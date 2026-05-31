@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 import { getCurrentContractorOrganization } from "@/lib/supabase/queries"
 
@@ -77,11 +78,13 @@ export default async function ContractorProfilePage({
               defaultWebsite={website}
             />
             <div className="space-y-2">
-              <Label htmlFor="city">Город</Label>
+              <RequiredLabel htmlFor="city" required>Город</RequiredLabel>
               <Input id="city" name="city" defaultValue={organization.city ?? ""} required />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Описание организации</Label>
+              <RequiredLabel htmlFor="description" required>
+                Описание организации
+              </RequiredLabel>
               <Textarea
                 id="description"
                 name="description"
