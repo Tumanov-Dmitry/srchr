@@ -1,6 +1,21 @@
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getDashboardMaterials } from "@/lib/supabase/queries"
+
+const statusLabels: Record<string, string> = {
+  draft: "Черновик",
+  moderation: "На модерации",
+  published: "Опубликован",
+  rejected: "Отклонен",
+  archived: "Архив",
+}
+
+const typeLabels: Record<string, string> = {
+  case: "Кейс",
+  article: "Статья",
+}
 
 export default async function DashboardMediaPage({
   searchParams,
@@ -8,6 +23,7 @@ export default async function DashboardMediaPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const { message } = await searchParams
+  const { materials, isMaterialsTableMissing } = await getDashboardMaterials()
 
   return (
     <div className="space-y-6">
@@ -29,14 +45,69 @@ export default async function DashboardMediaPage({
         </div>
       ) : null}
 
+      {isMaterialsTableMissing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Нужна таблица materials</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Чтобы сохранять черновики, статьи и материалы на модерации, примените
+            SQL из supabase/sql/create-materials.sql.
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Материалы</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          В MVP здесь появятся созданные кейсы и статьи. Сейчас кейсы сохраняются в
-          существующую таблицу cases, а для единой сущности материалов подготовлен
-          SQL-файл supabase/sql/create-materials.sql.
+        <CardContent>
+          {materials.length > 0 ? (
+            <div className="divide-y">
+              {materials.map((material) => (
+                <div
+                  className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 md:flex-row md:items-center md:justify-between"
+                  key={material.id}
+                >
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">
+                        {typeLabels[material.type] ?? material.type}
+                      </Badge>
+                      <Badge>
+                        {statusLabels[material.status ?? ""] ??
+                          material.status ??
+                          "Без статуса"}
+                      </Badge>
+                      {material.category ? (
+                        <span className="text-xs text-muted-foreground">
+                          {material.category}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div>
+                      <h2 className="font-medium">{material.title}</h2>
+                      {material.description ? (
+                        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                          {material.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {material.created_at
+                      ? new Date(material.created_at).toLocaleDateString("ru-RU")
+                      : "Дата не указана"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+              Материалов пока нет. Создайте кейс или статью, сохраните черновик
+              или отправьте материал на модерацию.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
