@@ -165,8 +165,12 @@ function redirectWithMissingFields(
   const missing = missingRequired(formData, fields)
 
   if (missing.length > 0) {
-    redirect(`${path}?message=Заполните обязательные поля для отправки на модерацию`)
+    redirectWithMessage(path, "Заполните обязательные поля для отправки на модерацию")
   }
+}
+
+function redirectWithMessage(path: string, message: string) {
+  redirect(`${path}?message=${encodeURIComponent(message)}`)
 }
 
 export async function createCaseMaterial(formData: FormData) {
@@ -191,32 +195,32 @@ export async function createCaseMaterial(formData: FormData) {
   }
 
   if (!title) {
-    redirect("/dashboard/media/new/case?message=Укажите название кейса")
+    redirectWithMessage("/dashboard/media/new/case", "Укажите название кейса")
   }
 
-  const slug = await getAvailableSlug("cases", title)
-  const blocks = buildCaseBlocks(formData)
-  const content = JSON.stringify({
-    type: "case",
-    blocks,
-    meta: {
-      category: value(formData, "category"),
-      industry: value(formData, "industry"),
-      city: value(formData, "city"),
-      project_year: numberValue(formData, "project_year"),
-      client_name: value(formData, "client_name"),
-      client_url: value(formData, "client_url"),
-      client_name_visible: value(formData, "client_name_visible") ?? "yes",
-      services: value(formData, "services"),
-      specialists: value(formData, "specialists"),
-      tools: value(formData, "tools"),
-      project_duration: value(formData, "project_duration"),
-      budget_range: value(formData, "budget_range"),
-      tags: tagsValue(formData) ?? null,
-    },
-  })
-
   try {
+    const slug = await getAvailableSlug("cases", title)
+    const blocks = buildCaseBlocks(formData)
+    const content = JSON.stringify({
+      type: "case",
+      blocks,
+      meta: {
+        category: value(formData, "category"),
+        industry: value(formData, "industry"),
+        city: value(formData, "city"),
+        project_year: numberValue(formData, "project_year"),
+        client_name: value(formData, "client_name"),
+        client_url: value(formData, "client_url"),
+        client_name_visible: value(formData, "client_name_visible") ?? "yes",
+        services: value(formData, "services"),
+        specialists: value(formData, "specialists"),
+        tools: value(formData, "tools"),
+        project_duration: value(formData, "project_duration"),
+        budget_range: value(formData, "budget_range"),
+        tags: tagsValue(formData) ?? null,
+      },
+    })
+
     const material = await writeMaterialWithFallback({
       type: "case",
       title,
@@ -289,12 +293,12 @@ export async function createCaseMaterial(formData: FormData) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить кейс"
-    redirect(`/dashboard/media/new/case?message=${encodeURIComponent(message)}`)
+    redirectWithMessage("/dashboard/media/new/case", message)
   }
 
   revalidatePath("/cases")
   revalidatePath("/dashboard/media")
-  redirect("/dashboard/media?message=Кейс сохранен")
+  redirectWithMessage("/dashboard/media", "Кейс сохранен")
 }
 
 export async function createArticleMaterial(formData: FormData) {
@@ -317,15 +321,15 @@ export async function createArticleMaterial(formData: FormData) {
   }
 
   if (!title) {
-    redirect("/dashboard/media/new/article?message=Укажите название статьи")
+    redirectWithMessage("/dashboard/media/new/article", "Укажите название статьи")
   }
-
-  const slug = await getAvailableSlug("materials", title)
-  const blocks = buildArticleBlocks(formData)
 
   let materialSaved = false
 
   try {
+    const slug = await getAvailableSlug("materials", title)
+    const blocks = buildArticleBlocks(formData)
+
     const material = await writeMaterialWithFallback({
       type: "article",
       title,
@@ -346,15 +350,16 @@ export async function createArticleMaterial(formData: FormData) {
     materialSaved = Boolean(material)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить статью"
-    redirect(`/dashboard/media/new/article?message=${encodeURIComponent(message)}`)
+    redirectWithMessage("/dashboard/media/new/article", message)
   }
 
   if (!materialSaved) {
-    redirect(
-      "/dashboard/media/new/article?message=Для сохранения статей нужна таблица materials. Примените SQL из supabase/sql/create-materials.sql",
+    redirectWithMessage(
+      "/dashboard/media/new/article",
+      "Для сохранения статей нужна таблица materials. Примените SQL из supabase/sql/create-materials.sql",
     )
   }
 
   revalidatePath("/dashboard/media")
-  redirect("/dashboard/media?message=Статья сохранена")
+  redirectWithMessage("/dashboard/media", "Статья сохранена")
 }
