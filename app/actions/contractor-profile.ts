@@ -109,7 +109,7 @@ async function saveContractorProfile(organizationId: string, formData: FormData)
     .maybeSingle()
 
   if (!lookupError && existing?.id) {
-    let nextPayload = { ...payload }
+    const nextPayload = { ...payload }
 
     for (let attempt = 0; attempt < 10; attempt += 1) {
       const { error } = await supabase
@@ -134,7 +134,7 @@ async function saveContractorProfile(organizationId: string, formData: FormData)
     throw new Error(lookupError.message)
   }
 
-  let nextPayload = { ...payload }
+  const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const { error } = await supabase
