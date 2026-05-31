@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createSlug } from "@/lib/slug"
+import { encodeMessage } from "@/lib/messages"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentTenderOwnerOrganization } from "@/lib/supabase/queries"
@@ -248,7 +249,7 @@ function redirectWithMissingFields(
 }
 
 function redirectWithMessage(path: string, message: string): never {
-  redirect(`${path}?message=${encodeURIComponent(message)}`)
+  redirect(`${path}?message=${encodeMessage(message)}`)
 }
 
 function caseContent(formData: FormData) {

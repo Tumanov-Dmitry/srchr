@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { decodeMessage } from "@/lib/messages"
 import { getDashboardMaterials } from "@/lib/supabase/queries"
 
 const statusLabels: Record<string, string> = {
@@ -22,7 +23,8 @@ export default async function DashboardMediaPage({
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
-  const { message } = await searchParams
+  const { message: rawMessage } = await searchParams
+  const message = decodeMessage(rawMessage)
   const { materials, isMaterialsTableMissing } = await getDashboardMaterials()
   const statusCounts = materials.reduce<Record<string, number>>((acc, material) => {
     const status = material.status ?? "unknown"

@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
+import { decodeMessage } from "@/lib/messages"
 
 export default async function NewCaseMaterialPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
-  const { message } = await searchParams
+  const { message: rawMessage } = await searchParams
+  const message = decodeMessage(rawMessage)
 
   return (
     <AutosaveForm

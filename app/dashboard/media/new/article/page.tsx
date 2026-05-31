@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
+import { decodeMessage } from "@/lib/messages"
 
 export default async function NewArticleMaterialPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
-  const { message } = await searchParams
+  const { message: rawMessage } = await searchParams
+  const message = decodeMessage(rawMessage)
 
   return (
     <AutosaveForm

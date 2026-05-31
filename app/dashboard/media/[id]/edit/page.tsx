@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
+import { decodeMessage } from "@/lib/messages"
 import { getDashboardMaterialById } from "@/lib/supabase/queries"
 import type { Material } from "@/types"
 
@@ -37,7 +38,8 @@ export default async function EditMaterialPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const { id } = await params
-  const { message } = await searchParams
+  const { message: rawMessage } = await searchParams
+  const message = decodeMessage(rawMessage)
   const { user, material, isMaterialsTableMissing } =
     await getDashboardMaterialById(id)
 
