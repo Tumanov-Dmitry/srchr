@@ -42,19 +42,5 @@ drop policy if exists "Organization members can manage materials" on public.mate
 create policy "Organization members can manage materials"
   on public.materials
   for all
-  using (
-    exists (
-      select 1
-      from public.organization_members om
-      where (om.organization_id = materials.organization_id or om.org_id = materials.organization_id)
-        and (om.user_id = auth.uid() or om.profile_id = auth.uid())
-    )
-  )
-  with check (
-    exists (
-      select 1
-      from public.organization_members om
-      where (om.organization_id = materials.organization_id or om.org_id = materials.organization_id)
-        and (om.user_id = auth.uid() or om.profile_id = auth.uid())
-    )
-  );
+  using (created_by = auth.uid())
+  with check (created_by = auth.uid());
