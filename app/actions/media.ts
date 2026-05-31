@@ -151,6 +151,22 @@ async function updateWithSchemaFallback(
   throw new Error("Не удалось обновить материал")
 }
 
+async function deleteWithSchemaFallback(table: string, id: string) {
+  const supabase = await createWriterClient()
+  const { data, error } = await supabase
+    .from(table)
+    .delete()
+    .eq("id", id)
+    .eq("status", "draft")
+    .select("id")
+    .maybeSingle()
+
+  if (isMissingTable(error)) return null
+  if (error) throw new Error(error.message)
+
+  return data
+}
+
 async function writeMaterialWithFallback(
   payload: Record<string, PayloadValue>,
 ) {
@@ -465,6 +481,7 @@ export async function updateMaterial(formData: FormData) {
 
   const id = value(formData, "id")
   const type = value(formData, "type")
+  const intent = value(formData, "intent") ?? "save"
   const status = statusValue(formData)
   const title = value(formData, "title")
 
@@ -474,6 +491,41 @@ export async function updateMaterial(formData: FormData) {
   }
 
   const editPath = `/dashboard/media/${id}/edit`
+
+  if (intent === "delete") {
+    let deleteError: string | null = null
+    let deleted = false
+
+    try {
+      const ownership = await getMaterialOwnership(id)
+
+      if (!ownership) {
+        deleteError = "Материал не найден или таблица materials недоступна"
+      } else if (
+        ownership.company_id !== organization.id &&
+        ownership.organization_id !== organization.id &&
+        ownership.created_by !== user.id
+      ) {
+        deleteError = "Нет доступа к этому материалу"
+      } else {
+        deleted = Boolean(await deleteWithSchemaFallback("materials", id))
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось удалить черновик"
+      redirectWithMessage(editPath, message)
+    }
+
+    if (deleteError) {
+      redirectWithMessage(editPath, deleteError)
+    }
+
+    if (!deleted) {
+      redirectWithMessage(editPath, "Удалять можно только черновики")
+    }
+
+    revalidatePath("/dashboard/media")
+    redirectWithMessage("/dashboard/media", "Черновик удален")
+  }
 
   if (status === "moderation") {
     redirectWithMissingFields(

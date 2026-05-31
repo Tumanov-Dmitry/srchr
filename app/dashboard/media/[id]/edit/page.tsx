@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { updateMaterial } from "@/app/actions/media"
+import { MaterialFormActions } from "@/components/media/material-form-actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -50,7 +51,7 @@ export default async function EditMaterialPage({
   const content = parseContent(material)
 
   return (
-    <form action={updateMaterial} className="space-y-6">
+    <form action={updateMaterial} className="space-y-6" data-material-form>
       <input name="id" type="hidden" value={material.id} />
       <input name="type" type="hidden" value={material.type} />
 
@@ -87,14 +88,7 @@ export default async function EditMaterialPage({
         <ArticleFields content={content} material={material} />
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" name="status" value="draft" variant="outline">
-          Сохранить черновик
-        </Button>
-        <Button type="submit" name="status" value="moderation">
-          Отправить на модерацию
-        </Button>
-      </div>
+      <MaterialFormActions status={material.status} />
     </form>
   )
 }
