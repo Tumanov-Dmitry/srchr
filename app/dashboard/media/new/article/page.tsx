@@ -38,12 +38,12 @@ export default async function NewArticleMaterialPage({
           <CardTitle>Основная информация</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <Field name="title" label="Название статьи" required />
+          <Field name="title" label="Название статьи" requiredLabel />
           <Field name="cover_url" label="Обложка" placeholder="https://..." />
-          <TextField name="description" label="Короткое описание" className="md:col-span-2" required />
+          <TextField name="description" label="Короткое описание" className="md:col-span-2" requiredLabel />
           <Field name="author" label="Автор" />
-          <Field name="category" label="Рубрика" required />
-          <Field name="tags" label="Теги" placeholder="гайд, EVP, подборка" required />
+          <Field name="category" label="Рубрика" requiredLabel />
+          <Field name="tags" label="Теги" placeholder="гайд, EVP, подборка" requiredLabel />
           <Field name="reading_time" label="Время чтения, мин" type="number" />
           <Field name="published_at" label="Дата публикации" type="date" />
         </CardContent>
@@ -54,7 +54,7 @@ export default async function NewArticleMaterialPage({
           <CardTitle>Контент</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <TextField name="content" label="Основной текст" required />
+          <TextField name="content" label="Основной текст" requiredLabel />
           <TextField name="quote" label="Цитата" />
           <TextField name="cta" label="CTA-блок" />
         </CardContent>
@@ -87,12 +87,13 @@ export default async function NewArticleMaterialPage({
 function Field({
   name,
   label,
+  requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Input> & { label: string }) {
+}: React.ComponentProps<typeof Input> & { label: string; requiredLabel?: boolean }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+      <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
       <Input id={name} name={name} {...props} />
@@ -103,12 +104,13 @@ function Field({
 function TextField({
   name,
   label,
+  requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Textarea> & { label: string }) {
+}: React.ComponentProps<typeof Textarea> & { label: string; requiredLabel?: boolean }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+      <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
       <Textarea id={name} name={name} {...props} />
