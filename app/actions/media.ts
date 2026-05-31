@@ -8,6 +8,10 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentTenderOwnerOrganization } from "@/lib/supabase/queries"
 
 type PayloadValue = string | number | null
+type MaterialOwnership = {
+  company_id?: string | null
+  organization_id?: string | null
+}
 
 function value(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
@@ -57,13 +61,17 @@ function uniqueSlugCandidate(slug: PayloadValue, attempt: number) {
   return `${baseSlug}-${attempt + 2}`
 }
 
+async function createWriterClient() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createClient()
+}
+
 async function writeWithSchemaFallback(
   table: string,
   payload: Record<string, PayloadValue>,
 ) {
-  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? createAdminClient()
-    : await createClient()
+  const supabase = await createWriterClient()
   const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -92,14 +100,26 @@ async function writeWithSchemaFallback(
   throw new Error("Не удалось сохранить материал")
 }
 
+async function getMaterialOwnership(id: string) {
+  const supabase = await createWriterClient()
+  const { data, error } = await supabase
+    .from("materials")
+    .select("company_id, organization_id")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (isMissingTable(error)) return null
+  if (error) throw new Error(error.message)
+
+  return (data ?? null) as MaterialOwnership | null
+}
+
 async function updateWithSchemaFallback(
   table: string,
   id: string,
   payload: Record<string, PayloadValue>,
 ) {
-  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? createAdminClient()
-    : await createClient()
+  const supabase = await createWriterClient()
   const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -108,7 +128,7 @@ async function updateWithSchemaFallback(
       .update(nextPayload)
       .eq("id", id)
       .select("id, slug")
-      .single()
+      .maybeSingle()
 
     if (!error) return data
     if (isMissingTable(error)) return null
@@ -470,6 +490,19 @@ export async function updateMaterial(formData: FormData) {
   let materialTableMissing = false
 
   try {
+    const ownership = await getMaterialOwnership(id)
+
+    if (!ownership) {
+      redirectWithMessage(editPath, "Материал не найден или таблица materials недоступна")
+    }
+
+    if (
+      ownership.company_id !== organization.id &&
+      ownership.organization_id !== organization.id
+    ) {
+      redirectWithMessage(editPath, "Нет доступа к этому материалу")
+    }
+
     const content = type === "case" ? caseContent(formData) : articleContent(formData)
     const updated = await updateWithSchemaFallback("materials", id, {
       title,
@@ -496,7 +529,7 @@ export async function updateMaterial(formData: FormData) {
   if (materialTableMissing) {
     redirectWithMessage(
       editPath,
-      "Для редактирования нужна таблица materials. Примените миграции.",
+      "Материал не найден или не был обновлен. Обновите страницу и попробуйте снова.",
     )
   }
 
