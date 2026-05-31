@@ -32,11 +32,13 @@ create index if not exists materials_organization_id_idx
 
 alter table public.materials enable row level security;
 
+drop policy if exists "Published materials are public" on public.materials;
 create policy "Published materials are public"
   on public.materials
   for select
   using (status = 'published');
 
+drop policy if exists "Organization members can manage materials" on public.materials;
 create policy "Organization members can manage materials"
   on public.materials
   for all
@@ -44,15 +46,15 @@ create policy "Organization members can manage materials"
     exists (
       select 1
       from public.organization_members om
-      where om.organization_id = materials.organization_id
-        and om.user_id = auth.uid()
+      where (om.organization_id = materials.organization_id or om.org_id = materials.organization_id)
+        and (om.user_id = auth.uid() or om.profile_id = auth.uid())
     )
   )
   with check (
     exists (
       select 1
       from public.organization_members om
-      where om.organization_id = materials.organization_id
-        and om.user_id = auth.uid()
+      where (om.organization_id = materials.organization_id or om.org_id = materials.organization_id)
+        and (om.user_id = auth.uid() or om.profile_id = auth.uid())
     )
   );
