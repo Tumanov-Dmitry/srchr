@@ -16,6 +16,8 @@ export type Organization = {
   status?: string | null
   is_contractor?: boolean | null
   is_client?: boolean | null
+  created_at?: string | null
+  updated_at?: string | null
   organization_services?: Array<{
     service_id?: string | null
     services?: Service | null

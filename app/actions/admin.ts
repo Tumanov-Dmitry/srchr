@@ -1,0 +1,134 @@
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+import { encodeMessage } from "@/lib/messages"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { getAdminAccess } from "@/lib/supabase/admin-queries"
+
+type TableName = "profiles" | "organizations" | "materials" | "tenders"
+
+function value(formData: FormData, key: string) {
+  const raw = String(formData.get(key) ?? "").trim()
+  return raw.length > 0 ? raw : null
+}
+
+function redirectWithMessage(path: string, message: string): never {
+  redirect(`${path}?message=${encodeMessage(message)}`)
+}
+
+async function requireAdmin() {
+  const access = await getAdminAccess()
+
+  if (!access.user) redirect("/login")
+  if (!access.isAdmin) redirect("/")
+
+  return access
+}
+
+function safeStatus(status: string | null, allowed: string[], fallback: string) {
+  return status && allowed.includes(status) ? status : fallback
+}
+
+async function updateStatus(
+  table: TableName,
+  id: string | null,
+  status: string,
+  path: string,
+) {
+  await requireAdmin()
+
+  if (!id) redirectWithMessage(path, "Объект не найден")
+
+  const supabase = createAdminClient()
+  const payload: Record<string, string | null> = { status }
+
+  if (table === "materials" && status === "published") {
+    payload.published_at = new Date().toISOString()
+  }
+
+  if (table === "tenders" && status === "published") {
+    payload.published_at = new Date().toISOString()
+  }
+
+  const { error } = await supabase.from(table).update(payload).eq("id", id)
+
+  if (error) {
+    redirectWithMessage(path, error.message)
+  }
+
+  revalidatePath("/admin")
+  revalidatePath(path)
+  redirectWithMessage(path, "Статус обновлен")
+}
+
+export async function updateAdminProfile(formData: FormData) {
+  await requireAdmin()
+
+  const id = value(formData, "id")
+  const role = safeStatus(value(formData, "role"), [
+    "guest",
+    "contractor",
+    "client",
+    "both",
+    "admin",
+  ], "guest")
+  const status = safeStatus(value(formData, "status"), [
+    "active",
+    "blocked",
+    "archived",
+  ], "active")
+  const path = "/admin/users"
+
+  if (!id) redirectWithMessage(path, "Пользователь не найден")
+
+  const supabase = createAdminClient()
+  const { error } = await supabase.from("profiles").update({ role, status }).eq("id", id)
+
+  if (error) {
+    redirectWithMessage(path, error.message)
+  }
+
+  revalidatePath(path)
+  redirectWithMessage(path, "Пользователь обновлен")
+}
+
+export async function updateAdminOrganizationStatus(formData: FormData) {
+  const status = safeStatus(value(formData, "status"), [
+    "draft",
+    "moderation",
+    "published",
+    "rejected",
+    "archived",
+    "blocked",
+  ], "draft")
+
+  await updateStatus("organizations", value(formData, "id"), status, "/admin/organizations")
+}
+
+export async function updateAdminMaterialStatus(formData: FormData) {
+  const status = safeStatus(value(formData, "status"), [
+    "draft",
+    "moderation",
+    "published",
+    "rejected",
+    "archived",
+  ], "draft")
+  const type = value(formData, "type")
+  const path = type === "case" ? "/admin/cases" : type === "article" ? "/admin/articles" : "/admin/materials"
+
+  await updateStatus("materials", value(formData, "id"), status, path)
+}
+
+export async function updateAdminTenderStatus(formData: FormData) {
+  const status = safeStatus(value(formData, "status"), [
+    "draft",
+    "moderation",
+    "published",
+    "closed",
+    "rejected",
+    "archived",
+  ], "draft")
+
+  await updateStatus("tenders", value(formData, "id"), status, "/admin/tenders")
+}
