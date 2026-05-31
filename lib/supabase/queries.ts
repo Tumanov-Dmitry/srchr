@@ -319,6 +319,50 @@ export type TenderFilters = {
   budget?: string
 }
 
+export type MaterialFilters = {
+  q?: string
+  type?: string
+  category?: string
+}
+
+export async function getPublishedMaterials(filters: MaterialFilters = {}) {
+  const supabase = await createClient()
+  let query = supabase
+    .from("materials")
+    .select("*, organizations:organization_id(*)")
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (filters.type === "case" || filters.type === "article") {
+    query = query.eq("type", filters.type)
+  }
+
+  if (filters.category) {
+    query = query.ilike("category", `%${filters.category}%`)
+  }
+
+  if (filters.q) {
+    query = query.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
+  }
+
+  const { data } = await query
+
+  return (data ?? []) as Material[]
+}
+
+export async function getPublishedMaterialBySlug(slug: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("materials")
+    .select("*, organizations:organization_id(*)")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle()
+
+  return (data ?? null) as Material | null
+}
+
 export async function getPublishedTenders(filters: TenderFilters = {}) {
   const supabase = await createClient()
   let query = supabase

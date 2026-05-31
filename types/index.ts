@@ -89,6 +89,7 @@ export type Material = {
   created_at?: string | null
   updated_at?: string | null
   published_at?: string | null
+  organizations?: Organization | null
 }
 
 export type Tender = {

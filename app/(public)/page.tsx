@@ -12,10 +12,10 @@ export default function HomePage() {
             SRCHR MVP
           </p>
           <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">
-            Платформа для поиска подрядчиков, кейсов и задач
+            Платформа для поиска подрядчиков, медиа и задач
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Стартовая версия соединяет каталог организаций, опубликованные кейсы,
+            Стартовая версия соединяет каталог организаций, опубликованные материалы,
             задачи и личный кабинет пользователя.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -32,7 +32,7 @@ export default function HomePage() {
         </div>
         <div className="rounded-lg border bg-card p-6">
           <div className="grid gap-4">
-            {["Авторизация", "Каталог", "Кейсы", "Dashboard"].map((item) => (
+            {["Авторизация", "Каталог", "Медиа", "Dashboard"].map((item) => (
               <div key={item} className="rounded-md border bg-background p-4">
                 <div className="font-medium">{item}</div>
                 <p className="mt-1 text-sm text-muted-foreground">

@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/supabase/queries"
 
 const navItems = [
   { href: "/contractors", label: "Подрядчики" },
-  { href: "/cases", label: "Кейсы" },
+  { href: "/media", label: "Медиа" },
   { href: "/tenders", label: "Задачи" },
 ]
 

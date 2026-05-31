@@ -167,7 +167,7 @@ export default async function ContractorPage({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-semibold tracking-normal">Кейсы</h2>
+            <h2 className="text-2xl font-semibold tracking-normal">Медиа</h2>
             {(item.cases ?? []).length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {(item.cases ?? []).map((caseItem) => (
@@ -181,7 +181,7 @@ export default async function ContractorPage({
                           "Описание кейса скоро появится."}
                       </p>
                       <Button asChild variant="outline" className="mt-4">
-                        <Link href={`/cases/${caseItem.slug}`}>Открыть кейс</Link>
+                        <Link href={`/media/${caseItem.slug}`}>Открыть материал</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -190,7 +190,7 @@ export default async function ContractorPage({
             ) : (
               <Card>
                 <CardContent className="p-6 text-sm text-muted-foreground">
-                  Кейсы этого подрядчика пока не опубликованы.
+                  Материалы этого подрядчика пока не опубликованы.
                 </CardContent>
               </Card>
             )}

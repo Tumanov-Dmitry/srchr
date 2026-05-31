@@ -404,6 +404,7 @@ export async function createCaseMaterial(formData: FormData) {
     redirectWithMessage("/dashboard/media/new/case", message)
   }
 
+  revalidatePath("/media")
   revalidatePath("/cases")
   revalidatePath("/dashboard/media")
   redirectWithMessage("/dashboard/media", "Кейс сохранен")
