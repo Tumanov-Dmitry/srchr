@@ -1,0 +1,21 @@
+name: Migrate dev database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    name: Run migrations on dev server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run db:migrate over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /opt/srchr-dev
+            npm run db:migrate
+            pm2 restart srchr-dev
