@@ -17,4 +17,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          script: /opt/deploy-srchr-dev.sh
+          script: |
+            /opt/deploy-srchr-dev.sh
+            cd /opt/srchr-dev
+            npm run db:migrate
