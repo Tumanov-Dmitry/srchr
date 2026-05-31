@@ -188,7 +188,7 @@ export async function getDashboardMaterials() {
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, type, title, slug, description, cover_url, status, category, company_id, organization_id, created_by, created_at, published_at",
+      "id, type, title, slug, description, cover_url, author, status, category, tags, reading_time, company_id, organization_id, created_by, created_at, updated_at, published_at",
     )
     .or(`company_id.eq.${organization.id},organization_id.eq.${organization.id}`)
     .order("created_at", { ascending: false })
@@ -197,6 +197,34 @@ export async function getDashboardMaterials() {
     user,
     organization,
     materials: error ? [] : ((data ?? []) as Material[]),
+    isMaterialsTableMissing: isMissingTable(error),
+  }
+}
+
+export async function getDashboardMaterialById(id: string) {
+  const { user, organization } = await getCurrentTenderOwnerOrganization()
+
+  if (!user || !organization) {
+    return {
+      user,
+      organization,
+      material: null,
+      isMaterialsTableMissing: false,
+    }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .eq("id", id)
+    .or(`company_id.eq.${organization.id},organization_id.eq.${organization.id}`)
+    .maybeSingle()
+
+  return {
+    user,
+    organization,
+    material: error ? null : ((data ?? null) as Material | null),
     isMaterialsTableMissing: isMissingTable(error),
   }
 }
