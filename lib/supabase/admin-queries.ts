@@ -16,6 +16,14 @@ export type AdminProfile = {
   organizations?: Organization | null
 }
 
+type ProfileRow = {
+  id: string
+  full_name?: string | null
+  account_type?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export type AdminStats = {
   agencies: number
   clients: number
@@ -135,9 +143,42 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 export async function getAdminProfiles() {
   const supabase = createAdminClient()
+  const [{ data: usersData }, { data: profilesData, error: profilesError }] =
+    await Promise.all([
+      supabase.auth.admin.listUsers({ page: 1, perPage: 100 }),
+      supabase
+        .from("profiles")
+        .select("id, full_name, account_type, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ])
+
+  const profiles = profilesError ? [] : ((profilesData ?? []) as ProfileRow[])
+  const profilesById = new Map(profiles.map((profile) => [profile.id, profile]))
+  const users = usersData.users ?? []
+
+  if (users.length > 0) {
+    return users.map((user) => {
+      const profile = profilesById.get(user.id)
+
+      return {
+        id: user.id,
+        email: user.email ?? null,
+        full_name: profile?.full_name ?? null,
+        name: null,
+        role: null,
+        status: null,
+        account_type: profile?.account_type ?? "guest",
+        created_at: profile?.created_at ?? user.created_at ?? null,
+        updated_at: profile?.updated_at ?? user.updated_at ?? null,
+        last_seen_at: user.last_sign_in_at ?? null,
+      } satisfies AdminProfile
+    })
+  }
+
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, full_name, account_type, created_at, updated_at")
     .order("created_at", { ascending: false })
     .limit(100)
 

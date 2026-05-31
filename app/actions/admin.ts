@@ -80,8 +80,7 @@ export async function updateAdminProfile(formData: FormData) {
   const supabase = createAdminClient()
   const { error } = await supabase
     .from("profiles")
-    .update({ account_type: accountType })
-    .eq("id", id)
+    .upsert({ id, account_type: accountType }, { onConflict: "id" })
 
   if (error) {
     redirectWithMessage(path, error.message)
