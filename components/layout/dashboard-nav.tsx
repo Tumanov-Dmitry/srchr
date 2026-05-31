@@ -16,7 +16,7 @@ const items = [
   { href: "/dashboard/organization", label: "Организация", icon: Building2 },
   { href: "/dashboard/client/tenders", label: "Мои задачи", icon: BriefcaseBusiness },
   { href: "/dashboard/contractor/responses", label: "Мои отклики", icon: MessageSquareReply },
-  { href: "/dashboard/cases", label: "Мои кейсы", icon: FolderKanban },
+  { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },
   { href: "/dashboard/favorites", label: "Избранное", icon: Heart },
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ]
