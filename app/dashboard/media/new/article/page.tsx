@@ -2,7 +2,7 @@ import { createArticleMaterial } from "@/app/actions/media"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 
 export default async function NewArticleMaterialPage({
@@ -87,7 +87,9 @@ function Field({
 }: React.ComponentProps<typeof Input> & { label: string }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <Label htmlFor={name}>{label}</Label>
+      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+        {label}
+      </RequiredLabel>
       <Input id={name} name={name} {...props} />
     </div>
   )
@@ -101,7 +103,9 @@ function TextField({
 }: React.ComponentProps<typeof Textarea> & { label: string }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <Label htmlFor={name}>{label}</Label>
+      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+        {label}
+      </RequiredLabel>
       <Textarea id={name} name={name} {...props} />
     </div>
   )
