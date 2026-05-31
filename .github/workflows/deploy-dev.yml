@@ -1,0 +1,20 @@
+name: Deploy dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to dev.srchr.ru
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run deploy script over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: /opt/deploy-srchr-dev.sh
