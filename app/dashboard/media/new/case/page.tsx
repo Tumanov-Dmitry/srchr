@@ -39,11 +39,11 @@ export default async function NewCaseMaterialPage({
           <CardTitle>Основная информация</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <Field name="title" label="Название кейса" required />
+          <Field name="title" label="Название кейса" requiredLabel />
           <Field name="cover_url" label="Обложка" placeholder="https://..." />
-          <TextField name="description" label="Короткое описание" className="md:col-span-2" required />
-          <Field name="category" label="Категория / услуга" required />
-          <Field name="industry" label="Индустрия клиента" required />
+          <TextField name="description" label="Короткое описание" className="md:col-span-2" requiredLabel />
+          <Field name="category" label="Категория / услуга" requiredLabel />
+          <Field name="industry" label="Индустрия клиента" requiredLabel />
           <Field name="city" label="Город / регион" />
           <Field name="project_year" label="Год проекта" type="number" />
           <Field name="client_name" label="Клиент / бренд" />
@@ -68,12 +68,12 @@ export default async function NewCaseMaterialPage({
           <CardTitle>Содержание кейса</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <TextField name="task" label="Задача" required />
+          <TextField name="task" label="Задача" requiredLabel />
           <TextField name="context" label="Контекст" />
-          <TextField name="work_done" label="Что сделали" required />
+          <TextField name="work_done" label="Что сделали" requiredLabel />
           <TextField name="project_team" label="Команда проекта" />
           <TextField name="solution" label="Решение" />
-          <TextField name="result" label="Результат" required />
+          <TextField name="result" label="Результат" requiredLabel />
           <TextField name="metrics" label="Цифры / метрики" />
           <TextField name="client_review" label="Отзыв клиента" />
           <TextField name="gallery" label="Галерея / медиа" placeholder="Ссылки на изображения или видео, по одной в строке" />
@@ -110,12 +110,13 @@ export default async function NewCaseMaterialPage({
 function Field({
   name,
   label,
+  requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Input> & { label: string }) {
+}: React.ComponentProps<typeof Input> & { label: string; requiredLabel?: boolean }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+      <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
       <Input id={name} name={name} {...props} />
@@ -126,12 +127,13 @@ function Field({
 function TextField({
   name,
   label,
+  requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Textarea> & { label: string }) {
+}: React.ComponentProps<typeof Textarea> & { label: string; requiredLabel?: boolean }) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
-      <RequiredLabel htmlFor={name} required={Boolean(props.required)}>
+      <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
       <Textarea id={name} name={name} {...props} />
