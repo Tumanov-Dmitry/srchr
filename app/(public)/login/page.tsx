@@ -3,8 +3,8 @@ import { login } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { PageShell } from "@/components/layout/page-shell"
+import { RequiredLabel } from "@/components/ui/required-label"
 
 export default async function LoginPage({
   searchParams,
@@ -22,11 +22,11 @@ export default async function LoginPage({
         <CardContent>
           <form action={login} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <RequiredLabel htmlFor="email" required>Email</RequiredLabel>
               <Input id="email" name="email" type="email" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
+              <RequiredLabel htmlFor="password" required>Пароль</RequiredLabel>
               <Input id="password" name="password" type="password" required />
             </div>
             {message ? <p className="text-sm text-destructive">{message}</p> : null}
