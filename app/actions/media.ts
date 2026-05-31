@@ -488,42 +488,47 @@ export async function updateMaterial(formData: FormData) {
   }
 
   let materialTableMissing = false
+  let accessError: string | null = null
 
   try {
     const ownership = await getMaterialOwnership(id)
 
     if (!ownership) {
-      redirectWithMessage(editPath, "Материал не найден или таблица materials недоступна")
-    }
-
-    if (
+      accessError = "Материал не найден или таблица materials недоступна"
+    } else if (
       ownership.company_id !== organization.id &&
       ownership.organization_id !== organization.id
     ) {
-      redirectWithMessage(editPath, "Нет доступа к этому материалу")
+      accessError = "Нет доступа к этому материалу"
     }
 
-    const content = type === "case" ? caseContent(formData) : articleContent(formData)
-    const updated = await updateWithSchemaFallback("materials", id, {
-      title,
-      description: value(formData, "description"),
-      cover_url: value(formData, "cover_url"),
-      author: value(formData, "author") ?? user.email ?? null,
-      company_id: organization.id,
-      organization_id: organization.id,
-      status,
-      category: value(formData, "category"),
-      tags: tagsValue(formData) ?? null,
-      reading_time: numberValue(formData, "reading_time"),
-      content,
-      updated_at: new Date().toISOString(),
-      published_at: status === "published" ? new Date().toISOString() : null,
-    })
+    if (!accessError) {
+      const content = type === "case" ? caseContent(formData) : articleContent(formData)
+      const updated = await updateWithSchemaFallback("materials", id, {
+        title,
+        description: value(formData, "description"),
+        cover_url: value(formData, "cover_url"),
+        author: value(formData, "author") ?? user.email ?? null,
+        company_id: organization.id,
+        organization_id: organization.id,
+        status,
+        category: value(formData, "category"),
+        tags: tagsValue(formData) ?? null,
+        reading_time: numberValue(formData, "reading_time"),
+        content,
+        updated_at: new Date().toISOString(),
+        published_at: status === "published" ? new Date().toISOString() : null,
+      })
 
-    materialTableMissing = !updated
+      materialTableMissing = !updated
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось обновить материал"
     redirectWithMessage(editPath, message)
+  }
+
+  if (accessError) {
+    redirectWithMessage(editPath, accessError)
   }
 
   if (materialTableMissing) {
