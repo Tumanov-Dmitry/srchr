@@ -33,7 +33,7 @@ export default async function ContractorDashboardPage({
             Кабинет подрядчика
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {organization.name} · профиль, кейсы и отклики.
+            {organization.name} · профиль, медиа и отклики.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Публичная ссылка: /contractors/{organization.slug}
@@ -54,7 +54,7 @@ export default async function ContractorDashboardPage({
             <Link href="/dashboard/contractor/profile">Редактировать профиль</Link>
           </Button>
           <Button asChild>
-            <Link href="/dashboard/cases">Добавить кейс</Link>
+            <Link href="/dashboard/media">Добавить материал</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/dashboard/contractor/responses">Мои отклики</Link>
