@@ -6,7 +6,6 @@ import { decodeMessage } from "@/lib/messages"
 import { getAdminProfiles } from "@/lib/supabase/admin-queries"
 
 const roles = ["guest", "contractor", "client", "both", "admin"]
-const statuses = ["active", "blocked", "archived"]
 
 export default async function AdminUsersPage({
   searchParams,
@@ -42,8 +41,7 @@ export default async function AdminUsersPage({
               <tr className="border-b">
                 <th className="py-3 pr-4">Email</th>
                 <th className="py-3 pr-4">Имя</th>
-                <th className="py-3 pr-4">Роль</th>
-                <th className="py-3 pr-4">Статус</th>
+                <th className="py-3 pr-4">Тип аккаунта</th>
                 <th className="py-3 pr-4">Дата регистрации</th>
                 <th className="py-3 pr-4">Действия</th>
               </tr>
@@ -59,9 +57,6 @@ export default async function AdminUsersPage({
                     </Badge>
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge>{profile.status ?? "active"}</Badge>
-                  </td>
-                  <td className="py-3 pr-4">
                     {profile.created_at
                       ? new Date(profile.created_at).toLocaleDateString("ru-RU")
                       : "—"}
@@ -72,22 +67,11 @@ export default async function AdminUsersPage({
                       <select
                         className="h-9 rounded-md border border-input bg-background px-2"
                         defaultValue={profile.role ?? profile.account_type ?? "guest"}
-                        name="role"
+                        name="account_type"
                       >
                         {roles.map((role) => (
                           <option key={role} value={role}>
                             {role}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className="h-9 rounded-md border border-input bg-background px-2"
-                        defaultValue={profile.status ?? "active"}
-                        name="status"
-                      >
-                        {statuses.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
                           </option>
                         ))}
                       </select>

@@ -66,24 +66,22 @@ export async function updateAdminProfile(formData: FormData) {
   await requireAdmin()
 
   const id = value(formData, "id")
-  const role = safeStatus(value(formData, "role"), [
+  const accountType = safeStatus(value(formData, "account_type"), [
     "guest",
     "contractor",
     "client",
     "both",
     "admin",
   ], "guest")
-  const status = safeStatus(value(formData, "status"), [
-    "active",
-    "blocked",
-    "archived",
-  ], "active")
   const path = "/admin/users"
 
   if (!id) redirectWithMessage(path, "Пользователь не найден")
 
   const supabase = createAdminClient()
-  const { error } = await supabase.from("profiles").update({ role, status }).eq("id", id)
+  const { error } = await supabase
+    .from("profiles")
+    .update({ account_type: accountType })
+    .eq("id", id)
 
   if (error) {
     redirectWithMessage(path, error.message)
