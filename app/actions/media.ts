@@ -50,7 +50,7 @@ async function writeWithSchemaFallback(
     : await createClient()
   const nextPayload = { ...payload }
 
-  for (let attempt = 0; attempt < 14; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     const { data, error } = await supabase
       .from(table)
       .insert(nextPayload)
