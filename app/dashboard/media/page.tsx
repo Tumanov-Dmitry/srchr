@@ -24,6 +24,11 @@ export default async function DashboardMediaPage({
 }) {
   const { message } = await searchParams
   const { materials, isMaterialsTableMissing } = await getDashboardMaterials()
+  const statusCounts = materials.reduce<Record<string, number>>((acc, material) => {
+    const status = material.status ?? "unknown"
+    acc[status] = (acc[status] ?? 0) + 1
+    return acc
+  }, {})
 
   return (
     <div className="space-y-6">
@@ -63,6 +68,16 @@ export default async function DashboardMediaPage({
         </CardHeader>
         <CardContent>
           {materials.length > 0 ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {Object.entries(statusCounts).map(([status, count]) => (
+                <Badge key={status} variant="outline">
+                  {statusLabels[status] ?? status}: {count}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+
+          {materials.length > 0 ? (
             <div className="divide-y">
               {materials.map((material) => (
                 <div
@@ -94,10 +109,19 @@ export default async function DashboardMediaPage({
                       ) : null}
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {material.created_at
-                      ? new Date(material.created_at).toLocaleDateString("ru-RU")
-                      : "Дата не указана"}
+                  <div className="flex flex-col items-start gap-3 md:items-end">
+                    <div className="text-sm text-muted-foreground">
+                      {material.updated_at || material.created_at
+                        ? new Date(
+                            material.updated_at ?? material.created_at ?? "",
+                          ).toLocaleDateString("ru-RU")
+                        : "Дата не указана"}
+                    </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/media/${material.id}/edit`}>
+                        Редактировать
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ))}
