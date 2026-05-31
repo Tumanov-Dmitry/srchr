@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createSlug } from "@/lib/slug"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentTenderOwnerOrganization } from "@/lib/supabase/queries"
 
@@ -44,7 +45,9 @@ async function writeWithSchemaFallback(
   table: string,
   payload: Record<string, PayloadValue>,
 ) {
-  const supabase = await createClient()
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createClient()
   const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 14; attempt += 1) {
@@ -68,11 +71,15 @@ async function writeWithSchemaFallback(
   throw new Error("Не удалось сохранить материал")
 }
 
-async function writeMaterialWithFallback(payload: Record<string, PayloadValue>) {
+async function writeMaterialWithFallback(
+  payload: Record<string, PayloadValue>,
+) {
   return writeWithSchemaFallback("materials", payload)
 }
 
-async function writeLegacyCaseWithFallback(payload: Record<string, PayloadValue>) {
+async function writeLegacyCaseWithFallback(
+  payload: Record<string, PayloadValue>,
+) {
   try {
     return await writeWithSchemaFallback("cases", payload)
   } catch (error) {
@@ -93,7 +100,9 @@ async function writeLegacyCaseWithFallback(payload: Record<string, PayloadValue>
 }
 
 async function getAvailableSlug(table: string, title: string) {
-  const supabase = await createClient()
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createClient()
   const baseSlug = createSlug(title)
   let candidate = baseSlug
 
@@ -144,18 +153,47 @@ function buildArticleBlocks(formData: FormData) {
   ].filter((block) => block.content)
 }
 
+function missingRequired(formData: FormData, fields: string[]) {
+  return fields.filter((field) => !value(formData, field))
+}
+
+function redirectWithMissingFields(
+  path: string,
+  formData: FormData,
+  fields: string[],
+) {
+  const missing = missingRequired(formData, fields)
+
+  if (missing.length > 0) {
+    redirect(`${path}?message=Заполните обязательные поля для отправки на модерацию`)
+  }
+}
+
 export async function createCaseMaterial(formData: FormData) {
   const { user, organization } = await getCurrentTenderOwnerOrganization()
 
   if (!user) redirect("/login")
   if (!organization) redirect("/onboarding")
 
-  const title = value(formData, "title")
+  const status = statusValue(formData)
+  const title = value(formData, "title") ?? "Новый кейс"
+
+  if (status === "moderation") {
+    redirectWithMissingFields("/dashboard/media/new/case", formData, [
+      "title",
+      "description",
+      "category",
+      "industry",
+      "task",
+      "work_done",
+      "result",
+    ])
+  }
+
   if (!title) {
     redirect("/dashboard/media/new/case?message=Укажите название кейса")
   }
 
-  const status = statusValue(formData)
   const slug = await getAvailableSlug("cases", title)
   const blocks = buildCaseBlocks(formData)
   const content = JSON.stringify({
@@ -265,12 +303,23 @@ export async function createArticleMaterial(formData: FormData) {
   if (!user) redirect("/login")
   if (!organization) redirect("/onboarding")
 
-  const title = value(formData, "title")
+  const status = statusValue(formData)
+  const title = value(formData, "title") ?? "Новая статья"
+
+  if (status === "moderation") {
+    redirectWithMissingFields("/dashboard/media/new/article", formData, [
+      "title",
+      "description",
+      "category",
+      "tags",
+      "content",
+    ])
+  }
+
   if (!title) {
     redirect("/dashboard/media/new/article?message=Укажите название статьи")
   }
 
-  const status = statusValue(formData)
   const slug = await getAvailableSlug("materials", title)
   const blocks = buildArticleBlocks(formData)
 
