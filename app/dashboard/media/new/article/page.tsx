@@ -1,4 +1,5 @@
 import { createArticleMaterial } from "@/app/actions/media"
+import { AutosaveForm } from "@/components/media/autosave-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,7 +14,11 @@ export default async function NewArticleMaterialPage({
   const { message } = await searchParams
 
   return (
-    <form action={createArticleMaterial} className="space-y-6">
+    <AutosaveForm
+      action={createArticleMaterial}
+      className="space-y-6"
+      storageKey="srchr:material:article:draft"
+    >
       <div>
         <h1 className="text-3xl font-semibold tracking-normal">Создать статью</h1>
         <p className="mt-2 text-muted-foreground">
@@ -75,7 +80,7 @@ export default async function NewArticleMaterialPage({
           Отправить на модерацию
         </Button>
       </div>
-    </form>
+    </AutosaveForm>
   )
 }
 
