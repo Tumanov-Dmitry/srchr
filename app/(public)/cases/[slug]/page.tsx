@@ -4,6 +4,23 @@ import { PageShell } from "@/components/layout/page-shell"
 import { getCaseBySlug } from "@/lib/supabase/queries"
 import type { CaseItem } from "@/types"
 
+type CaseBlock = {
+  type?: string
+  title?: string
+  content?: string
+}
+
+function getCaseBlocks(content?: string | null) {
+  if (!content) return null
+
+  try {
+    const parsed = JSON.parse(content) as { blocks?: CaseBlock[] }
+    return Array.isArray(parsed.blocks) ? parsed.blocks : null
+  } catch {
+    return null
+  }
+}
+
 export default async function CasePage({
   params,
 }: {
@@ -13,6 +30,8 @@ export default async function CasePage({
   const item = (await getCaseBySlug(slug)) as CaseItem | null
 
   if (!item) notFound()
+
+  const blocks = getCaseBlocks(item.content)
 
   return (
     <PageShell>
@@ -30,9 +49,24 @@ export default async function CasePage({
         <p className="mt-4 text-lg leading-8 text-muted-foreground">
           {item.short_description ?? "Краткое описание кейса скоро появится."}
         </p>
-        <div className="mt-8 whitespace-pre-line leading-8">
-          {item.content ?? "Полное описание кейса будет добавлено позже."}
-        </div>
+        {blocks ? (
+          <div className="mt-8 space-y-6">
+            {blocks.map((block, index) => (
+              <section key={`${block.type ?? "block"}-${index}`}>
+                <h2 className="text-xl font-semibold tracking-normal">
+                  {block.title}
+                </h2>
+                <p className="mt-2 whitespace-pre-line leading-8">
+                  {block.content}
+                </p>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 whitespace-pre-line leading-8">
+            {item.content ?? "Полное описание кейса будет добавлено позже."}
+          </div>
+        )}
         <Card className="mt-10">
           <CardHeader>
             <CardTitle>Комментарии</CardTitle>
