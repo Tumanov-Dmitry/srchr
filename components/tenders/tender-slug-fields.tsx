@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredLabel } from "@/components/ui/required-label"
 import { createSlug } from "@/lib/slug"
 
 export function TenderSlugFields({
@@ -19,7 +20,7 @@ export function TenderSlugFields({
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="title">Название задачи</Label>
+        <RequiredLabel htmlFor="title" required>Название задачи</RequiredLabel>
         <Input
           id="title"
           name="title"
