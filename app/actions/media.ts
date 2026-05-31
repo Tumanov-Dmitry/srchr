@@ -68,6 +68,30 @@ async function writeWithSchemaFallback(
   throw new Error("Не удалось сохранить материал")
 }
 
+async function writeMaterialWithFallback(payload: Record<string, PayloadValue>) {
+  return writeWithSchemaFallback("materials", payload)
+}
+
+async function writeLegacyCaseWithFallback(payload: Record<string, PayloadValue>) {
+  try {
+    return await writeWithSchemaFallback("cases", payload)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ""
+
+    if (
+      message.includes("status") &&
+      (message.includes("check constraint") || message.includes("violates"))
+    ) {
+      return writeWithSchemaFallback("cases", {
+        ...payload,
+        status: "draft",
+      })
+    }
+
+    throw error
+  }
+}
+
 async function getAvailableSlug(table: string, title: string) {
   const supabase = await createClient()
   const baseSlug = createSlug(title)
@@ -150,36 +174,81 @@ export async function createCaseMaterial(formData: FormData) {
       tools: value(formData, "tools"),
       project_duration: value(formData, "project_duration"),
       budget_range: value(formData, "budget_range"),
-      tags: tagsValue(formData),
+      tags: tagsValue(formData) ?? null,
     },
   })
 
   try {
-    await writeWithSchemaFallback("cases", {
+    const material = await writeMaterialWithFallback({
       type: "case",
       title,
       slug,
       description: value(formData, "description"),
-      short_description: value(formData, "description"),
-      cover: value(formData, "cover_url"),
       cover_url: value(formData, "cover_url"),
-      content,
+      author: user.email ?? null,
+      company_id: organization.id,
+      organization_id: organization.id,
       status,
       category: value(formData, "category"),
-      service: value(formData, "category"),
-      industry: value(formData, "industry"),
-      city: value(formData, "city"),
-      project_year: numberValue(formData, "project_year"),
-      client_name: value(formData, "client_name"),
-      client_url: value(formData, "client_url"),
-      budget_range: value(formData, "budget_range"),
       tags: tagsValue(formData) ?? null,
-      organization_id: organization.id,
-      company_id: organization.id,
-      author_id: user.id,
+      content,
       created_by: user.id,
       published_at: status === "published" ? new Date().toISOString() : null,
     })
+
+    if (!material) {
+      await writeLegacyCaseWithFallback({
+        type: "case",
+        title,
+        slug,
+        description: value(formData, "description"),
+        short_description: value(formData, "description"),
+        cover: value(formData, "cover_url"),
+        cover_url: value(formData, "cover_url"),
+        content,
+        status,
+        category: value(formData, "category"),
+        service: value(formData, "category"),
+        industry: value(formData, "industry"),
+        city: value(formData, "city"),
+        project_year: numberValue(formData, "project_year"),
+        client_name: value(formData, "client_name"),
+        client_url: value(formData, "client_url"),
+        budget_range: value(formData, "budget_range"),
+        tags: tagsValue(formData) ?? null,
+        organization_id: organization.id,
+        company_id: organization.id,
+        author_id: user.id,
+        created_by: user.id,
+        published_at: status === "published" ? new Date().toISOString() : null,
+      })
+    } else if (status === "published") {
+      await writeLegacyCaseWithFallback({
+        type: "case",
+        title,
+        slug,
+        description: value(formData, "description"),
+        short_description: value(formData, "description"),
+        cover: value(formData, "cover_url"),
+        cover_url: value(formData, "cover_url"),
+        content,
+        status,
+        category: value(formData, "category"),
+        service: value(formData, "category"),
+        industry: value(formData, "industry"),
+        city: value(formData, "city"),
+        project_year: numberValue(formData, "project_year"),
+        client_name: value(formData, "client_name"),
+        client_url: value(formData, "client_url"),
+        budget_range: value(formData, "budget_range"),
+        tags: tagsValue(formData) ?? null,
+        organization_id: organization.id,
+        company_id: organization.id,
+        author_id: user.id,
+        created_by: user.id,
+        published_at: status === "published" ? new Date().toISOString() : null,
+      })
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить кейс"
     redirect(`/dashboard/media/new/case?message=${encodeURIComponent(message)}`)
@@ -204,10 +273,11 @@ export async function createArticleMaterial(formData: FormData) {
   const status = statusValue(formData)
   const slug = await getAvailableSlug("materials", title)
   const blocks = buildArticleBlocks(formData)
+
   let materialSaved = false
 
   try {
-    const material = await writeWithSchemaFallback("materials", {
+    const material = await writeMaterialWithFallback({
       type: "article",
       title,
       slug,
@@ -232,7 +302,7 @@ export async function createArticleMaterial(formData: FormData) {
 
   if (!materialSaved) {
     redirect(
-      "/dashboard/media/new/article?message=Для сохранения статей примените SQL из supabase/sql/create-materials.sql",
+      "/dashboard/media/new/article?message=Для сохранения статей нужна таблица materials. Примените SQL из supabase/sql/create-materials.sql",
     )
   }
 
