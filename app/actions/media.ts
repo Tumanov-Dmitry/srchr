@@ -71,6 +71,38 @@ async function writeWithSchemaFallback(
   throw new Error("Не удалось сохранить материал")
 }
 
+async function updateWithSchemaFallback(
+  table: string,
+  id: string,
+  payload: Record<string, PayloadValue>,
+) {
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient()
+    : await createClient()
+  const nextPayload = { ...payload }
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const { data, error } = await supabase
+      .from(table)
+      .update(nextPayload)
+      .eq("id", id)
+      .select("id, slug")
+      .single()
+
+    if (!error) return data
+    if (isMissingTable(error)) return null
+
+    const missingColumn = getMissingColumn(error)
+    if (!missingColumn || !(missingColumn in nextPayload)) {
+      throw new Error(error.message)
+    }
+
+    delete nextPayload[missingColumn]
+  }
+
+  throw new Error("Не удалось обновить материал")
+}
+
 async function writeMaterialWithFallback(
   payload: Record<string, PayloadValue>,
 ) {
@@ -169,8 +201,39 @@ function redirectWithMissingFields(
   }
 }
 
-function redirectWithMessage(path: string, message: string) {
+function redirectWithMessage(path: string, message: string): never {
   redirect(`${path}?message=${encodeURIComponent(message)}`)
+}
+
+function caseContent(formData: FormData) {
+  const blocks = buildCaseBlocks(formData)
+
+  return JSON.stringify({
+    type: "case",
+    blocks,
+    meta: {
+      category: value(formData, "category"),
+      industry: value(formData, "industry"),
+      city: value(formData, "city"),
+      project_year: numberValue(formData, "project_year"),
+      client_name: value(formData, "client_name"),
+      client_url: value(formData, "client_url"),
+      client_name_visible: value(formData, "client_name_visible") ?? "yes",
+      services: value(formData, "services"),
+      specialists: value(formData, "specialists"),
+      tools: value(formData, "tools"),
+      project_duration: value(formData, "project_duration"),
+      budget_range: value(formData, "budget_range"),
+      tags: tagsValue(formData) ?? null,
+    },
+  })
+}
+
+function articleContent(formData: FormData) {
+  return JSON.stringify({
+    type: "article",
+    blocks: buildArticleBlocks(formData),
+  })
 }
 
 export async function createCaseMaterial(formData: FormData) {
@@ -200,26 +263,7 @@ export async function createCaseMaterial(formData: FormData) {
 
   try {
     const slug = await getAvailableSlug("cases", title)
-    const blocks = buildCaseBlocks(formData)
-    const content = JSON.stringify({
-      type: "case",
-      blocks,
-      meta: {
-        category: value(formData, "category"),
-        industry: value(formData, "industry"),
-        city: value(formData, "city"),
-        project_year: numberValue(formData, "project_year"),
-        client_name: value(formData, "client_name"),
-        client_url: value(formData, "client_url"),
-        client_name_visible: value(formData, "client_name_visible") ?? "yes",
-        services: value(formData, "services"),
-        specialists: value(formData, "specialists"),
-        tools: value(formData, "tools"),
-        project_duration: value(formData, "project_duration"),
-        budget_range: value(formData, "budget_range"),
-        tags: tagsValue(formData) ?? null,
-      },
-    })
+    const content = caseContent(formData)
 
     const material = await writeMaterialWithFallback({
       type: "case",
@@ -325,10 +369,10 @@ export async function createArticleMaterial(formData: FormData) {
   }
 
   let materialSaved = false
+  let materialTableMissing = false
 
   try {
     const slug = await getAvailableSlug("materials", title)
-    const blocks = buildArticleBlocks(formData)
 
     const material = await writeMaterialWithFallback({
       type: "article",
@@ -344,16 +388,17 @@ export async function createArticleMaterial(formData: FormData) {
       tags: tagsValue(formData) ?? null,
       reading_time: numberValue(formData, "reading_time"),
       published_at: status === "published" ? new Date().toISOString() : value(formData, "published_at"),
-      content: JSON.stringify({ type: "article", blocks }),
+      content: articleContent(formData),
       created_by: user.id,
     })
     materialSaved = Boolean(material)
+    materialTableMissing = !material
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить статью"
     redirectWithMessage("/dashboard/media/new/article", message)
   }
 
-  if (!materialSaved) {
+  if (!materialSaved || materialTableMissing) {
     redirectWithMessage(
       "/dashboard/media/new/article",
       "Для сохранения статей нужна таблица materials. Примените SQL из supabase/sql/create-materials.sql",
@@ -362,4 +407,74 @@ export async function createArticleMaterial(formData: FormData) {
 
   revalidatePath("/dashboard/media")
   redirectWithMessage("/dashboard/media", "Статья сохранена")
+}
+
+export async function updateMaterial(formData: FormData) {
+  const { user, organization } = await getCurrentTenderOwnerOrganization()
+
+  if (!user) redirect("/login")
+  if (!organization) redirect("/onboarding")
+
+  const id = value(formData, "id")
+  const type = value(formData, "type")
+  const status = statusValue(formData)
+  const title = value(formData, "title")
+
+  if (!id) redirectWithMessage("/dashboard/media", "Материал не найден")
+  if (type !== "case" && type !== "article") {
+    redirectWithMessage("/dashboard/media", "Неизвестный тип материала")
+  }
+
+  const editPath = `/dashboard/media/${id}/edit`
+
+  if (status === "moderation") {
+    redirectWithMissingFields(
+      editPath,
+      formData,
+      type === "case"
+        ? ["title", "description", "category", "industry", "task", "work_done", "result"]
+        : ["title", "description", "category", "tags", "content"],
+    )
+  }
+
+  if (!title) {
+    redirectWithMessage(editPath, "Укажите название материала")
+  }
+
+  let materialTableMissing = false
+
+  try {
+    const content = type === "case" ? caseContent(formData) : articleContent(formData)
+    const updated = await updateWithSchemaFallback("materials", id, {
+      title,
+      description: value(formData, "description"),
+      cover_url: value(formData, "cover_url"),
+      author: value(formData, "author") ?? user.email ?? null,
+      company_id: organization.id,
+      organization_id: organization.id,
+      status,
+      category: value(formData, "category"),
+      tags: tagsValue(formData) ?? null,
+      reading_time: numberValue(formData, "reading_time"),
+      content,
+      updated_at: new Date().toISOString(),
+      published_at: status === "published" ? new Date().toISOString() : null,
+    })
+
+    materialTableMissing = !updated
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Не удалось обновить материал"
+    redirectWithMessage(editPath, message)
+  }
+
+  if (materialTableMissing) {
+    redirectWithMessage(
+      editPath,
+      "Для редактирования нужна таблица materials. Примените миграции.",
+    )
+  }
+
+  revalidatePath("/dashboard/media")
+  revalidatePath(editPath)
+  redirectWithMessage("/dashboard/media", "Материал обновлен")
 }
