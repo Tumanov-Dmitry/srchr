@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredLabel } from "@/components/ui/required-label"
 import { createSlug } from "@/lib/slug"
 
 export function ContractorSlugFields({
@@ -27,7 +28,7 @@ export function ContractorSlugFields({
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="name">Название</Label>
+        <RequiredLabel htmlFor="name" required>Название</RequiredLabel>
         <Input
           id="name"
           name="name"
