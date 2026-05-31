@@ -75,12 +75,17 @@ export type Material = {
   slug: string
   description?: string | null
   cover_url?: string | null
+  author?: string | null
   status?: string | null
   category?: string | null
+  tags?: string | null
+  reading_time?: number | null
+  content?: string | Record<string, unknown> | null
   company_id?: string | null
   organization_id?: string | null
   created_by?: string | null
   created_at?: string | null
+  updated_at?: string | null
   published_at?: string | null
 }
 
