@@ -48,7 +48,7 @@ async function writeWithSchemaFallback(
   update?: { column: string; value: string },
 ) {
   const supabase = await createClient()
-  let nextPayload = { ...payload }
+  const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const query = update
