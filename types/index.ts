@@ -68,6 +68,22 @@ export type CaseItem = {
   organizations?: Organization | null
 }
 
+export type Material = {
+  id: string
+  type: "case" | "article"
+  title: string
+  slug: string
+  description?: string | null
+  cover_url?: string | null
+  status?: string | null
+  category?: string | null
+  company_id?: string | null
+  organization_id?: string | null
+  created_by?: string | null
+  created_at?: string | null
+  published_at?: string | null
+}
+
 export type Tender = {
   id: string
   slug: string
