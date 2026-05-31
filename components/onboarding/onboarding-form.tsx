@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredLabel } from "@/components/ui/required-label"
 import {
   Select,
   SelectContent,
@@ -33,7 +34,7 @@ export function OnboardingForm({
       <CardContent>
         <form action={completeOnboarding} className="space-y-6">
           <div className="space-y-2">
-            <Label>Роль</Label>
+            <RequiredLabel required>Роль</RequiredLabel>
             <Select
               name="role"
               value={role}
@@ -51,17 +52,17 @@ export function OnboardingForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">
+              <RequiredLabel htmlFor="name" required>
                 {role === "contractor" ? "Название компании" : "Название компании"}
-              </Label>
+              </RequiredLabel>
               <Input id="name" name="name" required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">Город</Label>
+              <RequiredLabel htmlFor="city" required>Город</RequiredLabel>
               <Input id="city" name="city" required />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Описание</Label>
+              <RequiredLabel htmlFor="description" required>Описание</RequiredLabel>
               <Textarea id="description" name="description" required />
             </div>
 
