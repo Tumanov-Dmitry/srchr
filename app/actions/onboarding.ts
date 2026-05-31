@@ -85,7 +85,6 @@ function getMissingColumn(error: { message?: string } | null) {
 async function createContractorProfile(organizationId: string, formData: FormData) {
   const supabase = await createClient()
   const description = String(formData.get("description") ?? "").trim()
-  const websiteUrl = optionalValue(formData, "website")
   const payload: Record<string, string | number | null> = {
     organization_id: organizationId,
     description,
@@ -99,7 +98,7 @@ async function createContractorProfile(organizationId: string, formData: FormDat
     team_size: optionalNumber(formData, "team_size"),
   }
 
-  let nextPayload = { ...payload }
+  const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const { error } = await supabase.from("contractor_profiles").insert(nextPayload)
