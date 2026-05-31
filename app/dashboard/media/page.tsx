@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ClearMaterialAutosave } from "@/components/media/clear-material-autosave"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,6 +35,8 @@ export default async function DashboardMediaPage({
 
   return (
     <div className="space-y-6">
+      {message ? <ClearMaterialAutosave /> : null}
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-normal">Медиа</h1>
