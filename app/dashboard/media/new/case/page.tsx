@@ -1,4 +1,5 @@
 import { createCaseMaterial } from "@/app/actions/media"
+import { AutosaveForm } from "@/components/media/autosave-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +15,11 @@ export default async function NewCaseMaterialPage({
   const { message } = await searchParams
 
   return (
-    <form action={createCaseMaterial} className="space-y-6">
+    <AutosaveForm
+      action={createCaseMaterial}
+      className="space-y-6"
+      storageKey="srchr:material:case:draft"
+    >
       <div>
         <h1 className="text-3xl font-semibold tracking-normal">Создать кейс</h1>
         <p className="mt-2 text-muted-foreground">
@@ -98,7 +103,7 @@ export default async function NewCaseMaterialPage({
           Отправить на модерацию
         </Button>
       </div>
-    </form>
+    </AutosaveForm>
   )
 }
 
