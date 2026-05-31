@@ -41,6 +41,22 @@ function isMissingTable(error: { message?: string } | null) {
   return message.includes("Could not find the table") || message.includes("does not exist")
 }
 
+function isDuplicateSlug(error: { message?: string; code?: string } | null) {
+  const message = error?.message ?? ""
+
+  return (
+    error?.code === "23505" &&
+    (message.includes("materials_slug_key") || message.includes("slug"))
+  )
+}
+
+function uniqueSlugCandidate(slug: PayloadValue, attempt: number) {
+  const baseSlug =
+    typeof slug === "string" && slug.trim().length > 0 ? slug.trim() : "material"
+
+  return `${baseSlug}-${attempt + 2}`
+}
+
 async function writeWithSchemaFallback(
   table: string,
   payload: Record<string, PayloadValue>,
@@ -59,6 +75,11 @@ async function writeWithSchemaFallback(
 
     if (!error) return data
     if (isMissingTable(error)) return null
+
+    if (isDuplicateSlug(error) && "slug" in nextPayload) {
+      nextPayload.slug = uniqueSlugCandidate(payload.slug, attempt)
+      continue
+    }
 
     const missingColumn = getMissingColumn(error)
     if (!missingColumn || !(missingColumn in nextPayload)) {
@@ -91,6 +112,11 @@ async function updateWithSchemaFallback(
 
     if (!error) return data
     if (isMissingTable(error)) return null
+
+    if (isDuplicateSlug(error) && "slug" in nextPayload) {
+      nextPayload.slug = uniqueSlugCandidate(payload.slug, attempt)
+      continue
+    }
 
     const missingColumn = getMissingColumn(error)
     if (!missingColumn || !(missingColumn in nextPayload)) {
@@ -262,7 +288,7 @@ export async function createCaseMaterial(formData: FormData) {
   }
 
   try {
-    const slug = await getAvailableSlug("cases", title)
+    const slug = await getAvailableSlug("materials", title)
     const content = caseContent(formData)
 
     const material = await writeMaterialWithFallback({
