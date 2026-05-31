@@ -5,14 +5,19 @@ import type { Material, Organization, Tender } from "@/types"
 export type AdminProfile = {
   id: string
   email?: string | null
+  phone?: string | null
   full_name?: string | null
   name?: string | null
   role?: string | null
   account_type?: string | null
   status?: string | null
   created_at?: string | null
+  auth_created_at?: string | null
   updated_at?: string | null
   last_seen_at?: string | null
+  email_confirmed_at?: string | null
+  phone_confirmed_at?: string | null
+  providers?: string | null
   organizations?: Organization | null
 }
 
@@ -143,7 +148,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 export async function getAdminProfiles() {
   const supabase = createAdminClient()
-  const [{ data: usersData }, { data: profilesData, error: profilesError }] =
+  const [{ data: usersData, error: usersError }, { data: profilesData, error: profilesError }] =
     await Promise.all([
       supabase.auth.admin.listUsers({ page: 1, perPage: 100 }),
       supabase
@@ -155,23 +160,32 @@ export async function getAdminProfiles() {
 
   const profiles = profilesError ? [] : ((profilesData ?? []) as ProfileRow[])
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]))
-  const users = usersData.users ?? []
+  const users = usersError ? [] : (usersData.users ?? [])
 
   if (users.length > 0) {
     return users.map((user) => {
       const profile = profilesById.get(user.id)
+      const providers = user.identities
+        ?.map((identity) => identity.provider)
+        .filter(Boolean)
+        .join(", ")
 
       return {
         id: user.id,
         email: user.email ?? null,
+        phone: user.phone ?? null,
         full_name: profile?.full_name ?? null,
         name: null,
         role: null,
         status: null,
         account_type: profile?.account_type ?? "guest",
         created_at: profile?.created_at ?? user.created_at ?? null,
+        auth_created_at: user.created_at ?? null,
         updated_at: profile?.updated_at ?? user.updated_at ?? null,
         last_seen_at: user.last_sign_in_at ?? null,
+        email_confirmed_at: user.email_confirmed_at ?? user.confirmed_at ?? null,
+        phone_confirmed_at: user.phone_confirmed_at ?? null,
+        providers: providers || null,
       } satisfies AdminProfile
     })
   }
