@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { TenderCard } from "@/components/tenders/tender-card"
 import { Button } from "@/components/ui/button"
@@ -53,7 +54,7 @@ export default async function TendersPage({
         <div className="flex items-end gap-2">
           <Button type="submit" className="flex-1">Применить</Button>
           <Button asChild variant="outline">
-            <a href="/tenders">Сбросить</a>
+            <Link href="/tenders">Сбросить</Link>
           </Button>
         </div>
       </form>
