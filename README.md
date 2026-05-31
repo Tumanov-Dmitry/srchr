@@ -38,6 +38,17 @@ npm run db:migrate
 Скрипт читает SQL-файлы из `supabase/migrations`, применяет только новые
 миграции и хранит историю в `public.schema_migrations`.
 
+Если `DATABASE_URL` указывает на Supavisor/pooler и подключение недоступно,
+мигратор автоматически попробует применить SQL напрямую через Docker-контейнер
+Postgres. По умолчанию используется контейнер `supabase-db`; при необходимости
+его можно переопределить:
+
+```env
+SUPABASE_DB_CONTAINER=supabase-db
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USER=postgres
+```
+
 ## Что уже есть
 
 - Supabase Auth: регистрация, вход, выход, текущий пользователь.
