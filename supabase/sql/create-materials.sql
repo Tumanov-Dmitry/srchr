@@ -30,6 +30,9 @@ create index if not exists materials_company_id_idx
 create index if not exists materials_organization_id_idx
   on public.materials (organization_id);
 
+grant select on public.materials to anon;
+grant select, insert, update, delete on public.materials to authenticated;
+
 alter table public.materials enable row level security;
 
 drop policy if exists "Published materials are public" on public.materials;
