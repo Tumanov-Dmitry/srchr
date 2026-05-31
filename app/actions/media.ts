@@ -12,6 +12,7 @@ type PayloadValue = string | number | null
 type MaterialOwnership = {
   company_id?: string | null
   organization_id?: string | null
+  created_by?: string | null
 }
 
 function value(formData: FormData, key: string) {
@@ -105,7 +106,7 @@ async function getMaterialOwnership(id: string) {
   const supabase = await createWriterClient()
   const { data, error } = await supabase
     .from("materials")
-    .select("company_id, organization_id")
+    .select("company_id, organization_id, created_by")
     .eq("id", id)
     .maybeSingle()
 
@@ -498,7 +499,8 @@ export async function updateMaterial(formData: FormData) {
       accessError = "Материал не найден или таблица materials недоступна"
     } else if (
       ownership.company_id !== organization.id &&
-      ownership.organization_id !== organization.id
+      ownership.organization_id !== organization.id &&
+      ownership.created_by !== user.id
     ) {
       accessError = "Нет доступа к этому материалу"
     }

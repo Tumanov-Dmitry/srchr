@@ -190,7 +190,9 @@ export async function getDashboardMaterials() {
     .select(
       "id, type, title, slug, description, cover_url, author, status, category, tags, reading_time, company_id, organization_id, created_by, created_at, updated_at, published_at",
     )
-    .or(`company_id.eq.${organization.id},organization_id.eq.${organization.id}`)
+    .or(
+      `company_id.eq.${organization.id},organization_id.eq.${organization.id},created_by.eq.${user.id}`,
+    )
     .order("created_at", { ascending: false })
 
   return {
@@ -218,7 +220,9 @@ export async function getDashboardMaterialById(id: string) {
     .from("materials")
     .select("*")
     .eq("id", id)
-    .or(`company_id.eq.${organization.id},organization_id.eq.${organization.id}`)
+    .or(
+      `company_id.eq.${organization.id},organization_id.eq.${organization.id},created_by.eq.${user.id}`,
+    )
     .maybeSingle()
 
   return {

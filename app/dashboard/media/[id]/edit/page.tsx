@@ -214,13 +214,47 @@ function ArticleFields({
 
 function parseContent(material: Material): MaterialContent {
   if (!material.content) return {}
-  if (typeof material.content === "object") return material.content as MaterialContent
+  if (typeof material.content === "object") {
+    return normalizeContent(material.content, material.type)
+  }
 
   try {
-    return JSON.parse(material.content) as MaterialContent
+    return normalizeContent(JSON.parse(material.content), material.type)
   } catch {
-    return {}
+    return normalizeContent(material.content, material.type)
   }
+}
+
+function normalizeContent(content: unknown, type: Material["type"]): MaterialContent {
+  if (!content) return {}
+
+  if (typeof content === "string") {
+    return {
+      blocks: [
+        {
+          type: type === "case" ? "result" : "text",
+          content,
+        },
+      ],
+    }
+  }
+
+  if (typeof content !== "object") return {}
+
+  const materialContent = content as MaterialContent & {
+    content?: string | null
+    text?: string | null
+  }
+
+  if (Array.isArray(materialContent.blocks)) return materialContent
+
+  const legacyText = materialContent.content ?? materialContent.text
+
+  if (legacyText) {
+    return normalizeContent(legacyText, type)
+  }
+
+  return materialContent
 }
 
 function blockValue(content: MaterialContent, type: string) {
