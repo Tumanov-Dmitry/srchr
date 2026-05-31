@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type {
   ContractorProfile,
+  Material,
   Organization,
   OrganizationMember,
   TenderResponse,
@@ -163,6 +164,40 @@ export async function getCurrentTenderOwnerOrganization() {
   return {
     user,
     organization,
+  }
+}
+
+function isMissingTable(error: { message?: string } | null) {
+  const message = error?.message ?? ""
+  return message.includes("Could not find the table") || message.includes("does not exist")
+}
+
+export async function getDashboardMaterials() {
+  const { user, organization } = await getCurrentTenderOwnerOrganization()
+
+  if (!user || !organization) {
+    return {
+      user,
+      organization,
+      materials: [] as Material[],
+      isMaterialsTableMissing: false,
+    }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("materials")
+    .select(
+      "id, type, title, slug, description, cover_url, status, category, company_id, organization_id, created_by, created_at, published_at",
+    )
+    .or(`company_id.eq.${organization.id},organization_id.eq.${organization.id}`)
+    .order("created_at", { ascending: false })
+
+  return {
+    user,
+    organization,
+    materials: error ? [] : ((data ?? []) as Material[]),
+    isMaterialsTableMissing: isMissingTable(error),
   }
 }
 
