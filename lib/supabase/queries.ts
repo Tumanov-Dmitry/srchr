@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type {
   ContractorProfile,
+  Organization,
   OrganizationMember,
   TenderResponse,
 } from "@/types"
@@ -186,7 +187,7 @@ export async function getPublishedContractors(filters: ContractorFilters = {}) {
 
   const { data } = await query
   const maxBudget = filters.budget ? Number(filters.budget) : null
-  let contractors = data ?? []
+  let contractors = (data ?? []) as Organization[]
 
   if (filters.service) {
     contractors = contractors.filter((contractor) =>
