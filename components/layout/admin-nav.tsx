@@ -7,12 +7,14 @@ import {
   FolderKanban,
   Home,
   Newspaper,
+  UserRound,
   Users,
 } from "lucide-react"
 
 const items = [
   { href: "/admin", label: "Дашборд", icon: Home },
   { href: "/admin/users", label: "Пользователи", icon: Users },
+  { href: "/admin/experts", label: "Эксперты", icon: UserRound },
   { href: "/admin/organizations", label: "Компании", icon: Building2 },
   { href: "/admin/materials", label: "Материалы", icon: FolderKanban },
   { href: "/admin/cases", label: "Кейсы", icon: FileText },

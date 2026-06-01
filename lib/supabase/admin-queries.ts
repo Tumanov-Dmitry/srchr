@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import type { Material, Organization, Tender } from "@/types"
+import type { ExpertProfile, Material, Organization, Tender } from "@/types"
 
 export type AdminProfile = {
   id: string
@@ -224,6 +224,17 @@ export async function getAdminMaterials(type?: "case" | "article") {
 
   const { data, error } = await query
   return error ? [] : ((data ?? []) as Material[])
+}
+
+export async function getAdminExperts() {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("expert_profiles")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100)
+
+  return error ? [] : ((data ?? []) as ExpertProfile[])
 }
 
 export async function getAdminTenders() {

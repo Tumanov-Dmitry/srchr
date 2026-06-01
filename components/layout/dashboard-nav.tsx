@@ -6,6 +6,7 @@ import {
   Heart,
   Home,
   MessageSquareReply,
+  UserRound,
   Settings,
 } from "lucide-react"
 
@@ -14,6 +15,7 @@ const items = [
   { href: "/dashboard/contractor", label: "Кабинет подрядчика", icon: BriefcaseBusiness },
   { href: "/dashboard/client", label: "Кабинет заказчика", icon: Building2 },
   { href: "/dashboard/organization", label: "Организация", icon: Building2 },
+  { href: "/dashboard/expert", label: "Профиль эксперта", icon: UserRound },
   { href: "/dashboard/client/tenders", label: "Мои задачи", icon: BriefcaseBusiness },
   { href: "/dashboard/contractor/responses", label: "Мои отклики", icon: MessageSquareReply },
   { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },

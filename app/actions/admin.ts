@@ -6,7 +6,7 @@ import { encodeMessage } from "@/lib/messages"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 
-type TableName = "profiles" | "organizations" | "materials" | "tenders"
+type TableName = "profiles" | "organizations" | "materials" | "tenders" | "expert_profiles"
 
 function value(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
@@ -128,4 +128,16 @@ export async function updateAdminTenderStatus(formData: FormData) {
   ], "draft")
 
   await updateStatus("tenders", value(formData, "id"), status, "/admin/tenders")
+}
+
+export async function updateAdminExpertStatus(formData: FormData) {
+  const status = safeStatus(value(formData, "status"), [
+    "draft",
+    "published",
+    "hidden",
+    "blocked",
+    "archived",
+  ], "draft")
+
+  await updateStatus("expert_profiles", value(formData, "id"), status, "/admin/experts")
 }

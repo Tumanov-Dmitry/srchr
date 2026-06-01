@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/@:slug",
+        destination: "/experts/:slug",
+      },
+    ]
+  },
 }
 
 export default nextConfig

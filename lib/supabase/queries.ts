@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import type {
   ContractorProfile,
+  ExpertProfile,
   Material,
   Organization,
   OrganizationMember,
@@ -231,6 +232,123 @@ export async function getDashboardMaterialById(id: string) {
     material: error ? null : ((data ?? null) as Material | null),
     isMaterialsTableMissing: isMissingTable(error),
   }
+}
+
+export type ExpertFilters = {
+  q?: string
+  specialization?: string
+  city?: string
+  skills?: string
+  company?: string
+  open?: string
+}
+
+export async function getCurrentExpertProfile() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      user: null,
+      profile: null,
+      organizations: [] as OrganizationMember[],
+      isExpertTableMissing: false,
+    }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("expert_profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  return {
+    user,
+    profile: error ? null : ((data ?? null) as ExpertProfile | null),
+    organizations: await getUserOrganizationMemberships(user.id),
+    isExpertTableMissing: isMissingTable(error),
+  }
+}
+
+export async function getPublishedExperts(filters: ExpertFilters = {}) {
+  const supabase = await createClient()
+  let query = supabase
+    .from("expert_profiles")
+    .select("*")
+    .eq("is_public", true)
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+
+  if (filters.city) {
+    query = query.ilike("city", `%${filters.city}%`)
+  }
+
+  if (filters.specialization) {
+    query = query.ilike("specializations", `%${filters.specialization}%`)
+  }
+
+  if (filters.skills) {
+    query = query.ilike("skills", `%${filters.skills}%`)
+  }
+
+  if (filters.open === "true") {
+    query = query.eq("is_open_to_work", true)
+  }
+
+  if (filters.q) {
+    query = query.or(
+      `first_name.ilike.%${filters.q}%,last_name.ilike.%${filters.q}%,position.ilike.%${filters.q}%,specializations.ilike.%${filters.q}%`,
+    )
+  }
+
+  const { data, error } = await query
+  if (isMissingTable(error)) return []
+
+  let experts = (data ?? []) as ExpertProfile[]
+
+  if (filters.company) {
+    const company = filters.company.toLowerCase()
+    const expertsWithOrganizations = await Promise.all(
+      experts.map(async (expert) => ({
+        ...expert,
+        organizations: (await getUserOrganizationMemberships(expert.user_id))
+          .map((membership) => membership.organizations)
+          .filter((organization): organization is Organization => Boolean(organization)),
+      })),
+    )
+
+    experts = expertsWithOrganizations.filter((expert) =>
+      expert.organizations?.some((organization) =>
+        organization.name.toLowerCase().includes(company),
+      ),
+    )
+  }
+
+  return experts
+}
+
+export async function getPublishedExpertBySlug(slug: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("expert_profiles")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_public", true)
+    .eq("status", "published")
+    .maybeSingle()
+
+  if (isMissingTable(error) || !data) return null
+
+  const profile = data as ExpertProfile
+  const memberships = await getUserOrganizationMemberships(profile.user_id)
+  const organizations = memberships
+    .map((membership) => membership.organizations)
+    .filter((organization): organization is Organization => Boolean(organization))
+
+  return {
+    ...profile,
+    organizations,
+  } as ExpertProfile
 }
 
 export type ContractorFilters = {

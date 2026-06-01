@@ -42,6 +42,35 @@ export type ContractorProfile = {
   status?: string | null
 }
 
+export type ExpertProfile = {
+  id: string
+  user_id: string
+  slug: string
+  avatar_url?: string | null
+  first_name: string
+  last_name?: string | null
+  position?: string | null
+  short_description?: string | null
+  city?: string | null
+  specializations?: string | null
+  skills?: string | null
+  activity_areas?: string | null
+  experience_description?: string | null
+  experience_years?: number | null
+  telegram_url?: string | null
+  contact_email?: string | null
+  website_url?: string | null
+  linkedin_url?: string | null
+  behance_url?: string | null
+  dribbble_url?: string | null
+  is_public?: boolean | null
+  is_open_to_work?: boolean | null
+  status?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  organizations?: Organization[]
+}
+
 export type OrganizationMember = {
   id?: string
   organization_id?: string | null
@@ -85,11 +114,14 @@ export type Material = {
   content?: string | Record<string, unknown> | null
   company_id?: string | null
   organization_id?: string | null
+  owner_type?: "company" | "expert" | null
+  expert_id?: string | null
   created_by?: string | null
   created_at?: string | null
   updated_at?: string | null
   published_at?: string | null
   organizations?: Organization | null
+  expert_profiles?: ExpertProfile | null
 }
 
 export type Tender = {
