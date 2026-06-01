@@ -19,5 +19,3 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             /opt/deploy-srchr-dev.sh
-            cd /opt/srchr-dev
-            npm run db:migrate
