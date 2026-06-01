@@ -1,0 +1,31 @@
+name: Apply experts SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-experts-sql.yml"
+      - "supabase/sql/create-experts.sql"
+  workflow_dispatch:
+
+jobs:
+  apply:
+    name: Create experts tables on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply experts SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git pull
+            docker exec -i supabase-db psql -U postgres -d postgres < supabase/sql/create-experts.sql
+            docker exec -i supabase-db psql -U postgres -d postgres -c "notify pgrst, 'reload schema';"
+            docker restart supabase-rest
+            pm2 restart srchr-dev --update-env
