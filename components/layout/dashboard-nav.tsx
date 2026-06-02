@@ -6,27 +6,60 @@ import {
   Heart,
   Home,
   MessageSquareReply,
-  UserRound,
   Settings,
+  UserRound,
 } from "lucide-react"
-
 const items = [
   { href: "/dashboard", label: "Обзор", icon: Home },
-  { href: "/dashboard/contractor", label: "Кабинет подрядчика", icon: BriefcaseBusiness },
-  { href: "/dashboard/client", label: "Кабинет заказчика", icon: Building2 },
+  {
+    href: "/dashboard/contractor",
+    label: "Кабинет подрядчика",
+    icon: BriefcaseBusiness,
+    hiddenFor: ["client"],
+  },
+  {
+    href: "/dashboard/client",
+    label: "Кабинет заказчика",
+    icon: Building2,
+    visibleFor: ["client"],
+  },
   { href: "/dashboard/organization", label: "Организация", icon: Building2 },
   { href: "/dashboard/expert", label: "Профиль эксперта", icon: UserRound },
-  { href: "/dashboard/client/tenders", label: "Мои задачи", icon: BriefcaseBusiness },
-  { href: "/dashboard/contractor/responses", label: "Мои отклики", icon: MessageSquareReply },
+  {
+    href: "/dashboard/client/tenders",
+    label: "Мои задачи",
+    icon: BriefcaseBusiness,
+  },
+  {
+    href: "/dashboard/contractor/responses",
+    label: "Мои отклики",
+    icon: MessageSquareReply,
+  },
   { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },
   { href: "/dashboard/favorites", label: "Избранное", icon: Heart },
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ]
 
-export function DashboardNav() {
+export function DashboardNav({
+  primaryRole,
+}: {
+  primaryRole?: string | null
+}) {
+  const visibleItems = items.filter((item) => {
+    if ("visibleFor" in item && item.visibleFor) {
+      return primaryRole ? item.visibleFor.includes(primaryRole) : false
+    }
+
+    if ("hiddenFor" in item && item.hiddenFor) {
+      return primaryRole ? !item.hiddenFor.includes(primaryRole) : true
+    }
+
+    return true
+  })
+
   return (
     <nav className="grid gap-1">
-      {items.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon
         return (
           <Link

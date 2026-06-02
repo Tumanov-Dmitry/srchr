@@ -53,7 +53,7 @@ export default async function DashboardLayout({
       </header>
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
         <aside className="h-fit rounded-lg border bg-background p-3">
-          <DashboardNav />
+          <DashboardNav primaryRole={state.primaryRole} />
         </aside>
         <main>{children}</main>
       </div>
