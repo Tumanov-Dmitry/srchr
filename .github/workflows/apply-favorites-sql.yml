@@ -30,7 +30,14 @@ jobs:
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c "notify pgrst, 'reload schema';"
             docker restart supabase-rest supabase-kong
             sleep 10
-            ANON_KEY="$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2-)"
+            ANON_KEY="$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2- || true)"
+            if [ -z "$ANON_KEY" ]; then
+              ANON_KEY="$(grep '^ANON_KEY=' /opt/supabase/docker/.env | cut -d= -f2- | tr -d '\"' || true)"
+            fi
+            if [ -z "$ANON_KEY" ]; then
+              echo "Anon key was not found in .env.local or /opt/supabase/docker/.env"
+              exit 1
+            fi
             curl -fsS \
               -H "apikey: ${ANON_KEY}" \
               -H "Authorization: Bearer ${ANON_KEY}" \

@@ -29,6 +29,52 @@ set
   created_at = coalesce(created_at, now()),
   updated_at = coalesce(updated_at, now());
 
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'favorites'
+      and column_name = 'organization_id'
+  ) then
+    update public.favorites
+    set
+      target_type = coalesce(target_type, 'company'),
+      target_id = coalesce(target_id, organization_id)
+    where target_id is null
+      and organization_id is not null;
+  end if;
+end $$;
+
+update public.favorites as favorite
+set snapshot = jsonb_build_object(
+  'title', coalesce(organization.name, 'Подрядчик'),
+  'subtitle', organization.city,
+  'image', organization.logo_url,
+  'description', organization.description,
+  'object_type', 'company'
+)
+from public.organizations as organization
+where favorite.target_type = 'company'
+  and favorite.target_id = organization.id
+  and (
+    favorite.snapshot = '{}'::jsonb
+    or favorite.snapshot->>'title' is null
+  );
+
+delete from public.favorites
+where user_id is null
+  or target_type is null
+  or target_id is null;
+
+delete from public.favorites as duplicate
+using public.favorites as original
+where duplicate.ctid < original.ctid
+  and duplicate.user_id = original.user_id
+  and duplicate.target_type = original.target_type
+  and duplicate.target_id = original.target_id;
+
 alter table public.favorites
   alter column user_id set not null,
   alter column target_type set not null,
