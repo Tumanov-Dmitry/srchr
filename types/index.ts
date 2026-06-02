@@ -87,18 +87,6 @@ export type Service = {
   slug?: string | null
 }
 
-export type CaseItem = {
-  id: string
-  slug: string
-  title: string
-  cover_url?: string | null
-  short_description?: string | null
-  content?: string | null
-  status?: string | null
-  organization_id?: string | null
-  organizations?: Organization | null
-}
-
 export type Material = {
   id: string
   type: "case" | "article"

@@ -24,11 +24,11 @@ import {
   getFavoriteMarkers,
 } from "@/lib/supabase/queries"
 import { formatMoney } from "@/lib/utils"
-import type { CaseItem, ContractorProfile, Organization } from "@/types"
+import type { ContractorProfile, Material, Organization } from "@/types"
 
 type ContractorPageData = Organization & {
   contractor_profiles?: ContractorProfile[]
-  cases?: CaseItem[]
+  materials?: Material[]
 }
 
 export async function generateMetadata({
@@ -188,22 +188,22 @@ export default async function ContractorPage({
 
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold tracking-normal">Медиа</h2>
-            {(item.cases ?? []).length > 0 ? (
+            {(item.materials ?? []).length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
-                {(item.cases ?? []).map((caseItem) => (
-                  <Card key={caseItem.id}>
+                {(item.materials ?? []).map((material) => (
+                  <Card key={material.id}>
                     <CardHeader>
                       <CardTitle className="text-lg">
-                        {caseItem.title}
+                        {material.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground">
-                        {caseItem.short_description ??
+                        {material.description ??
                           "Описание кейса скоро появится."}
                       </p>
                       <Button asChild variant="outline" className="mt-4">
-                        <Link href={`/media/${caseItem.slug}`}>
+                        <Link href={`/media/${material.slug}`}>
                           Открыть материал
                         </Link>
                       </Button>

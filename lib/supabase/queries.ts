@@ -413,38 +413,27 @@ export async function getContractorBySlug(slug: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from("organizations")
-    .select(
-      "*, organization_services(services(*)), contractor_profiles(*), cases(*)",
-    )
+    .select("*, organization_services(services(*)), contractor_profiles(*)")
     .eq("slug", slug)
     .eq("is_contractor", true)
     .eq("status", "published")
-    .single()
+    .maybeSingle()
 
-  return data
-}
+  if (!data) return null
 
-export async function getPublishedCases() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from("cases")
-    .select("*, organizations(*)")
+  const { data: materials } = await supabase
+    .from("materials")
+    .select("id, type, title, slug, description, cover_url, status, organization_id, company_id, published_at, created_at")
+    .eq("type", "case")
     .eq("status", "published")
+    .or(`organization_id.eq.${data.id},company_id.eq.${data.id}`)
+    .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
 
-  return data ?? []
-}
-
-export async function getCaseBySlug(slug: string) {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from("cases")
-    .select("*, organizations(*)")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .single()
-
-  return data
+  return {
+    ...data,
+    materials: (materials ?? []) as Material[],
+  }
 }
 
 export type TenderFilters = {
