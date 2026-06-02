@@ -18,4 +18,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
             /opt/deploy-srchr-dev.sh

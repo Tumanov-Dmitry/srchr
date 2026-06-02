@@ -24,6 +24,7 @@ jobs:
           script: |
             set -e
             cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
             git fetch origin main
             git checkout main
             git reset --hard origin/main
