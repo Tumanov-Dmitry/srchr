@@ -97,6 +97,16 @@ alter table public.favorites
 
 do $$
 begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'favorites_entity_type_check'
+      and conrelid = 'public.favorites'::regclass
+  ) then
+    alter table public.favorites
+      drop constraint favorites_entity_type_check;
+  end if;
+
   if not exists (
     select 1
     from pg_constraint
@@ -107,6 +117,10 @@ begin
       add constraint favorites_target_type_check
       check (target_type in ('company', 'expert', 'case', 'article'));
   end if;
+
+  alter table public.favorites
+    add constraint favorites_entity_type_check
+    check (entity_type in ('company', 'expert', 'case', 'article'));
 
   if not exists (
     select 1
