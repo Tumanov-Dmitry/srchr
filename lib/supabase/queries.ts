@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import type {
   ContractorProfile,
   ExpertProfile,
+  Favorite,
+  FavoriteTargetType,
   Material,
   Organization,
   OrganizationMember,
@@ -65,7 +67,10 @@ export async function getOnboardingState() {
     memberships,
     isComplete: memberships.length > 0,
     primaryRole,
-    dashboardPath: primaryRole === "contractor" ? "/dashboard/contractor" : "/dashboard/client",
+    dashboardPath:
+      primaryRole === "contractor"
+        ? "/dashboard/contractor"
+        : "/dashboard/client",
   }
 }
 
@@ -117,7 +122,9 @@ export async function getCurrentContractorOrganization() {
   return {
     user,
     organization,
-    profile: profileError ? null : ((profile ?? null) as ContractorProfile | null),
+    profile: profileError
+      ? null
+      : ((profile ?? null) as ContractorProfile | null),
     services: servicesError ? (fallbackServices ?? []) : (services ?? []),
   }
 }
@@ -170,7 +177,10 @@ export async function getCurrentTenderOwnerOrganization() {
 
 function isMissingTable(error: { message?: string } | null) {
   const message = error?.message ?? ""
-  return message.includes("Could not find the table") || message.includes("does not exist")
+  return (
+    message.includes("Could not find the table") ||
+    message.includes("does not exist")
+  )
 }
 
 export async function getDashboardMaterials() {
@@ -313,7 +323,9 @@ export async function getPublishedExperts(filters: ExpertFilters = {}) {
         ...expert,
         organizations: (await getUserOrganizationMemberships(expert.user_id))
           .map((membership) => membership.organizations)
-          .filter((organization): organization is Organization => Boolean(organization)),
+          .filter((organization): organization is Organization =>
+            Boolean(organization),
+          ),
       })),
     )
 
@@ -343,7 +355,9 @@ export async function getPublishedExpertBySlug(slug: string) {
   const memberships = await getUserOrganizationMemberships(profile.user_id)
   const organizations = memberships
     .map((membership) => membership.organizations)
-    .filter((organization): organization is Organization => Boolean(organization))
+    .filter((organization): organization is Organization =>
+      Boolean(organization),
+    )
 
   return {
     ...profile,
@@ -399,7 +413,9 @@ export async function getContractorBySlug(slug: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from("organizations")
-    .select("*, organization_services(services(*)), contractor_profiles(*), cases(*)")
+    .select(
+      "*, organization_services(services(*)), contractor_profiles(*), cases(*)",
+    )
     .eq("slug", slug)
     .eq("is_contractor", true)
     .eq("status", "published")
@@ -461,7 +477,9 @@ export async function getPublishedMaterials(filters: MaterialFilters = {}) {
   }
 
   if (filters.q) {
-    query = query.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
+    query = query.or(
+      `title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`,
+    )
   }
 
   const { data } = await query
@@ -643,4 +661,86 @@ export async function getContractorResponses() {
     organization,
     responses: (data ?? []) as TenderResponse[],
   }
+}
+
+export async function getUserFavorites(type?: string | null) {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      user: null,
+      favorites: [] as Favorite[],
+      isFavoritesTableMissing: false,
+    }
+  }
+
+  const {
+    hydrateFavorites,
+    favoritePluralTypeMap,
+    normalizeFavoriteTypeFilter,
+  } = await import("@/lib/favorites")
+
+  const supabase = await createClient()
+  const normalizedType = normalizeFavoriteTypeFilter(type)
+  const targetType = favoritePluralTypeMap[normalizedType]
+  let query = supabase
+    .from("favorites")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("is_pinned", { ascending: false })
+    .order("pinned_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (targetType) {
+    query = query.eq("target_type", targetType)
+  }
+
+  const { data, error } = await query
+
+  if (isMissingTable(error)) {
+    return {
+      user,
+      favorites: [] as Favorite[],
+      isFavoritesTableMissing: true,
+    }
+  }
+
+  const favorites = await hydrateFavorites(supabase, (data ?? []) as Favorite[])
+
+  return {
+    user,
+    favorites,
+    isFavoritesTableMissing: false,
+  }
+}
+
+export async function getFavoriteMarkers(
+  targets: Array<{ targetType: FavoriteTargetType; targetId: string }>,
+) {
+  const user = await getCurrentUser()
+
+  if (!user || targets.length === 0) return new Map<string, string>()
+
+  const supabase = await createClient()
+  const orFilter = targets
+    .map(
+      ({ targetType, targetId }) =>
+        `and(target_type.eq.${targetType},target_id.eq.${targetId})`,
+    )
+    .join(",")
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("id, target_type, target_id")
+    .eq("user_id", user.id)
+    .or(orFilter)
+
+  if (isMissingTable(error) || error) return new Map<string, string>()
+
+  return new Map(
+    (data ?? []).map((favorite) => [
+      `${favorite.target_type}:${favorite.target_id}`,
+      favorite.id as string,
+    ]),
+  )
 }

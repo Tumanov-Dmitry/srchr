@@ -124,6 +124,31 @@ export type Material = {
   expert_profiles?: ExpertProfile | null
 }
 
+export type FavoriteTargetType = "company" | "expert" | "case" | "article"
+export type FavoriteStatus = "active" | "unavailable"
+
+export type FavoriteSnapshot = {
+  title: string
+  subtitle?: string | null
+  image?: string | null
+  description?: string | null
+  object_type: FavoriteTargetType
+}
+
+export type Favorite = {
+  id: string
+  user_id: string
+  target_type: FavoriteTargetType
+  target_id: string
+  is_pinned: boolean
+  pinned_at?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  snapshot: FavoriteSnapshot
+  status: FavoriteStatus
+  href?: string | null
+}
+
 export type Tender = {
   id: string
   slug: string

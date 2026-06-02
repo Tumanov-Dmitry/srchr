@@ -13,11 +13,16 @@ import {
   Send,
   Users,
 } from "lucide-react"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageShell } from "@/components/layout/page-shell"
-import { getContractorBySlug, getCurrentUser } from "@/lib/supabase/queries"
+import {
+  getContractorBySlug,
+  getCurrentUser,
+  getFavoriteMarkers,
+} from "@/lib/supabase/queries"
 import { formatMoney } from "@/lib/utils"
 import type { CaseItem, ContractorProfile, Organization } from "@/types"
 
@@ -32,7 +37,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const contractor = (await getContractorBySlug(slug)) as ContractorPageData | null
+  const contractor = (await getContractorBySlug(
+    slug,
+  )) as ContractorPageData | null
 
   if (!contractor) {
     return {
@@ -77,6 +84,9 @@ export default async function ContractorPage({
     profile?.full_description ??
     item.description ??
     "Подробное описание подрядчика пока не заполнено."
+  const favoriteMarkers = await getFavoriteMarkers([
+    { targetType: "company", targetId: item.id },
+  ])
   const services =
     item.organization_services
       ?.map((service) => service.services?.name)
@@ -110,9 +120,17 @@ export default async function ContractorPage({
                 )}
               </div>
               <div className="min-w-0">
-                <div className="mb-3 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   <Badge variant="outline">Публичный профиль</Badge>
                   {item.status ? <Badge>{item.status}</Badge> : null}
+                  <FavoriteButton
+                    initialFavoriteId={favoriteMarkers.get(
+                      `company:${item.id}`,
+                    )}
+                    label="Добавить в избранное"
+                    targetId={item.id}
+                    targetType="company"
+                  />
                 </div>
                 <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
                   {item.name}
@@ -156,7 +174,9 @@ export default async function ContractorPage({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-semibold tracking-normal">О подрядчике</h2>
+            <h2 className="text-2xl font-semibold tracking-normal">
+              О подрядчике
+            </h2>
             <Card>
               <CardContent className="p-6">
                 <p className="whitespace-pre-line leading-8 text-muted-foreground">
@@ -173,7 +193,9 @@ export default async function ContractorPage({
                 {(item.cases ?? []).map((caseItem) => (
                   <Card key={caseItem.id}>
                     <CardHeader>
-                      <CardTitle className="text-lg">{caseItem.title}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {caseItem.title}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground">
@@ -181,7 +203,9 @@ export default async function ContractorPage({
                           "Описание кейса скоро появится."}
                       </p>
                       <Button asChild variant="outline" className="mt-4">
-                        <Link href={`/media/${caseItem.slug}`}>Открыть материал</Link>
+                        <Link href={`/media/${caseItem.slug}`}>
+                          Открыть материал
+                        </Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -211,7 +235,9 @@ export default async function ContractorPage({
                 <div className="text-muted-foreground">Команда</div>
                 <div className="flex items-center gap-2 font-medium">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  {profile?.team_size ? `${profile.team_size} чел.` : "Не указана"}
+                  {profile?.team_size
+                    ? `${profile.team_size} чел.`
+                    : "Не указана"}
                 </div>
               </div>
               <div>
@@ -244,7 +270,9 @@ export default async function ContractorPage({
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    {profile?.contact_phone ?? item.phone ?? "Телефон не указан"}
+                    {profile?.contact_phone ??
+                      item.phone ??
+                      "Телефон не указан"}
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Send className="h-4 w-4 text-muted-foreground" />
@@ -256,8 +284,9 @@ export default async function ContractorPage({
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
-                      Контакты скрыты. Публичная ссылка доступна в интернете,
-                      но контактные данные видны только авторизованным пользователям.
+                      Контакты скрыты. Публичная ссылка доступна в интернете, но
+                      контактные данные видны только авторизованным
+                      пользователям.
                     </span>
                   </div>
                   <Button asChild className="w-full">

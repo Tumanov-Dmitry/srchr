@@ -1,7 +1,11 @@
 import { ContractorCard } from "@/components/contractors/contractor-card"
 import { ContractorFilters } from "@/components/contractors/contractor-filters"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
-import { getPublishedContractors, getServices } from "@/lib/supabase/queries"
+import {
+  getFavoriteMarkers,
+  getPublishedContractors,
+  getServices,
+} from "@/lib/supabase/queries"
 import type { ContractorProfile, Organization, Service } from "@/types"
 
 type ContractorListItem = Organization & {
@@ -22,6 +26,12 @@ export default async function ContractorsPage({
     getPublishedContractors(filters),
     getServices(),
   ])
+  const favoriteMarkers = await getFavoriteMarkers(
+    (contractors as ContractorListItem[]).map((contractor) => ({
+      targetType: "company",
+      targetId: contractor.id,
+    })),
+  )
 
   return (
     <PageShell>
@@ -38,7 +48,11 @@ export default async function ContractorsPage({
       {contractors.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {(contractors as ContractorListItem[]).map((contractor) => (
-            <ContractorCard key={contractor.id} contractor={contractor} />
+            <ContractorCard
+              key={contractor.id}
+              contractor={contractor}
+              favoriteId={favoriteMarkers.get(`company:${contractor.id}`)}
+            />
           ))}
         </div>
       ) : (

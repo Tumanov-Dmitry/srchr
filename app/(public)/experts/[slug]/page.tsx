@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation"
 import { ExternalLink, Mail, MapPin, Send } from "lucide-react"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageShell } from "@/components/layout/page-shell"
-import { getPublishedExpertBySlug } from "@/lib/supabase/queries"
+import {
+  getFavoriteMarkers,
+  getPublishedExpertBySlug,
+} from "@/lib/supabase/queries"
 
 export default async function ExpertPage({
   params,
@@ -16,6 +20,9 @@ export default async function ExpertPage({
 
   if (!expert) notFound()
 
+  const favoriteMarkers = await getFavoriteMarkers([
+    { targetType: "expert", targetId: expert.id },
+  ])
   const name = [expert.first_name, expert.last_name].filter(Boolean).join(" ")
   const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/@${expert.slug}`
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicUrl)}`
@@ -29,17 +36,35 @@ export default async function ExpertPage({
               <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary">
                 {expert.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img alt="" className="h-full w-full object-cover" src={expert.avatar_url} />
+                  <img
+                    alt=""
+                    className="h-full w-full object-cover"
+                    src={expert.avatar_url}
+                  />
                 ) : (
-                  <span className="text-3xl font-semibold">{expert.first_name.slice(0, 1)}</span>
+                  <span className="text-3xl font-semibold">
+                    {expert.first_name.slice(0, 1)}
+                  </span>
                 )}
               </div>
               <div>
-                <div className="mb-3 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   <Badge>Эксперт</Badge>
-                  {expert.is_open_to_work ? <Badge variant="outline">Открыт к сотрудничеству</Badge> : null}
+                  {expert.is_open_to_work ? (
+                    <Badge variant="outline">Открыт к сотрудничеству</Badge>
+                  ) : null}
+                  <FavoriteButton
+                    initialFavoriteId={favoriteMarkers.get(
+                      `expert:${expert.id}`,
+                    )}
+                    label="Добавить в избранное"
+                    targetId={expert.id}
+                    targetType="expert"
+                  />
                 </div>
-                <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">{name}</h1>
+                <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+                  {name}
+                </h1>
                 <p className="mt-2 text-lg text-muted-foreground">
                   {expert.position ?? "Специалист"}
                 </p>
@@ -113,13 +138,21 @@ export default async function ExpertPage({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {expert.contact_email ? (
-                <a className="flex items-center gap-2" href={`mailto:${expert.contact_email}`}>
+                <a
+                  className="flex items-center gap-2"
+                  href={`mailto:${expert.contact_email}`}
+                >
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   {expert.contact_email}
                 </a>
               ) : null}
               {expert.telegram_url ? (
-                <a className="flex items-center gap-2" href={expert.telegram_url} rel="noreferrer" target="_blank">
+                <a
+                  className="flex items-center gap-2"
+                  href={expert.telegram_url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   <Send className="h-4 w-4 text-muted-foreground" />
                   Telegram
                 </a>

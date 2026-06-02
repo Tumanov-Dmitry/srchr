@@ -10,6 +10,7 @@ const navItems = [
   { href: "/experts", label: "Эксперты" },
   { href: "/media", label: "Медиа" },
   { href: "/tenders", label: "Задачи" },
+  { href: "/favorites", label: "Избранное" },
 ]
 
 export async function SiteHeader() {

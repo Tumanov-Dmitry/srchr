@@ -3,7 +3,11 @@ import { MaterialCard } from "@/components/media/material-card"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getPublishedMaterials, type MaterialFilters } from "@/lib/supabase/queries"
+import {
+  getFavoriteMarkers,
+  getPublishedMaterials,
+  type MaterialFilters,
+} from "@/lib/supabase/queries"
 
 const typeOptions = [
   { value: "", label: "Все типы" },
@@ -18,6 +22,9 @@ export default async function MediaPage({
 }) {
   const filters = await searchParams
   const materials = await getPublishedMaterials(filters)
+  const favoriteMarkers = await getFavoriteMarkers(
+    materials.map((item) => ({ targetType: item.type, targetId: item.id })),
+  )
 
   return (
     <PageShell>
@@ -59,7 +66,11 @@ export default async function MediaPage({
       {materials.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {materials.map((item) => (
-            <MaterialCard item={item} key={item.id} />
+            <MaterialCard
+              favoriteId={favoriteMarkers.get(`${item.type}:${item.id}`)}
+              item={item}
+              key={item.id}
+            />
           ))}
         </div>
       ) : (

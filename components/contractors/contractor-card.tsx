@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Building2, MapPin } from "lucide-react"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -15,7 +16,13 @@ type ContractorCardData = Organization & {
   contractor_profiles?: ContractorProfile[]
 }
 
-export function ContractorCard({ contractor }: { contractor: ContractorCardData }) {
+export function ContractorCard({
+  contractor,
+  favoriteId,
+}: {
+  contractor: ContractorCardData
+  favoriteId?: string | null
+}) {
   const servicesCount = contractor.organization_services?.length ?? 0
   const profile = contractor.contractor_profiles?.[0]
   const description =
@@ -26,17 +33,24 @@ export function ContractorCard({ contractor }: { contractor: ContractorCardData 
   return (
     <Card className="flex h-full flex-col">
       <CardHeader>
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-secondary">
-          {contractor.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={contractor.logo_url}
-              alt=""
-              className="h-10 w-10 rounded object-cover"
-            />
-          ) : (
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-          )}
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-secondary">
+            {contractor.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={contractor.logo_url}
+                alt=""
+                className="h-10 w-10 rounded object-cover"
+              />
+            ) : (
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <FavoriteButton
+            targetId={contractor.id}
+            targetType="company"
+            initialFavoriteId={favoriteId}
+          />
         </div>
         <CardTitle>{contractor.name}</CardTitle>
         <CardDescription className="line-clamp-3">

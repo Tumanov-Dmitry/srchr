@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,7 +17,13 @@ const typeLabels: Record<string, string> = {
   article: "Статья",
 }
 
-export function MaterialCard({ item }: { item: Material }) {
+export function MaterialCard({
+  item,
+  favoriteId,
+}: {
+  item: Material
+  favoriteId?: string | null
+}) {
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       {item.cover_url ? (
@@ -26,9 +33,20 @@ export function MaterialCard({ item }: { item: Material }) {
         <div className="h-44 bg-secondary" />
       )}
       <CardHeader>
-        <div className="flex flex-wrap gap-2">
-          <Badge className="w-fit">{typeLabels[item.type] ?? item.type}</Badge>
-          {item.category ? <Badge variant="outline">{item.category}</Badge> : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge className="w-fit">
+              {typeLabels[item.type] ?? item.type}
+            </Badge>
+            {item.category ? (
+              <Badge variant="outline">{item.category}</Badge>
+            ) : null}
+          </div>
+          <FavoriteButton
+            targetId={item.id}
+            targetType={item.type}
+            initialFavoriteId={favoriteId}
+          />
         </div>
         <CardTitle>{item.title}</CardTitle>
         <CardDescription className="line-clamp-3">

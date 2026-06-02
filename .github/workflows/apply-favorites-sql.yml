@@ -1,0 +1,30 @@
+name: Apply favorites SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-favorites-sql.yml"
+      - "supabase/sql/create-favorites.sql"
+  workflow_dispatch:
+
+jobs:
+  apply:
+    name: Create favorites table on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply favorites SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git pull
+            docker exec -i supabase-db psql -U postgres -d postgres < supabase/sql/create-favorites.sql
+            docker restart supabase-rest
+            pm2 restart srchr-dev --update-env
