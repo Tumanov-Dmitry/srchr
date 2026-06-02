@@ -45,4 +45,4 @@ jobs:
               -H "Authorization: Bearer ${ANON_KEY}" \
               "http://127.0.0.1:8000/rest/v1/favorites?select=id&limit=1" \
               || (docker logs supabase-rest --tail 120 && exit 1)
-            pm2 restart srchr-dev --update-env
+            pm2 restart srchr-dev --update-env || true

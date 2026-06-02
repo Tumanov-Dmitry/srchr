@@ -30,4 +30,4 @@ jobs:
             docker exec -i supabase-db psql -U postgres -d postgres < supabase/sql/create-experts.sql
             docker exec -i supabase-db psql -U postgres -d postgres -c "notify pgrst, 'reload schema';"
             docker restart supabase-rest
-            pm2 restart srchr-dev --update-env
+            pm2 restart srchr-dev --update-env || true
