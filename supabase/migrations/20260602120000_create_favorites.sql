@@ -14,6 +14,8 @@ create table if not exists public.favorites (
 alter table public.favorites
   add column if not exists target_type text,
   add column if not exists target_id uuid,
+  add column if not exists entity_type text,
+  add column if not exists entity_id uuid,
   add column if not exists is_pinned boolean default false,
   add column if not exists pinned_at timestamptz,
   add column if not exists snapshot jsonb default '{}'::jsonb,
@@ -23,6 +25,10 @@ alter table public.favorites
 
 update public.favorites
 set
+  target_type = coalesce(target_type, entity_type),
+  target_id = coalesce(target_id, entity_id),
+  entity_type = coalesce(entity_type, target_type),
+  entity_id = coalesce(entity_id, target_id),
   is_pinned = coalesce(is_pinned, false),
   snapshot = coalesce(snapshot, '{}'::jsonb),
   status = coalesce(status, 'active'),
@@ -41,7 +47,9 @@ begin
     update public.favorites
     set
       target_type = coalesce(target_type, 'company'),
-      target_id = coalesce(target_id, organization_id)
+      target_id = coalesce(target_id, organization_id),
+      entity_type = coalesce(entity_type, 'company'),
+      entity_id = coalesce(entity_id, organization_id)
     where target_id is null
       and organization_id is not null;
   end if;
@@ -79,6 +87,8 @@ alter table public.favorites
   alter column user_id set not null,
   alter column target_type set not null,
   alter column target_id set not null,
+  alter column entity_type set not null,
+  alter column entity_id set not null,
   alter column is_pinned set not null,
   alter column snapshot set not null,
   alter column status set not null,
@@ -118,6 +128,31 @@ create index if not exists favorites_user_sort_idx
 
 create index if not exists favorites_user_type_sort_idx
   on public.favorites (user_id, target_type, is_pinned desc, pinned_at desc, created_at desc);
+
+create or replace function public.sync_favorites_target_columns()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.target_type := coalesce(new.target_type, new.entity_type);
+  new.target_id := coalesce(new.target_id, new.entity_id);
+  new.entity_type := coalesce(new.entity_type, new.target_type);
+  new.entity_id := coalesce(new.entity_id, new.target_id);
+  new.is_pinned := coalesce(new.is_pinned, false);
+  new.snapshot := coalesce(new.snapshot, '{}'::jsonb);
+  new.status := coalesce(new.status, 'active');
+  new.created_at := coalesce(new.created_at, now());
+  new.updated_at := now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_favorites_target_columns on public.favorites;
+create trigger sync_favorites_target_columns
+  before insert or update on public.favorites
+  for each row
+  execute function public.sync_favorites_target_columns();
 
 alter table public.favorites enable row level security;
 

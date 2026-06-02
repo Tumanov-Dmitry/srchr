@@ -103,6 +103,8 @@ export async function POST(request: Request) {
       user_id: user.id,
       target_type: targetType,
       target_id: targetId,
+      entity_type: targetType,
+      entity_id: targetId,
       snapshot: snapshotResult.snapshot,
       status: snapshotResult.status,
     })
