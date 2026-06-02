@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { decodeMessage } from "@/lib/messages"
 import { getAdminProfiles } from "@/lib/supabase/admin-queries"
 
-const roles = ["guest", "contractor", "client", "both", "admin"]
+const roles = ["guest", "contractor", "client", "admin"]
 
 export default async function AdminUsersPage({
   searchParams,

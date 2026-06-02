@@ -6,9 +6,12 @@ import { createSlug } from "@/lib/slug"
 import { createClient } from "@/lib/supabase/server"
 import {
   getCurrentContractorOrganization,
+  getCurrentExpertProfile,
   getCurrentTenderOwnerOrganization,
   getCurrentUser,
 } from "@/lib/supabase/queries"
+
+type PayloadValue = string | number | null
 
 function value(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
@@ -44,7 +47,7 @@ function getMissingColumn(error: { message?: string } | null) {
 
 async function writeWithSchemaFallback(
   table: string,
-  payload: Record<string, string | number | null>,
+  payload: Record<string, PayloadValue>,
   update?: { column: string; value: string },
 ) {
   const supabase = await createClient()
@@ -133,14 +136,21 @@ export async function createTender(formData: FormData) {
   }
 
   try {
-    const slug = await getAvailableTenderSlug(null, value(formData, "slug"), title)
+    const slug = await getAvailableTenderSlug(
+      null,
+      value(formData, "slug"),
+      title,
+    )
     await writeWithSchemaFallback(
       "tenders",
       buildTenderPayload(formData, organization.id, user.id, slug),
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось создать задачу"
-    redirect(`/dashboard/client/tenders/new?message=${encodeURIComponent(message)}`)
+    const message =
+      error instanceof Error ? error.message : "Не удалось создать задачу"
+    redirect(
+      `/dashboard/client/tenders/new?message=${encodeURIComponent(message)}`,
+    )
   }
 
   revalidatePath("/tenders")
@@ -170,14 +180,19 @@ export async function updateTender(tenderId: string, formData: FormData) {
   }
 
   try {
-    const slug = await getAvailableTenderSlug(tenderId, value(formData, "slug"), title)
+    const slug = await getAvailableTenderSlug(
+      tenderId,
+      value(formData, "slug"),
+      title,
+    )
     await writeWithSchemaFallback(
       "tenders",
       buildTenderPayload(formData, organization.id, user.id, slug),
       { column: "id", value: tenderId },
     )
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось сохранить задачу"
+    const message =
+      error instanceof Error ? error.message : "Не удалось сохранить задачу"
     redirect(
       `/dashboard/client/tenders/${tenderId}/edit?message=${encodeURIComponent(message)}`,
     )
@@ -192,8 +207,29 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
   const user = await getCurrentUser()
   if (!user) redirect("/login")
 
-  const { organization } = await getCurrentContractorOrganization()
-  if (!organization) redirect("/onboarding")
+  const [{ organization }, { profile: expertProfile }] = await Promise.all([
+    getCurrentContractorOrganization(),
+    getCurrentExpertProfile(),
+  ])
+  const requestedResponderType = value(formData, "responder_type")
+  const hasContractor = Boolean(organization)
+  const hasExpert = Boolean(expertProfile)
+  const responderType =
+    requestedResponderType === "expert" && hasExpert
+      ? "expert"
+      : requestedResponderType === "contractor" && hasContractor
+        ? "contractor"
+        : hasContractor && !hasExpert
+          ? "contractor"
+          : hasExpert
+            ? "expert"
+            : null
+
+  if (!responderType) {
+    redirect(
+      "/dashboard/expert?message=Создайте профиль эксперта или организацию-подрядчика для откликов",
+    )
+  }
 
   const supabase = await createClient()
   const { data: tender } = await supabase
@@ -204,16 +240,24 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
     .maybeSingle()
 
   if (!tender) redirect("/tenders")
-  if (tender.organization_id === organization.id) {
-    redirect(`/tenders/${tender.slug}?message=Нельзя откликнуться на свою задачу`)
+  if (organization && tender.organization_id === organization.id) {
+    redirect(
+      `/tenders/${tender.slug}?message=Нельзя откликнуться на свою задачу`,
+    )
   }
 
-  const { data: existing } = await supabase
+  let existingQuery = supabase
     .from("tender_responses")
     .select("id")
     .eq("tender_id", tenderId)
-    .eq("organization_id", organization.id)
-    .maybeSingle()
+
+  if (responderType === "contractor" && organization) {
+    existingQuery = existingQuery.eq("organization_id", organization.id)
+  } else {
+    existingQuery = existingQuery.eq("user_id", user.id)
+  }
+
+  const { data: existing } = await existingQuery.limit(1).maybeSingle()
 
   if (existing) {
     redirect(`/tenders/${tender.slug}?message=Вы уже откликнулись на эту задачу`)
@@ -221,19 +265,25 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
 
   const message = value(formData, "message")
   if (!message) {
-    redirect(`/tenders/${tender.slug}?message=Напишите сообщение для заказчика`)
+    redirect(
+      `/tenders/${tender.slug}?message=Напишите сообщение для заказчика`,
+    )
   }
 
   try {
     await writeWithSchemaFallback("tender_responses", {
       tender_id: tenderId,
-      organization_id: organization.id,
+      organization_id:
+        responderType === "contractor" ? organization?.id ?? null : null,
+      expert_id: responderType === "expert" ? expertProfile?.id ?? null : null,
+      responder_type: responderType,
       user_id: user.id,
       message,
       status: "sent",
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Не удалось отправить отклик"
+    const errorMessage =
+      error instanceof Error ? error.message : "Не удалось отправить отклик"
     redirect(`/tenders/${tender.slug}?message=${encodeURIComponent(errorMessage)}`)
   }
 

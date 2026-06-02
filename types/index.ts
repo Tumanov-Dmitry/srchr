@@ -1,4 +1,4 @@
-export type AccountRole = "guest" | "contractor" | "client" | "both" | "admin"
+export type AccountRole = "guest" | "contractor" | "client" | "admin"
 export type OnboardingRole = "contractor" | "client"
 
 export type Organization = {
@@ -172,6 +172,8 @@ export type TenderResponse = {
   tender_id?: string | null
   organization_id?: string | null
   user_id?: string | null
+  expert_id?: string | null
+  responder_type?: "contractor" | "expert" | null
   message?: string | null
   status?: string | null
   created_at?: string | null

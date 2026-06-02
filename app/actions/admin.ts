@@ -70,7 +70,6 @@ export async function updateAdminProfile(formData: FormData) {
     "guest",
     "contractor",
     "client",
-    "both",
     "admin",
   ], "guest")
   const path = "/admin/users"

@@ -1,11 +1,13 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createTenderResponse } from "@/app/actions/tenders"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageShell } from "@/components/layout/page-shell"
 import { ResponseForm } from "@/components/tenders/response-form"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   getCurrentContractorOrganization,
+  getCurrentExpertProfile,
   getCurrentUser,
   getTenderBySlug,
   getUserOrganizationMemberships,
@@ -25,6 +27,12 @@ function formatTenderBudget(tender: Tender) {
   return formatMoney(tender.budget)
 }
 
+type ResponseOption = {
+  value: "contractor" | "expert"
+  label: string
+  description: string
+}
+
 export default async function TenderPage({
   params,
   searchParams,
@@ -33,10 +41,11 @@ export default async function TenderPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const [{ slug }, { message }] = await Promise.all([params, searchParams])
-  const [tender, user, contractorState] = await Promise.all([
+  const [tender, user, contractorState, expertState] = await Promise.all([
     getTenderBySlug(slug),
     getCurrentUser(),
     getCurrentContractorOrganization(),
+    getCurrentExpertProfile(),
   ])
 
   if (!tender) notFound()
@@ -46,17 +55,43 @@ export default async function TenderPage({
   const isOwner = memberships.some(
     (membership) => membership.organizations?.id === item.organization_id,
   )
+  const hasContractor = Boolean(contractorState.organization)
+  const hasExpert = Boolean(expertState.profile)
+  const responseOptions: ResponseOption[] = []
+
+  if (hasContractor) {
+    responseOptions.push({
+      value: "contractor",
+      label: "Как подрядчик",
+      description: contractorState.organization?.name ?? "От имени агентства",
+    })
+  }
+
+  if (hasExpert) {
+    responseOptions.push({
+      value: "expert",
+      label: "Как эксперт",
+      description: [
+        expertState.profile?.first_name,
+        expertState.profile?.last_name,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    })
+  }
+
   let hasResponse = false
-
-  if (contractorState.organization) {
+  if (user && responseOptions.length > 0) {
     const supabase = await createClient()
-    const { data } = await supabase
-      .from("tender_responses")
-      .select("id")
-      .eq("tender_id", item.id)
-      .eq("organization_id", contractorState.organization.id)
-      .maybeSingle()
+    let query = supabase.from("tender_responses").select("id").eq("tender_id", item.id)
 
+    if (contractorState.organization && !expertState.profile) {
+      query = query.eq("organization_id", contractorState.organization.id)
+    } else {
+      query = query.eq("user_id", user.id)
+    }
+
+    const { data } = await query.limit(1).maybeSingle()
     hasResponse = Boolean(data)
   }
 
@@ -72,13 +107,17 @@ export default async function TenderPage({
           </h1>
           <div className="mt-8 space-y-8">
             <section>
-              <h2 className="mb-3 text-xl font-semibold tracking-normal">Описание</h2>
+              <h2 className="mb-3 text-xl font-semibold tracking-normal">
+                Описание
+              </h2>
               <p className="whitespace-pre-line leading-8 text-muted-foreground">
                 {item.description ?? "Описание задачи скоро появится."}
               </p>
             </section>
             <section>
-              <h2 className="mb-3 text-xl font-semibold tracking-normal">Цель</h2>
+              <h2 className="mb-3 text-xl font-semibold tracking-normal">
+                Цель
+              </h2>
               <p className="whitespace-pre-line leading-8 text-muted-foreground">
                 {item.goal ?? "Цель будет уточнена заказчиком."}
               </p>
@@ -126,7 +165,7 @@ export default async function TenderPage({
                   Войдите, чтобы откликнуться на задачу.
                 </p>
                 <Button asChild className="w-full">
-                  <a href="/login">Войти</a>
+                  <Link href="/login">Войти</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -136,10 +175,16 @@ export default async function TenderPage({
                 Вы автор этой задачи, отклик недоступен.
               </CardContent>
             </Card>
-          ) : !contractorState.organization ? (
+          ) : responseOptions.length === 0 ? (
             <Card>
-              <CardContent className="p-5 text-sm text-muted-foreground">
-                Отклики доступны подрядчикам после onboarding.
+              <CardContent className="space-y-3 p-5 text-sm text-muted-foreground">
+                <p>
+                  Чтобы откликаться на задачи, создайте профиль эксперта или
+                  организацию-подрядчика.
+                </p>
+                <Button asChild variant="outline">
+                  <Link href="/dashboard/expert">Создать профиль эксперта</Link>
+                </Button>
               </CardContent>
             </Card>
           ) : hasResponse ? (
@@ -149,7 +194,10 @@ export default async function TenderPage({
               </CardContent>
             </Card>
           ) : (
-            <ResponseForm action={createTenderResponse.bind(null, item.id)} />
+            <ResponseForm
+              action={createTenderResponse.bind(null, item.id)}
+              options={responseOptions}
+            />
           )}
         </aside>
       </div>
