@@ -24,7 +24,9 @@ jobs:
           script: |
             set -e
             cd /opt/srchr-dev
-            git pull
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
             docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/patch-tender-responses.sql
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "select id, responder_type, expert_id from public.tender_responses limit 1;"
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"

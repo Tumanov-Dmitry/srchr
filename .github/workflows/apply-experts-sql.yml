@@ -24,7 +24,9 @@ jobs:
           script: |
             set -e
             cd /opt/srchr-dev
-            git pull
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
             docker exec -i supabase-db psql -U postgres -d postgres < supabase/sql/create-experts.sql
             docker exec -i supabase-db psql -U postgres -d postgres -c "notify pgrst, 'reload schema';"
             docker restart supabase-rest
