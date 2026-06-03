@@ -6,7 +6,13 @@ import { encodeMessage } from "@/lib/messages"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 
-type TableName = "profiles" | "organizations" | "materials" | "tenders" | "expert_profiles"
+type TableName =
+  | "profiles"
+  | "organizations"
+  | "materials"
+  | "tenders"
+  | "expert_profiles"
+  | "events"
 
 function value(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
@@ -48,6 +54,10 @@ async function updateStatus(
   }
 
   if (table === "tenders" && status === "published") {
+    payload.published_at = new Date().toISOString()
+  }
+
+  if (table === "events" && status === "published") {
     payload.published_at = new Date().toISOString()
   }
 
@@ -139,4 +149,47 @@ export async function updateAdminExpertStatus(formData: FormData) {
   ], "draft")
 
   await updateStatus("expert_profiles", value(formData, "id"), status, "/admin/experts")
+}
+
+export async function updateAdminEventStatus(formData: FormData) {
+  const status = safeStatus(value(formData, "status"), [
+    "draft",
+    "moderation",
+    "published",
+    "rejected",
+    "archived",
+    "cancelled",
+    "completed",
+  ], "draft")
+
+  await updateStatus("events", value(formData, "id"), status, "/admin/events")
+}
+
+export async function updateAdminEventPromotion(formData: FormData) {
+  await requireAdmin()
+
+  const id = value(formData, "id")
+  const isPromoted = value(formData, "is_promoted") === "on"
+  const promotedUntil = value(formData, "promoted_until")
+  const promotionUrl = value(formData, "promotion_url")
+  const path = "/admin/events"
+
+  if (!id) redirectWithMessage(path, "Событие не найдено")
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from("events")
+    .update({
+      is_promoted: isPromoted,
+      promoted_until: isPromoted ? promotedUntil : null,
+      promotion_url: promotionUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+
+  if (error) redirectWithMessage(path, error.message)
+
+  revalidatePath("/events")
+  revalidatePath(path)
+  redirectWithMessage(path, "Продвижение обновлено")
 }

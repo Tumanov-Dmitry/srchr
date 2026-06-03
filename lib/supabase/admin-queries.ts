@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import type { ExpertProfile, Material, Organization, Tender } from "@/types"
+import type { Event, ExpertProfile, Material, Organization, Tender } from "@/types"
 
 export type AdminProfile = {
   id: string
@@ -246,4 +246,31 @@ export async function getAdminTenders() {
     .limit(100)
 
   return error ? [] : ((data ?? []) as Tender[])
+}
+
+export async function getAdminEvents(status?: string | null) {
+  const supabase = createAdminClient()
+  let query = supabase
+    .from("events")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200)
+
+  if (status && status !== "all") {
+    query = query.eq("status", status)
+  }
+
+  const { data, error } = await query
+  return error ? [] : ((data ?? []) as Event[])
+}
+
+export async function getAdminEventById(id: string) {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  return error ? null : ((data ?? null) as Event | null)
 }

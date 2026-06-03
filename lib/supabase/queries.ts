@@ -4,6 +4,9 @@ import type {
   ExpertProfile,
   Favorite,
   FavoriteTargetType,
+  Event,
+  EventParticipant,
+  EventParticipationStatus,
   Material,
   Organization,
   OrganizationMember,
@@ -446,6 +449,212 @@ export type MaterialFilters = {
   q?: string
   type?: string
   category?: string
+}
+
+export type EventFilters = {
+  month?: string
+  city?: string
+  format?: string
+  event_type?: string
+  tag?: string
+}
+
+function eventOwnerName(event: Event, organizations: Organization[], experts: ExpertProfile[]) {
+  if (event.owner_type === "organization") {
+    return organizations.find((organization) => organization.id === event.owner_id)?.name ?? null
+  }
+
+  const expert = experts.find((profile) => profile.id === event.owner_id)
+  return expert ? [expert.first_name, expert.last_name].filter(Boolean).join(" ") : null
+}
+
+async function hydrateEventOwners(events: Event[]) {
+  if (events.length === 0) return events
+
+  const supabase = await createClient()
+  const organizationIds = events
+    .filter((event) => event.owner_type === "organization")
+    .map((event) => event.owner_id)
+  const expertIds = events
+    .filter((event) => event.owner_type === "expert")
+    .map((event) => event.owner_id)
+
+  const [{ data: organizations }, { data: experts }] = await Promise.all([
+    organizationIds.length > 0
+      ? supabase.from("organizations").select("id, name, logo_url").in("id", organizationIds)
+      : Promise.resolve({ data: [] }),
+    expertIds.length > 0
+      ? supabase.from("expert_profiles").select("id, first_name, last_name, avatar_url").in("id", expertIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  return events.map((event) => ({
+    ...event,
+    owner_name: eventOwnerName(
+      event,
+      (organizations ?? []) as Organization[],
+      (experts ?? []) as ExpertProfile[],
+    ),
+  }))
+}
+
+export async function getPublishedEvents(filters: EventFilters = {}) {
+  const supabase = await createClient()
+  let query = supabase
+    .from("events")
+    .select("*")
+    .in("status", ["published", "completed"])
+    .order("is_promoted", { ascending: false })
+    .order("promoted_until", { ascending: false, nullsFirst: false })
+    .order("start_date", { ascending: true })
+
+  if (filters.city) {
+    query = query.ilike("city", `%${filters.city}%`)
+  }
+
+  if (filters.format && ["online", "offline", "hybrid"].includes(filters.format)) {
+    query = query.eq("format", filters.format)
+  }
+
+  if (filters.event_type) {
+    query = query.eq("event_type", filters.event_type)
+  }
+
+  if (filters.tag) {
+    query = query.or(`tags.ilike.%${filters.tag}%,categories.ilike.%${filters.tag}%`)
+  }
+
+  if (filters.month && /^\d{4}-\d{2}$/.test(filters.month)) {
+    const start = `${filters.month}-01T00:00:00.000Z`
+    const end = new Date(start)
+    end.setUTCMonth(end.getUTCMonth() + 1)
+    query = query.gte("start_date", start).lt("start_date", end.toISOString())
+  }
+
+  const { data, error } = await query
+  if (isMissingTable(error)) return []
+
+  return hydrateEventOwners((data ?? []) as Event[])
+}
+
+export async function getPublishedEventBySlug(slug: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("slug", slug)
+    .in("status", ["published", "completed"])
+    .maybeSingle()
+
+  if (isMissingTable(error) || !data) return null
+
+  const [event] = await hydrateEventOwners([data as Event])
+  const user = await getCurrentUser()
+
+  if (!user) return event
+
+  const { data: participation } = await supabase
+    .from("event_participants")
+    .select("status")
+    .eq("event_id", event.id)
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  return {
+    ...event,
+    my_participation: (participation?.status ?? null) as EventParticipationStatus | null,
+  }
+}
+
+export async function getDashboardEvents() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      user: null,
+      events: [] as Event[],
+      participations: [] as EventParticipant[],
+      isEventsTableMissing: false,
+    }
+  }
+
+  const memberships = await getUserOrganizationMemberships(user.id)
+  const organizationIds = memberships
+    .filter((membership) => ["owner", "admin", "editor"].includes(membership.role ?? "member"))
+    .map((membership) => membership.organization_id ?? membership.organizations?.id)
+    .filter((id): id is string => Boolean(id))
+
+  const expert = await getCurrentExpertProfile()
+  const ownerFilters = [`created_by.eq.${user.id}`]
+
+  if (expert.profile) {
+    ownerFilters.push(`and(owner_type.eq.expert,owner_id.eq.${expert.profile.id})`)
+  }
+
+  for (const organizationId of organizationIds) {
+    ownerFilters.push(`and(owner_type.eq.organization,owner_id.eq.${organizationId})`)
+  }
+
+  const supabase = await createClient()
+  const [{ data, error }, { data: participationData, error: participationError }] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("*")
+        .or(ownerFilters.join(","))
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("event_participants")
+        .select("*, events(*)")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false }),
+    ])
+
+  return {
+    user,
+    events: error ? [] : await hydrateEventOwners((data ?? []) as Event[]),
+    participations: participationError ? [] : ((participationData ?? []) as EventParticipant[]),
+    isEventsTableMissing: isMissingTable(error) || isMissingTable(participationError),
+  }
+}
+
+export async function getDashboardEventById(id: string) {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      user: null,
+      event: null,
+      isEventsTableMissing: false,
+    }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.from("events").select("*").eq("id", id).maybeSingle()
+
+  if (isMissingTable(error)) {
+    return {
+      user,
+      event: null,
+      isEventsTableMissing: true,
+    }
+  }
+
+  if (!data) {
+    return {
+      user,
+      event: null,
+      isEventsTableMissing: false,
+    }
+  }
+
+  const [event] = await hydrateEventOwners([data as Event])
+
+  return {
+    user,
+    event,
+    isEventsTableMissing: false,
+  }
 }
 
 export async function getPublishedMaterials(filters: MaterialFilters = {}) {

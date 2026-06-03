@@ -3,6 +3,7 @@ import {
   BarChart3,
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   FileText,
   FolderKanban,
   Home,
@@ -20,6 +21,7 @@ const items = [
   { href: "/admin/cases", label: "Кейсы", icon: FileText },
   { href: "/admin/articles", label: "Статьи", icon: Newspaper },
   { href: "/admin/tenders", label: "Задачи", icon: BriefcaseBusiness },
+  { href: "/admin/events", label: "Мероприятия", icon: CalendarDays },
   { href: "/admin/stats", label: "Статистика", icon: BarChart3 },
 ]
 

@@ -168,3 +168,68 @@ export type TenderResponse = {
   tenders?: Tender | null
   organizations?: Organization | null
 }
+
+export type EventOwnerType = "expert" | "organization"
+export type EventType =
+  | "conference"
+  | "meetup"
+  | "webinar"
+  | "workshop"
+  | "education"
+  | "exhibition"
+  | "private_meeting"
+  | "other"
+export type EventFormat = "online" | "offline" | "hybrid"
+export type EventPriceType = "free" | "paid"
+export type EventStatus =
+  | "draft"
+  | "moderation"
+  | "published"
+  | "rejected"
+  | "archived"
+  | "cancelled"
+  | "completed"
+export type EventParticipationStatus = "going" | "interested" | "not_going"
+
+export type Event = {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  cover_url?: string | null
+  event_type: EventType
+  start_date?: string | null
+  end_date?: string | null
+  city?: string | null
+  address?: string | null
+  format: EventFormat
+  external_url?: string | null
+  price_type: EventPriceType
+  price_note?: string | null
+  owner_type: EventOwnerType
+  owner_id: string
+  speakers?: string | null
+  tags?: string | null
+  categories?: string | null
+  status: EventStatus
+  is_promoted?: boolean | null
+  promoted_until?: string | null
+  promotion_url?: string | null
+  created_by?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  published_at?: string | null
+  owner_name?: string | null
+  owner_avatar?: string | null
+  my_participation?: EventParticipationStatus | null
+}
+
+export type EventParticipant = {
+  id: string
+  event_id: string
+  user_id: string
+  status: EventParticipationStatus
+  created_at?: string | null
+  updated_at?: string | null
+  events?: Event | null
+}

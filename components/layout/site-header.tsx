@@ -9,6 +9,7 @@ const navItems = [
   { href: "/contractors", label: "Подрядчики" },
   { href: "/experts", label: "Эксперты" },
   { href: "/media", label: "Медиа" },
+  { href: "/events", label: "Мероприятия" },
   { href: "/tenders", label: "Задачи" },
   { href: "/favorites", label: "Избранное" },
 ]

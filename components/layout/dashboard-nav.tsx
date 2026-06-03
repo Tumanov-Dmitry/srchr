@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   FolderKanban,
   Heart,
   Home,
@@ -9,6 +10,7 @@ import {
   Settings,
   UserRound,
 } from "lucide-react"
+
 const items = [
   { href: "/dashboard", label: "Обзор", icon: Home },
   {
@@ -36,6 +38,7 @@ const items = [
     icon: MessageSquareReply,
   },
   { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },
+  { href: "/dashboard/events", label: "Мероприятия", icon: CalendarDays },
   { href: "/dashboard/favorites", label: "Избранное", icon: Heart },
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ]
