@@ -20,17 +20,18 @@ export async function NotificationBell() {
 
   return (
     <details className="relative">
-      <summary className="list-none">
-        <Button aria-label="Уведомления" className="relative" size="icon" variant="ghost">
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 ? (
-            <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          ) : null}
-        </Button>
+      <summary
+        aria-label="Уведомления"
+        className="relative inline-flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground [&::-webkit-details-marker]:hidden"
+      >
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 ? (
+          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        ) : null}
       </summary>
-      <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-lg border bg-background shadow-lg">
+      <div className="fixed left-4 right-4 top-16 z-50 max-h-[calc(100vh-5rem)] overflow-hidden rounded-lg border bg-background shadow-lg md:absolute md:left-auto md:right-0 md:top-auto md:mt-2 md:w-80">
         <div className="border-b px-4 py-3">
           <div className="font-medium">Уведомления</div>
           <div className="text-xs text-muted-foreground">
