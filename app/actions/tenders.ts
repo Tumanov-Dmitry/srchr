@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import {
+  createNotificationEvent,
+  notifyAdmins,
+} from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -55,7 +59,12 @@ async function writeWithSchemaFallback(
 
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const query = update
-      ? supabase.from(table).update(nextPayload).eq(update.column, update.value)
+      ? supabase
+          .from(table)
+          .update(nextPayload)
+          .eq(update.column, update.value)
+          .select("id")
+          .maybeSingle()
       : supabase.from(table).insert(nextPayload).select("id").single()
 
     const { data, error } = await query
@@ -71,6 +80,43 @@ async function writeWithSchemaFallback(
   }
 
   throw new Error("Не удалось сохранить данные")
+}
+
+async function notifyAdminsAboutTender({
+  id,
+  title,
+  slug,
+  status,
+  actorId,
+}: {
+  id: string
+  title: string
+  slug: string
+  status: string | null
+  actorId: string
+}) {
+  const isPublished = status === "published"
+
+  await createNotificationEvent({
+    event_key: isPublished ? "task_published" : "task_created",
+    event_type: isPublished ? "task_published" : "task_created",
+    source: "tenders",
+    actor_id: actorId,
+    target_type: "tender",
+    target_id: id,
+    title: isPublished ? `Новая опубликованная задача: ${title}` : `Новая задача: ${title}`,
+    text: isPublished
+      ? "Пользователь опубликовал новую задачу."
+      : "Пользователь создал новую задачу.",
+  })
+  await notifyAdmins({
+    title: isPublished ? "Новая опубликованная задача" : "Новая задача",
+    text: title,
+    type: "admin",
+    target_type: "tender",
+    target_id: id,
+    target_url: `/tenders/${slug}`,
+  })
 }
 
 async function getAvailableTenderSlug(
@@ -141,10 +187,20 @@ export async function createTender(formData: FormData) {
       value(formData, "slug"),
       title,
     )
-    await writeWithSchemaFallback(
+    const createdTender = await writeWithSchemaFallback(
       "tenders",
       buildTenderPayload(formData, organization.id, user.id, slug),
     )
+
+    if (createdTender) {
+      await notifyAdminsAboutTender({
+        id: createdTender.id as string,
+        title,
+        slug,
+        status: tenderStatus(formData),
+        actorId: user.id,
+      })
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Не удалось создать задачу"
@@ -185,11 +241,21 @@ export async function updateTender(tenderId: string, formData: FormData) {
       value(formData, "slug"),
       title,
     )
-    await writeWithSchemaFallback(
+    const updatedTender = await writeWithSchemaFallback(
       "tenders",
       buildTenderPayload(formData, organization.id, user.id, slug),
       { column: "id", value: tenderId },
     )
+
+    if (updatedTender && tenderStatus(formData) === "published") {
+      await notifyAdminsAboutTender({
+        id: tenderId,
+        title,
+        slug,
+        status: "published",
+        actorId: user.id,
+      })
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Не удалось сохранить задачу"

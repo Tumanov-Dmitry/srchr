@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import {
+  createNotificationEvent,
+  notifyAdmins,
+} from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { encodeMessage } from "@/lib/messages"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -300,6 +304,39 @@ function articleContent(formData: FormData) {
   })
 }
 
+async function notifyAdminsAboutMaterialModeration({
+  id,
+  type,
+  title,
+  actorId,
+}: {
+  id: string
+  type: "case" | "article"
+  title: string
+  actorId: string
+}) {
+  const typeLabel = type === "case" ? "кейс" : "статья"
+
+  await createNotificationEvent({
+    event_key: "material_moderation_requested",
+    event_type: "material_moderation_requested",
+    source: "materials",
+    actor_id: actorId,
+    target_type: type,
+    target_id: id,
+    title: `Новый материал на модерации: ${title}`,
+    text: `Пользователь отправил ${typeLabel} на модерацию.`,
+  })
+  await notifyAdmins({
+    title: `Новый материал на модерации`,
+    text: `${title} (${typeLabel})`,
+    type: "admin",
+    target_type: type,
+    target_id: id,
+    target_url: `/admin/materials`,
+  })
+}
+
 export async function createCaseMaterial(formData: FormData) {
   const { user, organization } = await getCurrentTenderOwnerOrganization()
 
@@ -345,6 +382,15 @@ export async function createCaseMaterial(formData: FormData) {
       created_by: user.id,
       published_at: status === "published" ? new Date().toISOString() : null,
     })
+
+    if (material && status === "moderation") {
+      await notifyAdminsAboutMaterialModeration({
+        id: material.id as string,
+        type: "case",
+        title,
+        actorId: user.id,
+      })
+    }
 
     if (!material) {
       await writeLegacyCaseWithFallback({
@@ -458,6 +504,15 @@ export async function createArticleMaterial(formData: FormData) {
     })
     materialSaved = Boolean(material)
     materialTableMissing = !material
+
+    if (material && status === "moderation") {
+      await notifyAdminsAboutMaterialModeration({
+        id: material.id as string,
+        type: "article",
+        title,
+        actorId: user.id,
+      })
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить статью"
     redirectWithMessage("/dashboard/media/new/article", message)
@@ -577,6 +632,15 @@ export async function updateMaterial(formData: FormData) {
       })
 
       materialTableMissing = !updated
+
+      if (updated && status === "moderation") {
+        await notifyAdminsAboutMaterialModeration({
+          id,
+          type,
+          title,
+          actorId: user.id,
+        })
+      }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось обновить материал"
