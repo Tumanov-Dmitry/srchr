@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { encodeMessage } from "@/lib/messages"
+import {
+  createNotificationEvent,
+  notifyAdmins,
+} from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
@@ -218,9 +222,34 @@ export async function createEvent(formData: FormData) {
   const supabase = await createWriterClient()
   const payload = eventPayload(formData, owner, user.id, status, slug)
 
-  const { error } = await supabase.from("events").insert(payload)
+  const { data: createdEvent, error } = await supabase
+    .from("events")
+    .insert(payload)
+    .select("id, slug, title, status")
+    .maybeSingle()
 
   if (error) redirectWithMessage(path, error.message)
+
+  if (createdEvent && status === "moderation") {
+    await createNotificationEvent({
+      event_key: "event_moderation_requested",
+      event_type: "event_moderation_requested",
+      source: "events",
+      actor_id: user.id,
+      target_type: "event",
+      target_id: createdEvent.id as string,
+      title: "Новое мероприятие на модерации",
+      text: createdEvent.title as string,
+    })
+    await notifyAdmins({
+      title: "Новое мероприятие на модерации",
+      text: createdEvent.title as string,
+      type: "admin",
+      target_type: "event",
+      target_id: createdEvent.id as string,
+      target_url: `/admin/events/${createdEvent.id}/edit`,
+    })
+  }
 
   revalidatePath("/dashboard/events")
   redirectWithMessage("/dashboard/events", "Событие сохранено")
@@ -290,6 +319,27 @@ export async function updateEvent(formData: FormData) {
   const { error } = await supabase.from("events").update(payload).eq("id", id)
 
   if (error) redirectWithMessage(path, error.message)
+
+  if (status === "moderation") {
+    await createNotificationEvent({
+      event_key: "event_moderation_requested",
+      event_type: "event_moderation_requested",
+      source: "events",
+      actor_id: user.id,
+      target_type: "event",
+      target_id: id,
+      title: "Мероприятие отправлено на модерацию",
+      text: title,
+    })
+    await notifyAdmins({
+      title: "Мероприятие отправлено на модерацию",
+      text: title,
+      type: "admin",
+      target_type: "event",
+      target_id: id,
+      target_url: `/admin/events/${id}/edit`,
+    })
+  }
 
   revalidatePath("/dashboard/events")
   revalidatePath("/events")

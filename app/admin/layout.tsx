@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { Search } from "lucide-react"
 import { logout } from "@/app/actions/auth"
 import { AdminNav } from "@/components/layout/admin-nav"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 import { Button } from "@/components/ui/button"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 
@@ -30,6 +31,7 @@ export default async function AdminLayout({
             SRCHR Admin
           </Link>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <Button asChild variant="ghost">
               <Link href="/dashboard">ЛК</Link>
             </Button>

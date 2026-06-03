@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { logout } from "@/app/actions/auth"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 import { Button } from "@/components/ui/button"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 import { getCurrentUser } from "@/lib/supabase/queries"
@@ -44,6 +45,7 @@ export async function SiteHeader() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
+              <NotificationBell />
               <Button asChild variant="ghost">
                 <Link href="/dashboard">ЛК</Link>
               </Button>

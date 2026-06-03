@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { encodeMessage } from "@/lib/messages"
+import {
+  createNotification,
+  createNotificationEvent,
+} from "@/lib/notifications"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 
@@ -65,6 +69,50 @@ async function updateStatus(
 
   if (error) {
     redirectWithMessage(path, error.message)
+  }
+
+  if (["materials", "tenders", "events"].includes(table)) {
+    const { data: row } = await supabase
+      .from(table)
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+    const title = String(row?.title ?? "Объект обновлен")
+    const createdBy = typeof row?.created_by === "string" ? row.created_by : null
+    const targetType =
+      table === "materials"
+        ? String(row?.type ?? "material")
+        : table === "tenders"
+          ? "tender"
+          : "event"
+    const targetUrl =
+      table === "events"
+        ? `/events/${row?.slug ?? ""}`
+        : table === "tenders"
+          ? `/tenders/${row?.slug ?? ""}`
+          : `/media/${row?.slug ?? ""}`
+
+    await createNotificationEvent({
+      event_key: `${targetType}_${status}`,
+      event_type: "admin_status_changed",
+      source: "admin",
+      target_type: targetType,
+      target_id: id,
+      title: `Статус обновлен: ${status}`,
+      text: title,
+    })
+
+    if (createdBy) {
+      await createNotification({
+        recipient_id: createdBy,
+        title: `Статус обновлен: ${title}`,
+        text: `Новый статус: ${status}`,
+        type: targetType,
+        target_type: targetType,
+        target_id: id,
+        target_url: targetUrl,
+      })
+    }
   }
 
   revalidatePath("/admin")

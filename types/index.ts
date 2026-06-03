@@ -233,3 +233,50 @@ export type EventParticipant = {
   updated_at?: string | null
   events?: Event | null
 }
+
+export type NotificationChannel = "in_app" | "email" | "telegram"
+export type NotificationSeverity = "info" | "warning" | "error" | "critical"
+export type NotificationEventStatus = "new" | "processing" | "handled" | "ignored"
+
+export type NotificationEvent = {
+  id: string
+  event_key: string
+  event_type?: string | null
+  source?: string | null
+  actor_id?: string | null
+  target_type?: string | null
+  target_id?: string | null
+  title?: string | null
+  text?: string | null
+  severity: NotificationSeverity
+  status: NotificationEventStatus
+  payload?: Record<string, unknown> | null
+  created_at?: string | null
+}
+
+export type Notification = {
+  id: string
+  recipient_id: string
+  title: string
+  text?: string | null
+  type: string
+  target_type?: string | null
+  target_id?: string | null
+  target_url?: string | null
+  channels?: NotificationChannel[] | null
+  is_read: boolean
+  created_at?: string | null
+  read_at?: string | null
+}
+
+export type NotificationPreference = {
+  id?: string
+  user_id: string
+  category: string
+  event_key: string
+  in_app: boolean
+  email: boolean
+  telegram: boolean
+  created_at?: string | null
+  updated_at?: string | null
+}

@@ -4,6 +4,8 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  Bell,
+  CircleAlert,
   FileText,
   FolderKanban,
   Home,
@@ -22,6 +24,8 @@ const items = [
   { href: "/admin/articles", label: "Статьи", icon: Newspaper },
   { href: "/admin/tenders", label: "Задачи", icon: BriefcaseBusiness },
   { href: "/admin/events", label: "Мероприятия", icon: CalendarDays },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/system-events", label: "System Events", icon: CircleAlert },
   { href: "/admin/stats", label: "Статистика", icon: BarChart3 },
 ]
 
