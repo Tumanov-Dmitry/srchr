@@ -46,6 +46,22 @@ function uniqueIds(ids: Array<string | null | undefined>) {
   return Array.from(new Set(ids.filter((id): id is string => Boolean(id))))
 }
 
+export function normalizeNotificationTargetUrl(targetUrl?: string | null) {
+  if (!targetUrl) return null
+
+  const trimmed = targetUrl.trim()
+  if (!trimmed) return null
+
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
+
+  try {
+    const url = new URL(trimmed)
+    return `${url.pathname}${url.search}${url.hash}` || null
+  } catch {
+    return null
+  }
+}
+
 export async function createNotificationEvent(input: NotificationEventInput) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
 
@@ -86,7 +102,7 @@ export async function createNotification(input: NotificationInput) {
       type: input.type ?? "system",
       target_type: input.target_type ?? null,
       target_id: input.target_id ?? null,
-      target_url: input.target_url ?? null,
+      target_url: normalizeNotificationTargetUrl(input.target_url),
       channels: input.channels ?? ["in_app"],
     })
     .select("id")

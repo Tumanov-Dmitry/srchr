@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { normalizeNotificationTargetUrl } from "@/lib/notifications"
 import { createClient } from "@/lib/supabase/server"
 
 export async function GET(
@@ -28,5 +29,8 @@ export async function GET(
     .eq("id", id)
     .eq("recipient_id", user.id)
 
-  return NextResponse.redirect(new URL(data?.target_url || "/notifications", request.url))
+  const targetPath =
+    normalizeNotificationTargetUrl(data?.target_url) ?? "/dashboard/notifications"
+
+  return NextResponse.redirect(new URL(targetPath, request.url))
 }
