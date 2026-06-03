@@ -15,9 +15,16 @@ function redirectWithMessage(path: string, message: string): never {
   redirect(`${path}?message=${encodeMessage(message)}`)
 }
 
+function revalidateNotificationSurfaces() {
+  revalidatePath("/dashboard/notifications")
+  revalidatePath("/notifications")
+  revalidatePath("/dashboard")
+  revalidatePath("/")
+}
+
 export async function markNotificationRead(formData: FormData) {
   const id = value(formData, "id")
-  const path = value(formData, "path") ?? "/notifications"
+  const path = value(formData, "path") ?? "/dashboard/notifications"
 
   if (!id) redirectWithMessage(path, "Уведомление не найдено")
 
@@ -36,8 +43,7 @@ export async function markNotificationRead(formData: FormData) {
 
   if (error) redirectWithMessage(path, error.message)
 
-  revalidatePath("/notifications")
-  revalidatePath("/")
+  revalidateNotificationSurfaces()
   redirect(path)
 }
 
@@ -55,11 +61,13 @@ export async function markAllNotificationsRead() {
     .eq("recipient_id", user.id)
     .eq("is_read", false)
 
-  if (error) redirectWithMessage("/notifications", error.message)
+  if (error) redirectWithMessage("/dashboard/notifications", error.message)
 
-  revalidatePath("/notifications")
-  revalidatePath("/")
-  redirectWithMessage("/notifications", "Все уведомления отмечены прочитанными")
+  revalidateNotificationSurfaces()
+  redirectWithMessage(
+    "/dashboard/notifications",
+    "Все уведомления отмечены прочитанными",
+  )
 }
 
 export async function saveNotificationPreferences(formData: FormData) {

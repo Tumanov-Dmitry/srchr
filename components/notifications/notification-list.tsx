@@ -6,8 +6,10 @@ import type { Notification } from "@/types"
 
 export function NotificationList({
   notifications,
+  returnPath = "/dashboard/notifications",
 }: {
   notifications: Notification[]
+  returnPath?: string
 }) {
   if (notifications.length === 0) {
     return (
@@ -52,7 +54,7 @@ export function NotificationList({
             {!notification.is_read ? (
               <form action={markNotificationRead}>
                 <input name="id" type="hidden" value={notification.id} />
-                <input name="path" type="hidden" value="/notifications" />
+                <input name="path" type="hidden" value={returnPath} />
                 <Button size="sm" type="submit" variant="ghost">
                   Прочитано
                 </Button>

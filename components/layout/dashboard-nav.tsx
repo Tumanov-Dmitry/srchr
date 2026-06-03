@@ -40,7 +40,7 @@ const items = [
   },
   { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },
   { href: "/dashboard/events", label: "Мероприятия", icon: CalendarDays },
-  { href: "/notifications", label: "Уведомления", icon: Bell },
+  { href: "/dashboard/notifications", label: "Уведомления", icon: Bell },
   { href: "/dashboard/favorites", label: "Избранное", icon: Heart },
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ]

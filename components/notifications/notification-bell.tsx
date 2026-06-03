@@ -70,7 +70,7 @@ export async function NotificationBell() {
         </div>
         <div className="border-t p-2">
           <Button asChild className="w-full" size="sm" variant="outline">
-            <Link href="/notifications">Открыть все</Link>
+            <Link href="/dashboard/notifications">Открыть все</Link>
           </Button>
         </div>
       </div>
