@@ -81,17 +81,44 @@ create policy "Authenticated users can create notification events"
   with check (actor_id = auth.uid() or actor_id is null);
 
 drop policy if exists "Admins can read notification events" on public.notification_events;
-create policy "Admins can read notification events"
-  on public.notification_events for select
-  to authenticated
-  using (
-    exists (
-      select 1
-      from public.profiles p
-      where p.id = auth.uid()
-        and coalesce(p.role, p.account_type) in ('admin', 'super_admin', 'moderator')
-    )
-  );
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'role'
+  ) then
+    execute $policy$
+      create policy "Admins can read notification events"
+        on public.notification_events for select
+        to authenticated
+        using (
+          exists (
+            select 1
+            from public.profiles p
+            where p.id = auth.uid()
+              and coalesce(p.role, p.account_type) in ('admin', 'super_admin', 'moderator')
+          )
+        )
+    $policy$;
+  else
+    execute $policy$
+      create policy "Admins can read notification events"
+        on public.notification_events for select
+        to authenticated
+        using (
+          exists (
+            select 1
+            from public.profiles p
+            where p.id = auth.uid()
+              and p.account_type in ('admin', 'super_admin', 'moderator')
+          )
+        )
+    $policy$;
+  end if;
+end $$;
 
 drop policy if exists "Users can read own notifications" on public.notifications;
 create policy "Users can read own notifications"

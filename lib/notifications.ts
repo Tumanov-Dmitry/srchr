@@ -25,13 +25,25 @@ type NotificationInput = {
   channels?: string[]
 }
 
-function isMissingNotificationsTable(error: { message?: string; code?: string } | null) {
+function isMissingRelation(error: { message?: string; code?: string } | null) {
   const message = error?.message ?? ""
   return (
     error?.code === "42P01" ||
     message.includes("Could not find the table") ||
     message.includes("does not exist")
   )
+}
+
+function isMissingColumn(error: { message?: string; code?: string } | null) {
+  const message = error?.message ?? ""
+  return (
+    error?.code === "42703" ||
+    message.includes("column") && message.includes("does not exist")
+  )
+}
+
+function uniqueIds(ids: Array<string | null | undefined>) {
+  return Array.from(new Set(ids.filter((id): id is string => Boolean(id))))
 }
 
 export async function createNotificationEvent(input: NotificationEventInput) {
@@ -55,7 +67,7 @@ export async function createNotificationEvent(input: NotificationEventInput) {
     .select("id")
     .maybeSingle()
 
-  if (isMissingNotificationsTable(error)) return null
+  if (isMissingRelation(error)) return null
   if (error) throw new Error(error.message)
 
   return data
@@ -80,7 +92,7 @@ export async function createNotification(input: NotificationInput) {
     .select("id")
     .maybeSingle()
 
-  if (isMissingNotificationsTable(error)) return null
+  if (isMissingRelation(error)) return null
   if (error) throw new Error(error.message)
 
   return data
@@ -90,18 +102,50 @@ export async function notifyAdmins(input: Omit<NotificationInput, "recipient_id"
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return
 
   const supabase = createAdminClient()
-  const { data, error } = await supabase
+  const adminIds: string[] = []
+
+  const { data: accountTypeAdmins, error: accountTypeError } = await supabase
     .from("profiles")
     .select("id")
-    .or("role.in.(admin,super_admin,moderator),account_type.in.(admin,super_admin,moderator)")
+    .in("account_type", ["admin", "super_admin", "moderator"])
 
-  if (error) return
+  if (!accountTypeError) {
+    adminIds.push(...(accountTypeAdmins ?? []).map((profile) => profile.id as string))
+  } else if (!isMissingColumn(accountTypeError) && !isMissingRelation(accountTypeError)) {
+    throw new Error(accountTypeError.message)
+  }
+
+  const { data: roleAdmins, error: roleError } = await supabase
+    .from("profiles")
+    .select("id")
+    .in("role", ["admin", "super_admin", "moderator"])
+
+  if (!roleError) {
+    adminIds.push(...(roleAdmins ?? []).map((profile) => profile.id as string))
+  } else if (!isMissingColumn(roleError) && !isMissingRelation(roleError)) {
+    throw new Error(roleError.message)
+  }
+
+  const { data: usersData } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+
+  adminIds.push(
+    ...(usersData.users ?? [])
+      .filter((user) =>
+        ["admin", "super_admin", "moderator"].includes(
+          String(user.app_metadata?.role ?? user.app_metadata?.account_type ?? ""),
+        ),
+      )
+      .map((user) => user.id),
+  )
 
   await Promise.all(
-    (data ?? []).map((profile) =>
+    uniqueIds(adminIds).map((recipientId) =>
       createNotification({
         ...input,
-        recipient_id: profile.id as string,
+        recipient_id: recipientId,
         type: input.type ?? "admin",
       }),
     ),
