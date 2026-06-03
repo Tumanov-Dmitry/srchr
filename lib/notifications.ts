@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin"
+import { normalizeNotificationTargetUrl } from "@/lib/notification-targets"
 import type { NotificationSeverity } from "@/types"
 
 type NotificationEventInput = {
@@ -44,22 +45,6 @@ function isMissingColumn(error: { message?: string; code?: string } | null) {
 
 function uniqueIds(ids: Array<string | null | undefined>) {
   return Array.from(new Set(ids.filter((id): id is string => Boolean(id))))
-}
-
-export function normalizeNotificationTargetUrl(targetUrl?: string | null) {
-  if (!targetUrl) return null
-
-  const trimmed = targetUrl.trim()
-  if (!trimmed) return null
-
-  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
-
-  try {
-    const url = new URL(trimmed)
-    return `${url.pathname}${url.search}${url.hash}` || null
-  } catch {
-    return null
-  }
 }
 
 export async function createNotificationEvent(input: NotificationEventInput) {

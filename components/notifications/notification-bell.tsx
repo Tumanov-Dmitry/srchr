@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Bell } from "lucide-react"
+import { NotificationOpenLink } from "@/components/notifications/notification-open-link"
 import { Button } from "@/components/ui/button"
 import { getUserNotifications } from "@/lib/supabase/notification-queries"
 
@@ -40,28 +41,33 @@ export async function NotificationBell() {
         </div>
         <div className="max-h-80 overflow-auto">
           {notifications.length > 0 ? (
-            notifications.map((notification) => (
-              <Link
-                className="block border-b px-4 py-3 text-sm last:border-0 hover:bg-accent"
-                href={`/notifications/${notification.id}/open`}
-                key={notification.id}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-medium">{notification.title}</div>
-                  {!notification.is_read ? (
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  ) : null}
-                </div>
-                {notification.text ? (
-                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {notification.text}
+            notifications.map((notification) => {
+              const href = notification.target_url ?? "/dashboard/notifications"
+
+              return (
+                <NotificationOpenLink
+                  className="block border-b px-4 py-3 text-sm last:border-0 hover:bg-accent"
+                  href={href}
+                  key={notification.id}
+                  notificationId={notification.id}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="font-medium">{notification.title}</div>
+                    {!notification.is_read ? (
+                      <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    ) : null}
                   </div>
-                ) : null}
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {formatDate(notification.created_at)}
-                </div>
-              </Link>
-            ))
+                  {notification.text ? (
+                    <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {notification.text}
+                    </div>
+                  ) : null}
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {formatDate(notification.created_at)}
+                  </div>
+                </NotificationOpenLink>
+              )
+            })
           ) : (
             <div className="px-4 py-6 text-sm text-muted-foreground">
               Уведомлений пока нет.

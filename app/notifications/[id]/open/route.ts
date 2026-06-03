@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
-import { normalizeNotificationTargetUrl } from "@/lib/notifications"
+import { hydrateNotificationTargetUrls } from "@/lib/notification-targets"
 import { createClient } from "@/lib/supabase/server"
+import type { Notification } from "@/types"
 
 export async function GET(
   request: Request,
@@ -18,7 +19,7 @@ export async function GET(
 
   const { data } = await supabase
     .from("notifications")
-    .select("target_url")
+    .select("*")
     .eq("id", id)
     .eq("recipient_id", user.id)
     .maybeSingle()
@@ -29,8 +30,11 @@ export async function GET(
     .eq("id", id)
     .eq("recipient_id", user.id)
 
-  const targetPath =
-    normalizeNotificationTargetUrl(data?.target_url) ?? "/dashboard/notifications"
+  const [notification] = await hydrateNotificationTargetUrls(
+    supabase,
+    data ? ([data] as Notification[]) : [],
+  )
+  const targetPath = notification?.target_url ?? "/dashboard/notifications"
 
   return NextResponse.redirect(new URL(targetPath, request.url))
 }

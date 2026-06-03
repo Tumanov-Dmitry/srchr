@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { hydrateNotificationTargetUrls } from "@/lib/notification-targets"
 import type {
   Notification,
   NotificationEvent,
@@ -102,9 +103,16 @@ export async function getUserNotifications(limit = 50) {
       .eq("is_read", false),
   ])
 
+  const notifications = error
+    ? []
+    : await hydrateNotificationTargetUrls(
+        supabase,
+        (data ?? []) as Notification[],
+      )
+
   return {
     user,
-    notifications: error ? [] : ((data ?? []) as Notification[]),
+    notifications,
     unreadCount: countError ? 0 : (count ?? 0),
     isNotificationsTableMissing: isMissingTable(error) || isMissingTable(countError),
   }

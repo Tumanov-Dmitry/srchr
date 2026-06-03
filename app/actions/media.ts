@@ -333,7 +333,7 @@ async function notifyAdminsAboutMaterialModeration({
     type: "admin",
     target_type: type,
     target_id: id,
-    target_url: `/admin/materials`,
+    target_url: `/admin/materials?target=${id}`,
   })
 }
 
