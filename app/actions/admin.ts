@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { encodeMessage } from "@/lib/messages"
+import { reportServerError } from "@/lib/security/errors"
 import {
   createNotification,
   createNotificationEvent,
@@ -68,7 +69,8 @@ async function updateStatus(
   const { error } = await supabase.from(table).update(payload).eq("id", id)
 
   if (error) {
-    redirectWithMessage(path, error.message)
+    reportServerError(`admin.updateStatus.${table}`, error)
+    redirectWithMessage(path, "Не удалось изменить статус")
   }
 
   if (["materials", "tenders", "events"].includes(table)) {
@@ -135,12 +137,32 @@ export async function updateAdminProfile(formData: FormData) {
   if (!id) redirectWithMessage(path, "Пользователь не найден")
 
   const supabase = createAdminClient()
-  const { error } = await supabase
+  const { error: combinedError } = await supabase
     .from("profiles")
-    .upsert({ id, account_type: accountType }, { onConflict: "id" })
+    .upsert(
+      { id, role: accountType, account_type: accountType },
+      { onConflict: "id" },
+    )
 
-  if (error) {
-    redirectWithMessage(path, error.message)
+  if (combinedError) {
+    const { error: accountTypeError } = await supabase
+      .from("profiles")
+      .upsert({ id, account_type: accountType }, { onConflict: "id" })
+
+    if (accountTypeError) {
+      const { error: roleError } = await supabase
+        .from("profiles")
+        .upsert({ id, role: accountType }, { onConflict: "id" })
+
+      if (roleError) {
+        reportServerError("admin.updateProfile", {
+          combinedError,
+          accountTypeError,
+          roleError,
+        })
+        redirectWithMessage(path, "Не удалось обновить пользователя")
+      }
+    }
   }
 
   revalidatePath(path)
@@ -235,7 +257,10 @@ export async function updateAdminEventPromotion(formData: FormData) {
     })
     .eq("id", id)
 
-  if (error) redirectWithMessage(path, error.message)
+  if (error) {
+    reportServerError("admin.updateEventPromotion", error)
+    redirectWithMessage(path, "Не удалось обновить продвижение")
+  }
 
   revalidatePath("/events")
   revalidatePath(path)

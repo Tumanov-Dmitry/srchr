@@ -66,8 +66,12 @@ create index if not exists notifications_target_idx
 create index if not exists notification_preferences_user_id_idx
   on public.notification_preferences (user_id);
 
-grant select, insert on public.notification_events to authenticated;
-grant select, update, insert, delete on public.notifications to authenticated;
+revoke insert, update, delete on public.notification_events from authenticated;
+revoke insert, delete on public.notifications from authenticated;
+revoke update on public.notifications from authenticated;
+grant select on public.notification_events to authenticated;
+grant select on public.notifications to authenticated;
+grant update (is_read, read_at) on public.notifications to authenticated;
 grant select, insert, update, delete on public.notification_preferences to authenticated;
 
 alter table public.notification_events enable row level security;
@@ -75,10 +79,6 @@ alter table public.notifications enable row level security;
 alter table public.notification_preferences enable row level security;
 
 drop policy if exists "Authenticated users can create notification events" on public.notification_events;
-create policy "Authenticated users can create notification events"
-  on public.notification_events for insert
-  to authenticated
-  with check (actor_id = auth.uid() or actor_id is null);
 
 drop policy if exists "Admins can read notification events" on public.notification_events;
 do $$
@@ -99,7 +99,10 @@ begin
             select 1
             from public.profiles p
             where p.id = auth.uid()
-              and coalesce(p.role, p.account_type) in ('admin', 'super_admin', 'moderator')
+              and (
+                p.role in ('admin', 'super_admin', 'moderator')
+                or p.account_type in ('admin', 'super_admin', 'moderator')
+              )
           )
         )
     $policy$;
@@ -134,10 +137,6 @@ create policy "Users can update own notifications"
   with check (recipient_id = auth.uid());
 
 drop policy if exists "Users can insert own notifications" on public.notifications;
-create policy "Users can insert own notifications"
-  on public.notifications for insert
-  to authenticated
-  with check (recipient_id = auth.uid());
 
 drop policy if exists "Users can read own notification preferences" on public.notification_preferences;
 create policy "Users can read own notification preferences"

@@ -177,8 +177,8 @@ create policy "Users can manage own favorites"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
-grant usage on schema public to anon, authenticated;
-grant select on public.favorites to anon;
+grant usage on schema public to authenticated;
+revoke all on public.favorites from anon;
 grant select, insert, update, delete on public.favorites to authenticated;
 
 notify pgrst, 'reload schema';

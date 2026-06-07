@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentContractorOrganization } from "@/lib/supabase/queries"
 import { createSlug } from "@/lib/slug"
+import { reportServerError } from "@/lib/security/errors"
 
 function value(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
@@ -165,9 +166,8 @@ export async function updateContractorProfile(formData: FormData) {
     await updateOrganization(organization.id, formData)
     await saveContractorProfile(organization.id, formData)
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Не удалось сохранить профиль"
-    redirect(`/dashboard/contractor/profile?message=${encodeURIComponent(message)}`)
+    reportServerError("contractor.updateProfile", error)
+    redirect("/dashboard/contractor/profile?message=Не удалось сохранить профиль")
   }
 
   revalidatePath("/dashboard/contractor")
@@ -195,9 +195,8 @@ export async function setContractorPublicationStatus(formData: FormData) {
     .eq("id", organization.id)
 
   if (error) {
-    redirect(
-      `/dashboard/contractor?message=${encodeURIComponent(error.message)}`,
-    )
+    reportServerError("contractor.publicationStatus", error)
+    redirect("/dashboard/contractor?message=Не удалось изменить статус профиля")
   }
 
   revalidatePath("/dashboard/contractor")

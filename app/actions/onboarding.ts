@@ -2,20 +2,20 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import { createSlug } from "@/lib/slug"
-import type { AccountRole, OnboardingRole } from "@/types"
+import type { OnboardingRole } from "@/types"
 
 function slugify(value: string) {
   return `${createSlug(value)}-${Date.now().toString(36)}`
 }
 
-async function saveProfileRole(userId: string, email: string | undefined, role: AccountRole) {
+async function markOnboardingComplete(userId: string, email: string | undefined) {
   const supabase = await createClient()
   const payload = {
     id: userId,
     email: email ?? null,
-    role,
     onboarding_completed: true,
   }
 
@@ -25,16 +25,17 @@ async function saveProfileRole(userId: string, email: string | undefined, role: 
 
   if (!error) return
 
-  await supabase
+  const { error: fallbackError } = await supabase
     .from("profiles")
     .upsert(
       {
         id: userId,
         email: email ?? null,
-        account_type: role,
       },
       { onConflict: "id" },
     )
+
+  if (fallbackError) throw new Error(fallbackError.message)
 }
 
 async function createOrganizationMember(
@@ -140,6 +141,7 @@ async function createOrganization({
     is_contractor: onboardingRole === "contractor",
     is_client: onboardingRole === "client",
     status: "draft",
+    created_by: (await supabase.auth.getUser()).data.user?.id ?? null,
   }
 
   const { data, error } = await supabase
@@ -156,7 +158,15 @@ async function createOrganization({
 
   const { data: fallbackData, error: fallbackError } = await supabase
     .from("organizations")
-    .insert(basePayload)
+    .insert({
+      name: basePayload.name,
+      slug: basePayload.slug,
+      description: basePayload.description,
+      city: basePayload.city,
+      is_contractor: basePayload.is_contractor,
+      is_client: basePayload.is_client,
+      status: basePayload.status,
+    })
     .select("id")
     .single()
 
@@ -199,9 +209,9 @@ export async function completeOnboarding(formData: FormData) {
     redirect("/login")
   }
 
-  const onboardingRole = String(formData.get("role") ?? "client") as OnboardingRole
-  const accountRole: AccountRole =
-    onboardingRole === "contractor" ? "contractor" : "client"
+  const requestedRole = String(formData.get("role") ?? "")
+  const onboardingRole: OnboardingRole =
+    requestedRole === "contractor" ? "contractor" : "client"
 
   const name = String(formData.get("name") ?? "").trim()
   const description = String(formData.get("description") ?? "").trim()
@@ -226,11 +236,11 @@ export async function completeOnboarding(formData: FormData) {
       onboardingRole,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось создать организацию"
-    redirect(`/onboarding?message=${encodeURIComponent(message)}`)
+    reportServerError("onboarding.organization", error)
+    redirect("/onboarding?message=Не удалось создать организацию")
   }
 
-  await saveProfileRole(user.id, user.email, accountRole)
+  await markOnboardingComplete(user.id, user.email)
   await createOrganizationMember(organization.id, user.id, onboardingRole)
 
   if (onboardingRole === "contractor") {

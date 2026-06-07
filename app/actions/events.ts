@@ -8,7 +8,7 @@ import {
   notifyAdmins,
 } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { reportServerError } from "@/lib/security/errors"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -66,7 +66,7 @@ function redirectWithMessage(path: string, message: string): never {
 }
 
 async function createWriterClient() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ? createAdminClient() : await createClient()
+  return createClient()
 }
 
 async function getAvailableSlug(title: string, currentId?: string | null) {
@@ -228,7 +228,10 @@ export async function createEvent(formData: FormData) {
     .select("id, slug, title, status")
     .maybeSingle()
 
-  if (error) redirectWithMessage(path, error.message)
+  if (error) {
+    reportServerError("events.create", error)
+    redirectWithMessage(path, "Не удалось сохранить мероприятие")
+  }
 
   if (createdEvent && status === "moderation") {
     await createNotificationEvent({
@@ -276,7 +279,10 @@ export async function updateEvent(formData: FormData) {
       .update({ status: "archived", updated_at: new Date().toISOString() })
       .eq("id", id)
 
-    if (error) redirectWithMessage(path, error.message)
+    if (error) {
+      reportServerError("events.archive", error)
+      redirectWithMessage(path, "Не удалось архивировать мероприятие")
+    }
     revalidatePath("/dashboard/events")
     redirectWithMessage("/dashboard/events", "Событие отправлено в архив")
   }
@@ -288,7 +294,10 @@ export async function updateEvent(formData: FormData) {
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
       .eq("id", id)
 
-    if (error) redirectWithMessage(path, error.message)
+    if (error) {
+      reportServerError("events.cancel", error)
+      redirectWithMessage(path, "Не удалось отменить мероприятие")
+    }
     revalidatePath("/dashboard/events")
     redirectWithMessage("/dashboard/events", "Событие отменено")
   }
@@ -318,7 +327,10 @@ export async function updateEvent(formData: FormData) {
 
   const { error } = await supabase.from("events").update(payload).eq("id", id)
 
-  if (error) redirectWithMessage(path, error.message)
+  if (error) {
+    reportServerError("events.update", error)
+    redirectWithMessage(path, "Не удалось обновить мероприятие")
+  }
 
   if (status === "moderation") {
     await createNotificationEvent({
@@ -373,7 +385,10 @@ export async function setEventParticipation(formData: FormData) {
     { onConflict: "event_id,user_id" },
   )
 
-  if (error) redirectWithMessage(path, error.message)
+  if (error) {
+    reportServerError("events.participation", error)
+    redirectWithMessage(path, "Не удалось обновить статус участия")
+  }
 
   revalidatePath(path)
   redirectWithMessage(path, "Статус участия обновлен")

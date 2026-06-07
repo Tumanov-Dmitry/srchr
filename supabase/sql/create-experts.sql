@@ -79,23 +79,38 @@ create policy "Material expert authors are public for published materials"
   );
 
 drop policy if exists "Users can manage own expert authorship" on public.material_expert_authors;
-create policy "Users can manage own expert authorship"
+drop policy if exists "Material owners manage expert authorship" on public.material_expert_authors;
+create policy "Material owners manage expert authorship"
   on public.material_expert_authors
   for all
   using (
     exists (
-      select 1
-      from public.expert_profiles
-      where expert_profiles.id = material_expert_authors.expert_id
-        and expert_profiles.user_id = auth.uid()
+      select 1 from public.materials m
+      where m.id = material_expert_authors.material_id
+        and (
+          m.created_by = auth.uid()
+          or exists (
+            select 1 from public.organization_members om
+            where om.organization_id = coalesce(m.organization_id, m.company_id)
+              and om.user_id = auth.uid()
+              and coalesce(om.role, 'member') in ('owner', 'admin', 'editor')
+          )
+        )
     )
   )
   with check (
     exists (
-      select 1
-      from public.expert_profiles
-      where expert_profiles.id = material_expert_authors.expert_id
-        and expert_profiles.user_id = auth.uid()
+      select 1 from public.materials m
+      where m.id = material_expert_authors.material_id
+        and (
+          m.created_by = auth.uid()
+          or exists (
+            select 1 from public.organization_members om
+            where om.organization_id = coalesce(m.organization_id, m.company_id)
+              and om.user_id = auth.uid()
+              and coalesce(om.role, 'member') in ('owner', 'admin', 'editor')
+          )
+        )
     )
   );
 

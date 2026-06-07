@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { reportServerError } from "@/lib/security/errors"
+import { checkRateLimit } from "@/lib/security/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 
 export async function PATCH(
@@ -14,6 +16,17 @@ export async function PATCH(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const rateLimit = checkRateLimit(`favorites:pin:${user.id}`, 30, 60_000)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Слишком много запросов" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfter) },
+      },
+    )
+  }
+
   const { data: favorite, error: favoriteError } = await supabase
     .from("favorites")
     .select("id, is_pinned")
@@ -21,8 +34,13 @@ export async function PATCH(
     .eq("user_id", user.id)
     .maybeSingle()
 
-  if (favoriteError)
-    return NextResponse.json({ error: favoriteError.message }, { status: 500 })
+  if (favoriteError) {
+    reportServerError("api.favorites.pin.lookup", favoriteError)
+    return NextResponse.json(
+      { error: "Не удалось загрузить избранное" },
+      { status: 500 },
+    )
+  }
   if (!favorite)
     return NextResponse.json({ error: "Favorite not found" }, { status: 404 })
   if (favorite.is_pinned) return NextResponse.json({ favorite })
@@ -33,8 +51,13 @@ export async function PATCH(
     .eq("user_id", user.id)
     .eq("is_pinned", true)
 
-  if (countError)
-    return NextResponse.json({ error: countError.message }, { status: 500 })
+  if (countError) {
+    reportServerError("api.favorites.pin.count", countError)
+    return NextResponse.json(
+      { error: "Не удалось проверить закреплённые карточки" },
+      { status: 500 },
+    )
+  }
   if ((count ?? 0) >= 4) {
     return NextResponse.json(
       { error: "Можно закрепить не больше 4 карточек" },
@@ -51,7 +74,13 @@ export async function PATCH(
     .select("*")
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    reportServerError("api.favorites.pin", error)
+    return NextResponse.json(
+      { error: "Не удалось закрепить карточку" },
+      { status: 500 },
+    )
+  }
 
   return NextResponse.json({ favorite: data })
 }

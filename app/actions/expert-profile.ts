@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createSlug } from "@/lib/slug"
 import { encodeMessage } from "@/lib/messages"
+import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/queries"
 
@@ -124,8 +125,8 @@ export async function saveExpertProfile(formData: FormData) {
       updated_at: new Date().toISOString(),
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось сохранить профиль эксперта"
-    redirectWithMessage("/dashboard/expert", message)
+    reportServerError("expert.saveProfile", error)
+    redirectWithMessage("/dashboard/expert", "Не удалось сохранить профиль эксперта")
   }
 
   revalidatePath("/experts")

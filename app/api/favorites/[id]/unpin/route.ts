@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { reportServerError } from "@/lib/security/errors"
+import { checkRateLimit } from "@/lib/security/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 
 export async function PATCH(
@@ -14,6 +16,17 @@ export async function PATCH(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const rateLimit = checkRateLimit(`favorites:unpin:${user.id}`, 30, 60_000)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Слишком много запросов" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfter) },
+      },
+    )
+  }
+
   const { data, error } = await supabase
     .from("favorites")
     .update({
@@ -26,7 +39,13 @@ export async function PATCH(
     .select("*")
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    reportServerError("api.favorites.unpin", error)
+    return NextResponse.json(
+      { error: "Не удалось открепить карточку" },
+      { status: 500 },
+    )
+  }
 
   return NextResponse.json({ favorite: data })
 }

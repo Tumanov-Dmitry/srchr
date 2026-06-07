@@ -49,6 +49,29 @@ SUPABASE_DB_NAME=postgres
 SUPABASE_DB_USER=postgres
 ```
 
+## Security baseline
+
+Security policies are versioned separately from feature SQL:
+
+```bash
+docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres \
+  < supabase/sql/security-hardening.sql
+
+docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres \
+  < supabase/sql/security-audit.sql
+```
+
+Apply `security-hardening.sql` manually with a database owner after reviewing it.
+The second command is read-only and prints the resulting RLS, grants, and helper
+functions. Security SQL is intentionally not part of the deploy workflow.
+
+Local checks:
+
+```bash
+npm run security:check
+npm run build
+```
+
 ## Что уже есть
 
 - Supabase Auth: регистрация, вход, выход, текущий пользователь.

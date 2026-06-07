@@ -114,14 +114,82 @@ drop policy if exists "Users can create events" on public.events;
 create policy "Users can create events"
   on public.events for insert
   to authenticated
-  with check (created_by = auth.uid() and status in ('draft', 'moderation'));
+  with check (
+    created_by = auth.uid()
+    and status in ('draft', 'moderation')
+    and is_promoted = false
+    and promoted_until is null
+    and promotion_url is null
+    and published_at is null
+    and (
+      (
+        owner_type = 'expert'
+        and exists (
+          select 1 from public.expert_profiles ep
+          where ep.id = events.owner_id
+            and ep.user_id = auth.uid()
+        )
+      )
+      or (
+        owner_type = 'organization'
+        and exists (
+          select 1 from public.organization_members om
+          where om.organization_id = events.owner_id
+            and om.user_id = auth.uid()
+            and coalesce(om.role, 'member') in ('owner', 'admin', 'editor')
+        )
+      )
+    )
+  );
 
 drop policy if exists "Creators can update non-published events" on public.events;
 create policy "Creators can update non-published events"
   on public.events for update
   to authenticated
-  using (created_by = auth.uid() and status in ('draft', 'moderation', 'rejected'))
-  with check (created_by = auth.uid() and status in ('draft', 'moderation', 'rejected', 'archived', 'cancelled'));
+  using (
+    created_by = auth.uid()
+    and status in ('draft', 'moderation', 'rejected')
+    and (
+      (
+        owner_type = 'expert'
+        and exists (
+          select 1 from public.expert_profiles ep
+          where ep.id = events.owner_id and ep.user_id = auth.uid()
+        )
+      )
+      or (
+        owner_type = 'organization'
+        and exists (
+          select 1 from public.organization_members om
+          where om.organization_id = events.owner_id
+            and om.user_id = auth.uid()
+            and coalesce(om.role, 'member') in ('owner', 'admin', 'editor')
+        )
+      )
+    )
+  )
+  with check (
+    created_by = auth.uid()
+    and status in ('draft', 'moderation', 'rejected', 'archived', 'cancelled')
+    and (
+      (
+        owner_type = 'expert'
+        and exists (
+          select 1 from public.expert_profiles ep
+          where ep.id = events.owner_id and ep.user_id = auth.uid()
+        )
+      )
+      or (
+        owner_type = 'organization'
+        and exists (
+          select 1 from public.organization_members om
+          where om.organization_id = events.owner_id
+            and om.user_id = auth.uid()
+            and coalesce(om.role, 'member') in ('owner', 'admin', 'editor')
+        )
+      )
+    )
+  );
 
 drop policy if exists "Organization editors can update events" on public.events;
 create policy "Organization editors can update events"

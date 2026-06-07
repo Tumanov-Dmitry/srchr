@@ -7,6 +7,7 @@ import {
   notifyAdmins,
 } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
+import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import {
   getCurrentContractorOrganization,
@@ -202,11 +203,8 @@ export async function createTender(formData: FormData) {
       })
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Не удалось создать задачу"
-    redirect(
-      `/dashboard/client/tenders/new?message=${encodeURIComponent(message)}`,
-    )
+    reportServerError("tenders.create", error)
+    redirect("/dashboard/client/tenders/new?message=Не удалось создать задачу")
   }
 
   revalidatePath("/tenders")
@@ -257,10 +255,9 @@ export async function updateTender(tenderId: string, formData: FormData) {
       })
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Не удалось сохранить задачу"
+    reportServerError("tenders.update", error)
     redirect(
-      `/dashboard/client/tenders/${tenderId}/edit?message=${encodeURIComponent(message)}`,
+      `/dashboard/client/tenders/${tenderId}/edit?message=Не удалось сохранить задачу`,
     )
   }
 
@@ -348,9 +345,8 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
       status: "sent",
     })
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Не удалось отправить отклик"
-    redirect(`/tenders/${tender.slug}?message=${encodeURIComponent(errorMessage)}`)
+    reportServerError("tenders.createResponse", error)
+    redirect(`/tenders/${tender.slug}?message=Не удалось отправить отклик`)
   }
 
   revalidatePath(`/tenders/${tender.slug}`)
@@ -385,8 +381,9 @@ export async function updateTenderResponseStatus(
     .eq("tender_id", tenderId)
 
   if (error) {
+    reportServerError("tenders.updateResponseStatus", error)
     redirect(
-      `/dashboard/client/tenders/${tenderId}/responses?message=${encodeURIComponent(error.message)}`,
+      `/dashboard/client/tenders/${tenderId}/responses?message=Не удалось изменить статус отклика`,
     )
   }
 

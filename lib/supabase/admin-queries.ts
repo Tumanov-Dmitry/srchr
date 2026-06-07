@@ -65,10 +65,17 @@ export async function getAdminAccess(): Promise<AdminAccess> {
     .maybeSingle()
 
   const profile = (data ?? null) as AdminProfile | null
-  const role = profile?.role ?? profile?.account_type ?? user.app_metadata?.role
+  const roles = [
+    profile?.role,
+    profile?.account_type,
+    user.app_metadata?.role,
+    user.app_metadata?.account_type,
+  ]
 
   return {
-    isAdmin: role === "admin" || role === "super_admin" || role === "moderator",
+    isAdmin: roles.some((role) =>
+      ["admin", "super_admin", "moderator"].includes(String(role ?? "")),
+    ),
     user: { id: user.id, email: user.email },
     profile,
   }

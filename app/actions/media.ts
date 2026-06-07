@@ -8,7 +8,7 @@ import {
 } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { encodeMessage } from "@/lib/messages"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentTenderOwnerOrganization } from "@/lib/supabase/queries"
 
@@ -34,9 +34,7 @@ function numberValue(formData: FormData, key: string) {
 
 function statusValue(formData: FormData) {
   const status = value(formData, "status")
-  return ["draft", "moderation", "published", "rejected", "archived"].includes(
-    status ?? "",
-  )
+  return ["draft", "moderation", "archived"].includes(status ?? "")
     ? status
     : "draft"
 }
@@ -68,9 +66,7 @@ function uniqueSlugCandidate(slug: PayloadValue, attempt: number) {
 }
 
 async function createWriterClient() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? createAdminClient()
-    : await createClient()
+  return createClient()
 }
 
 async function writeWithSchemaFallback(
@@ -200,9 +196,7 @@ async function writeLegacyCaseWithFallback(
 }
 
 async function getAvailableSlug(table: string, title: string) {
-  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? createAdminClient()
-    : await createClient()
+  const supabase = await createClient()
   const baseSlug = createSlug(title)
   let candidate = baseSlug
 
@@ -446,8 +440,8 @@ export async function createCaseMaterial(formData: FormData) {
       })
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось сохранить кейс"
-    redirectWithMessage("/dashboard/media/new/case", message)
+    reportServerError("media.createCase", error)
+    redirectWithMessage("/dashboard/media/new/case", "Не удалось сохранить кейс")
   }
 
   revalidatePath("/media")
@@ -514,8 +508,8 @@ export async function createArticleMaterial(formData: FormData) {
       })
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось сохранить статью"
-    redirectWithMessage("/dashboard/media/new/article", message)
+    reportServerError("media.createArticle", error)
+    redirectWithMessage("/dashboard/media/new/article", "Не удалось сохранить статью")
   }
 
   if (!materialSaved || materialTableMissing) {
@@ -567,8 +561,8 @@ export async function updateMaterial(formData: FormData) {
         deleted = Boolean(await deleteWithSchemaFallback("materials", id))
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Не удалось удалить черновик"
-      redirectWithMessage(editPath, message)
+      reportServerError("media.deleteDraft", error)
+      redirectWithMessage(editPath, "Не удалось удалить черновик")
     }
 
     if (deleteError) {
@@ -643,8 +637,8 @@ export async function updateMaterial(formData: FormData) {
       }
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось обновить материал"
-    redirectWithMessage(editPath, message)
+    reportServerError("media.update", error)
+    redirectWithMessage(editPath, "Не удалось обновить материал")
   }
 
   if (accessError) {

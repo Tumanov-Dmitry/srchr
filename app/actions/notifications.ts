@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { encodeMessage } from "@/lib/messages"
+import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import { notificationPreferenceGroups } from "@/lib/supabase/notification-queries"
 
@@ -41,7 +42,10 @@ export async function markNotificationRead(formData: FormData) {
     .eq("id", id)
     .eq("recipient_id", user.id)
 
-  if (error) redirectWithMessage(path, error.message)
+  if (error) {
+    reportServerError("notifications.markRead", error)
+    redirectWithMessage(path, "Не удалось отметить уведомление")
+  }
 
   revalidateNotificationSurfaces()
   redirect(path)
@@ -61,7 +65,13 @@ export async function markAllNotificationsRead() {
     .eq("recipient_id", user.id)
     .eq("is_read", false)
 
-  if (error) redirectWithMessage("/dashboard/notifications", error.message)
+  if (error) {
+    reportServerError("notifications.markAllRead", error)
+    redirectWithMessage(
+      "/dashboard/notifications",
+      "Не удалось отметить уведомления",
+    )
+  }
 
   revalidateNotificationSurfaces()
   redirectWithMessage(
@@ -94,7 +104,13 @@ export async function saveNotificationPreferences(formData: FormData) {
     .from("notification_preferences")
     .upsert(rows, { onConflict: "user_id,event_key" })
 
-  if (error) redirectWithMessage("/dashboard/settings", error.message)
+  if (error) {
+    reportServerError("notifications.preferences", error)
+    redirectWithMessage(
+      "/dashboard/settings",
+      "Не удалось сохранить настройки уведомлений",
+    )
+  }
 
   revalidatePath("/dashboard/settings")
   redirectWithMessage("/dashboard/settings", "Настройки уведомлений сохранены")
