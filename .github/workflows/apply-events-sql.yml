@@ -9,6 +9,10 @@ on:
       - "supabase/sql/create-events.sql"
   workflow_dispatch:
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Create events tables on dev

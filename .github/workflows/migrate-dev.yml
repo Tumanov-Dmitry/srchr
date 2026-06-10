@@ -3,6 +3,10 @@ name: Migrate dev database
 on:
   workflow_dispatch:
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   migrate:
     name: Run migrations on dev server

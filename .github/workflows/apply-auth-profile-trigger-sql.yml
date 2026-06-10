@@ -9,6 +9,10 @@ on:
       - "supabase/sql/fix-auth-profile-trigger.sql"
   workflow_dispatch:
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Fix Auth profile trigger on dev

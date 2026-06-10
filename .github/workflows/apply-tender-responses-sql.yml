@@ -9,6 +9,10 @@ on:
       - "supabase/sql/patch-tender-responses.sql"
   workflow_dispatch:
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Patch tender responses on dev

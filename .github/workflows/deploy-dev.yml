@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to dev.srchr.ru

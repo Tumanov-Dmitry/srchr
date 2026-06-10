@@ -9,6 +9,10 @@ on:
       - "supabase/sql/create-reputation.sql"
   workflow_dispatch:
 
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Create reputation tables on dev
