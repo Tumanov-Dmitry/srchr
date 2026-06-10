@@ -7,7 +7,7 @@ alter table public.profiles
 alter table public.profiles
   add constraint profiles_account_type_check
   check (
-    account_type in ('guest', 'contractor', 'client', 'both', 'admin')
+    account_type in ('guest', 'contractor', 'client', 'admin')
   );
 
 create or replace function public.handle_new_user()
