@@ -1,0 +1,34 @@
+name: Apply Auth profile trigger SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-auth-profile-trigger-sql.yml"
+      - "supabase/sql/fix-auth-profile-trigger.sql"
+  workflow_dispatch:
+
+jobs:
+  apply:
+    name: Fix Auth profile trigger on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply Auth profile trigger SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-auth-profile-trigger.sql
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "select tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal;"
+            docker restart supabase-auth
+            sleep 5
