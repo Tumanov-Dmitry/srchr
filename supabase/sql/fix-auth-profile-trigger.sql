@@ -39,11 +39,9 @@ begin
     from pg_trigger trigger_row
     join pg_class table_row on table_row.oid = trigger_row.tgrelid
     join pg_namespace table_schema on table_schema.oid = table_row.relnamespace
-    join pg_proc function_row on function_row.oid = trigger_row.tgfoid
     where table_schema.nspname = 'auth'
       and table_row.relname = 'users'
       and not trigger_row.tgisinternal
-      and pg_get_functiondef(function_row.oid) ilike '%public.profiles%'
   loop
     execute format('drop trigger if exists %I on auth.users', trigger_name);
   end loop;
