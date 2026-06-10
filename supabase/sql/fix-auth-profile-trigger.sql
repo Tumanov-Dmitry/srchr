@@ -1,6 +1,15 @@
 -- Keep Auth user creation compatible with the current profiles schema.
 -- Apply with the database owner.
 
+alter table public.profiles
+  drop constraint if exists profiles_account_type_check;
+
+alter table public.profiles
+  add constraint profiles_account_type_check
+  check (
+    account_type in ('guest', 'contractor', 'client', 'both', 'admin')
+  );
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
