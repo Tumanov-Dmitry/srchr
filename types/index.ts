@@ -114,6 +114,35 @@ export type ReputationEvent = {
   comment?: string | null
 }
 
+export type AnalyticsPeriod = "7" | "30" | "90" | "all"
+
+export type AnalyticsMetricKey =
+  | "views"
+  | "unique_views"
+  | "favorites"
+  | "contact_clicks"
+  | "external_clicks"
+  | "responses"
+  | "participation_going"
+  | "participation_interested"
+  | "participation_not_going"
+  | "qr_scans"
+  | "calendar_adds"
+  | "shares"
+
+export type AnalyticsDailyStat = {
+  id: string
+  date: string
+  target_type: string
+  target_id: string
+  owner_type: "expert" | "organization"
+  owner_id: string
+  metric_key: AnalyticsMetricKey
+  metric_value: number
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export type OrganizationMember = {
   id?: string
   organization_id?: string | null

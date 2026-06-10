@@ -1,6 +1,7 @@
 import Link from "next/link"
 import {
   Award,
+  BarChart3,
   Bell,
   BriefcaseBusiness,
   Building2,
@@ -29,6 +30,7 @@ const items = [
   },
   { href: "/dashboard/organization", label: "Организация", icon: Building2 },
   { href: "/dashboard/expert", label: "Профиль эксперта", icon: UserRound },
+  { href: "/dashboard/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/dashboard/reputation", label: "Репутация", icon: Award },
   {
     href: "/dashboard/client/tenders",

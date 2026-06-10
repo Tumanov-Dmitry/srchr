@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { trackAnalyticsEvent } from "@/lib/analytics"
 import { encodeMessage } from "@/lib/messages"
 import {
   createNotificationEvent,
@@ -375,6 +376,11 @@ export async function setEventParticipation(formData: FormData) {
   if (!eventId) redirectWithMessage(path, "Событие не найдено")
 
   const supabase = await createClient()
+  const { data: event } = await supabase
+    .from("events")
+    .select("owner_type, owner_id")
+    .eq("id", eventId)
+    .maybeSingle()
   const { error } = await supabase.from("event_participants").upsert(
     {
       event_id: eventId,
@@ -388,6 +394,19 @@ export async function setEventParticipation(formData: FormData) {
   if (error) {
     reportServerError("events.participation", error)
     redirectWithMessage(path, "Не удалось обновить статус участия")
+  }
+
+  if (event?.owner_id) {
+    await trackAnalyticsEvent({
+      eventType: `event_participation_${status}`,
+      actorUserId: user.id,
+      targetType: "event",
+      targetId: eventId,
+      ownerType: event.owner_type as EventOwnerType,
+      ownerId: event.owner_id as string,
+      source: "event_participation",
+      metadata: { status },
+    })
   }
 
   revalidatePath(path)

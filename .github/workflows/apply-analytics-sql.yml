@@ -1,0 +1,54 @@
+name: Apply analytics SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-analytics-sql.yml"
+      - "supabase/sql/create-analytics.sql"
+  workflow_dispatch:
+
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Create analytics tables on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply analytics SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres < supabase/sql/create-analytics.sql
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c "select event_type, target_type, created_at from public.analytics_events limit 1;"
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c "select date, metric_key, metric_value from public.analytics_daily_stats limit 1;"
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -c "notify pgrst, 'reload schema';"
+            docker restart supabase-rest supabase-kong
+            sleep 10
+            ANON_KEY="$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2- || true)"
+            if [ -z "$ANON_KEY" ]; then
+              ANON_KEY="$(grep '^ANON_KEY=' /opt/supabase/docker/.env | cut -d= -f2- | tr -d '\"' || true)"
+            fi
+            if [ -z "$ANON_KEY" ]; then
+              echo "Anon key was not found"
+              exit 1
+            fi
+            curl -fsS \
+              -H "apikey: ${ANON_KEY}" \
+              -H "Authorization: Bearer ${ANON_KEY}" \
+              "http://127.0.0.1:8000/rest/v1/analytics_daily_stats?select=date,metric_key,metric_value&limit=1" \
+              || (docker logs supabase-rest --tail 120 && exit 1)
+            pm2 restart srchr-dev --update-env || true

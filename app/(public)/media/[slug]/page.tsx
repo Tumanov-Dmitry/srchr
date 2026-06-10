@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -88,6 +89,12 @@ export default async function MaterialPage({
 
   return (
     <PageShell>
+      <AnalyticsTracker
+        eventType="material_view"
+        source="material_page"
+        targetId={item.id}
+        targetType="material"
+      />
       <article className="mx-auto max-w-4xl">
         {item.cover_url ? (
           // eslint-disable-next-line @next/next/no-img-element

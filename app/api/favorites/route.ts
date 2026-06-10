@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { trackFavoriteAdded } from "@/lib/analytics"
 import {
   buildFavoriteSnapshot,
   hydrateFavorites,
@@ -137,6 +138,12 @@ export async function POST(request: Request) {
       { status: 500 },
     )
   }
+
+  await trackFavoriteAdded({
+    targetType,
+    targetId,
+    actorUserId: user.id,
+  })
 
   return NextResponse.json({ favorite: { ...data, href: snapshotResult.href } })
 }

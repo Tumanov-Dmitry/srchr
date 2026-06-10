@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { trackAnalyticsEvent } from "@/lib/analytics"
 import {
   createNotificationEvent,
   notifyAdmins,
@@ -343,6 +344,16 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
       user_id: user.id,
       message,
       status: "sent",
+    })
+    await trackAnalyticsEvent({
+      eventType: "tender_response_created",
+      actorUserId: user.id,
+      targetType: "tender",
+      targetId: tenderId,
+      ownerType: "organization",
+      ownerId: tender.organization_id as string,
+      source: "tender_response",
+      metadata: { responder_type: responderType },
     })
   } catch (error) {
     reportServerError("tenders.createResponse", error)

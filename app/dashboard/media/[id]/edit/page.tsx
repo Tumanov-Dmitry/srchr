@@ -71,9 +71,14 @@ export default async function EditMaterialPage({
             виден в списке материалов.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/media">К списку</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/analytics/materials/${id}`}>Аналитика</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/dashboard/media">К списку</Link>
+          </Button>
+        </div>
       </div>
 
       {message ? (

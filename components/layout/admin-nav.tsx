@@ -26,7 +26,7 @@ const items = [
   { href: "/admin/events", label: "Мероприятия", icon: CalendarDays },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/system-events", label: "System Events", icon: CircleAlert },
-  { href: "/admin/stats", label: "Статистика", icon: BarChart3 },
+  { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
 ]
 
 export function AdminNav() {

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 import { ExternalLink, Mail, MapPin, Send } from "lucide-react"
+import { AnalyticsLink } from "@/components/analytics/analytics-link"
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
@@ -27,11 +29,18 @@ export default async function ExpertPage({
     getReputationDetails("expert", expert.id),
   ])
   const name = [expert.first_name, expert.last_name].filter(Boolean).join(" ")
-  const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/@${expert.slug}`
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicUrl)}`
+  const qrDestination = `/analytics/qr/expert/${expert.id}?to=${encodeURIComponent(`/@${expert.slug}`)}`
+  const qrTrackingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}${qrDestination}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrTrackingUrl)}`
 
   return (
     <PageShell>
+      <AnalyticsTracker
+        eventType="expert_view"
+        source="expert_profile"
+        targetId={expert.id}
+        targetType="expert"
+      />
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <article className="space-y-6">
           <div className="rounded-lg border bg-card p-6">
@@ -149,31 +158,47 @@ export default async function ExpertPage({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {expert.contact_email ? (
-                <a
+                <AnalyticsLink
                   className="flex items-center gap-2"
+                  eventType="contact_click"
                   href={`mailto:${expert.contact_email}`}
+                  source="expert_email"
+                  targetId={expert.id}
+                  targetType="expert"
                 >
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   {expert.contact_email}
-                </a>
+                </AnalyticsLink>
               ) : null}
               {expert.telegram_url ? (
-                <a
+                <AnalyticsLink
                   className="flex items-center gap-2"
+                  eventType="contact_click"
                   href={expert.telegram_url}
                   rel="noreferrer"
+                  source="expert_telegram"
                   target="_blank"
+                  targetId={expert.id}
+                  targetType="expert"
                 >
                   <Send className="h-4 w-4 text-muted-foreground" />
                   Telegram
-                </a>
+                </AnalyticsLink>
               ) : null}
               {expert.website_url ? (
                 <Button asChild className="w-full" variant="outline">
-                  <a href={expert.website_url} rel="noreferrer" target="_blank">
+                  <AnalyticsLink
+                    eventType="external_link_click"
+                    href={expert.website_url}
+                    rel="noreferrer"
+                    source="expert_website"
+                    target="_blank"
+                    targetId={expert.id}
+                    targetType="expert"
+                  >
                     Сайт
                     <ExternalLink className="h-4 w-4" />
-                  </a>
+                  </AnalyticsLink>
                 </Button>
               ) : null}
             </CardContent>

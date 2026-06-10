@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createTenderResponse } from "@/app/actions/tenders"
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PageShell } from "@/components/layout/page-shell"
 import { ResponseForm } from "@/components/tenders/response-form"
 import { Button } from "@/components/ui/button"
@@ -97,6 +98,12 @@ export default async function TenderPage({
 
   return (
     <PageShell>
+      <AnalyticsTracker
+        eventType="tender_view"
+        source="tender_page"
+        targetId={item.id}
+        targetType="tender"
+      />
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <article>
           <p className="mb-3 text-sm font-medium text-primary">

@@ -1,5 +1,7 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { EventForm } from "@/components/events/event-form"
+import { Button } from "@/components/ui/button"
 import { decodeMessage } from "@/lib/messages"
 import {
   getCurrentExpertProfile,
@@ -25,11 +27,16 @@ export default async function EditEventPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Редактирование события</h1>
-        <p className="mt-2 text-muted-foreground">
-          Публикация выполняется только через модерацию.
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal">Редактирование события</h1>
+          <p className="mt-2 text-muted-foreground">
+            Публикация выполняется только через модерацию.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href={`/dashboard/analytics/events/${id}`}>Аналитика</Link>
+        </Button>
       </div>
 
       {message ? (

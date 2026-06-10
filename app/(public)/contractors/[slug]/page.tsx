@@ -13,6 +13,8 @@ import {
   Send,
   Users,
 } from "lucide-react"
+import { AnalyticsLink } from "@/components/analytics/analytics-link"
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
@@ -97,6 +99,12 @@ export default async function ContractorPage({
 
   return (
     <PageShell>
+      <AnalyticsTracker
+        eventType="contractor_view"
+        source="contractor_profile"
+        targetId={item.id}
+        targetType="contractor"
+      />
       <div className="mb-6">
         <Button asChild variant="ghost">
           <Link href="/contractors">
@@ -259,10 +267,18 @@ export default async function ContractorPage({
               </div>
               {website ? (
                 <Button asChild variant="outline" className="w-full">
-                  <a href={website} target="_blank" rel="noreferrer">
+                  <AnalyticsLink
+                    eventType="external_link_click"
+                    href={website}
+                    rel="noreferrer"
+                    source="contractor_website"
+                    target="_blank"
+                    targetId={item.id}
+                    targetType="contractor"
+                  >
                     Сайт
                     <ExternalLink className="h-4 w-4" />
-                  </a>
+                  </AnalyticsLink>
                 </Button>
               ) : null}
             </CardContent>

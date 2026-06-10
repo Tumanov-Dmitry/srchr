@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { trackAnalyticsEvent } from "@/lib/analytics"
 import { getPublishedEventBySlug } from "@/lib/supabase/queries"
 
 function escapeIcs(value?: string | null) {
@@ -22,6 +23,15 @@ export async function GET(
 
   if (!event) return new NextResponse("Not found", { status: 404 })
   if (!event.start_date) return new NextResponse("Event date is missing", { status: 409 })
+
+  await trackAnalyticsEvent({
+    eventType: "ics_download",
+    targetType: "event",
+    targetId: event.id,
+    ownerType: event.owner_type,
+    ownerId: event.owner_id,
+    source: "event_calendar",
+  })
 
   const pageUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/events/${event.slug}`
   const startsAt = formatIcsDate(event.start_date)
