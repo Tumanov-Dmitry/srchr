@@ -1,5 +1,6 @@
 import Link from "next/link"
 import {
+  Award,
   Bell,
   BriefcaseBusiness,
   Building2,
@@ -28,6 +29,7 @@ const items = [
   },
   { href: "/dashboard/organization", label: "Организация", icon: Building2 },
   { href: "/dashboard/expert", label: "Профиль эксперта", icon: UserRound },
+  { href: "/dashboard/reputation", label: "Репутация", icon: Award },
   {
     href: "/dashboard/client/tenders",
     label: "Мои задачи",
@@ -45,11 +47,7 @@ const items = [
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
 ]
 
-export function DashboardNav({
-  primaryRole,
-}: {
-  primaryRole?: string | null
-}) {
+export function DashboardNav({ primaryRole }: { primaryRole?: string | null }) {
   const visibleItems = items.filter((item) => {
     if ("visibleFor" in item && item.visibleFor) {
       return primaryRole ? item.visibleFor.includes(primaryRole) : false

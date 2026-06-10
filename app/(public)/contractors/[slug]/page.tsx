@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +23,7 @@ import {
   getContractorBySlug,
   getCurrentUser,
   getFavoriteMarkers,
+  getReputationDetails,
 } from "@/lib/supabase/queries"
 import { formatMoney } from "@/lib/utils"
 import type { ContractorProfile, Material, Organization } from "@/types"
@@ -84,8 +86,9 @@ export default async function ContractorPage({
     profile?.full_description ??
     item.description ??
     "Подробное описание подрядчика пока не заполнено."
-  const favoriteMarkers = await getFavoriteMarkers([
-    { targetType: "company", targetId: item.id },
+  const [favoriteMarkers, reputation] = await Promise.all([
+    getFavoriteMarkers([{ targetType: "company", targetId: item.id }]),
+    getReputationDetails("contractor", item.id),
   ])
   const services =
     item.organization_services
@@ -150,6 +153,14 @@ export default async function ContractorPage({
                 <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
                   {shortDescription}
                 </p>
+                <div id="reputation">
+                  <ReputationStats
+                    breakdown={reputation.breakdown}
+                    className="mt-5"
+                    details
+                    summary={reputation.summary}
+                  />
+                </div>
               </div>
             </div>
           </div>

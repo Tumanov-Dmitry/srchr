@@ -19,17 +19,38 @@ export function ContractorFilters({
   defaultCity,
   defaultService,
   defaultBudget,
+  defaultSort,
 }: {
   services: Service[]
   defaultCity?: string
   defaultService?: string
   defaultBudget?: string
+  defaultSort?: string
 }) {
   return (
-    <form className="mb-8 grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-4">
+    <form className="mb-8 grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-5">
       <div className="space-y-2">
         <Label htmlFor="city">Город</Label>
-        <Input id="city" name="city" placeholder="Москва" defaultValue={defaultCity} />
+        <Input
+          id="city"
+          name="city"
+          placeholder="Москва"
+          defaultValue={defaultCity}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Сортировка</Label>
+        <Select name="sort" defaultValue={defaultSort ?? "name"}>
+          <SelectTrigger>
+            <SelectValue placeholder="По названию" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">По названию</SelectItem>
+            <SelectItem value="reputation">По репутации</SelectItem>
+            <SelectItem value="reviews">По отзывам</SelectItem>
+            <SelectItem value="recommendations">По рекомендациям</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label>Услуга</Label>

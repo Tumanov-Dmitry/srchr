@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { ExternalLink, Mail, MapPin, Send } from "lucide-react"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +9,7 @@ import { PageShell } from "@/components/layout/page-shell"
 import {
   getFavoriteMarkers,
   getPublishedExpertBySlug,
+  getReputationDetails,
 } from "@/lib/supabase/queries"
 
 export default async function ExpertPage({
@@ -20,8 +22,9 @@ export default async function ExpertPage({
 
   if (!expert) notFound()
 
-  const favoriteMarkers = await getFavoriteMarkers([
-    { targetType: "expert", targetId: expert.id },
+  const [favoriteMarkers, reputation] = await Promise.all([
+    getFavoriteMarkers([{ targetType: "expert", targetId: expert.id }]),
+    getReputationDetails("expert", expert.id),
   ])
   const name = [expert.first_name, expert.last_name].filter(Boolean).join(" ")
   const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/@${expert.slug}`
@@ -74,6 +77,14 @@ export default async function ExpertPage({
                     {expert.city}
                   </p>
                 ) : null}
+                <div id="reputation">
+                  <ReputationStats
+                    breakdown={reputation.breakdown}
+                    className="mt-4"
+                    details
+                    summary={reputation.summary}
+                  />
+                </div>
               </div>
             </div>
             <p className="mt-6 whitespace-pre-line leading-8 text-muted-foreground">

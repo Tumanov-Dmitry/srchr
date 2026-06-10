@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PageShell } from "@/components/layout/page-shell"
 import {
   getFavoriteMarkers,
   getPublishedMaterialBySlug,
+  getReputationSummary,
 } from "@/lib/supabase/queries"
 import type { Material } from "@/types"
 
@@ -57,9 +60,31 @@ export default async function MaterialPage({
   if (!item) notFound()
 
   const blocks = getMaterialBlocks(item)
-  const favoriteMarkers = await getFavoriteMarkers([
-    { targetType: item.type, targetId: item.id },
+  const isExpertOwner = item.owner_type === "expert" && item.expert_id
+  const reputationTargetType = isExpertOwner ? "expert" : "contractor"
+  const reputationTargetId = isExpertOwner
+    ? item.expert_id
+    : item.organizations?.is_contractor
+      ? (item.organization_id ?? item.company_id)
+      : null
+  const [favoriteMarkers, reputation] = await Promise.all([
+    getFavoriteMarkers([{ targetType: item.type, targetId: item.id }]),
+    reputationTargetId
+      ? getReputationSummary(reputationTargetType, reputationTargetId)
+      : Promise.resolve(null),
   ])
+  const expertName = item.expert_profiles
+    ? [item.expert_profiles.first_name, item.expert_profiles.last_name]
+        .filter(Boolean)
+        .join(" ")
+    : null
+  const authorName =
+    expertName ?? item.organizations?.name ?? item.author ?? "SRCHR"
+  const authorHref = item.expert_profiles?.slug
+    ? `/@${item.expert_profiles.slug}`
+    : item.organizations?.slug
+      ? `/contractors/${item.organizations.slug}`
+      : null
 
   return (
     <PageShell>
@@ -86,9 +111,25 @@ export default async function MaterialPage({
             targetType={item.type}
           />
         </div>
-        <p className="mb-3 text-sm font-medium text-primary">
-          {item.organizations?.name ?? item.author ?? "SRCHR"}
-        </p>
+        <div className="mb-3 space-y-2">
+          {authorHref ? (
+            <Link
+              className="text-sm font-medium text-primary"
+              href={authorHref}
+            >
+              {authorName}
+            </Link>
+          ) : (
+            <p className="text-sm font-medium text-primary">{authorName}</p>
+          )}
+          {reputationTargetId ? (
+            <ReputationStats
+              compact
+              href={authorHref ? `${authorHref}#reputation` : undefined}
+              summary={reputation}
+            />
+          ) : null}
+        </div>
         <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
           {item.title}
         </h1>

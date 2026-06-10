@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { reportServerError } from "@/lib/security/errors"
 import type {
   ContractorProfile,
   ExpertProfile,
@@ -10,6 +11,10 @@ import type {
   Material,
   Organization,
   OrganizationMember,
+  ReputationBreakdown,
+  ReputationEvent,
+  ReputationSummary,
+  ReputationTargetType,
   TenderResponse,
 } from "@/types"
 
@@ -254,6 +259,7 @@ export type ExpertFilters = {
   skills?: string
   company?: string
   open?: string
+  sort?: string
 }
 
 export async function getCurrentExpertProfile() {
@@ -426,7 +432,9 @@ export async function getContractorBySlug(slug: string) {
 
   const { data: materials } = await supabase
     .from("materials")
-    .select("id, type, title, slug, description, cover_url, status, organization_id, company_id, published_at, created_at")
+    .select(
+      "id, type, title, slug, description, cover_url, status, organization_id, company_id, published_at, created_at",
+    )
     .eq("type", "case")
     .eq("status", "published")
     .or(`organization_id.eq.${data.id},company_id.eq.${data.id}`)
@@ -436,6 +444,176 @@ export async function getContractorBySlug(slug: string) {
   return {
     ...data,
     materials: (materials ?? []) as Material[],
+  }
+}
+
+export async function getReputationSummaries(
+  targetType: ReputationTargetType,
+  targetIds: string[],
+) {
+  const uniqueTargetIds = [...new Set(targetIds.filter(Boolean))]
+  const summaries = new Map<string, ReputationSummary>()
+
+  if (uniqueTargetIds.length === 0) return summaries
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("reputation_summary")
+    .select("*")
+    .eq("target_type", targetType)
+    .in("target_id", uniqueTargetIds)
+
+  if (error) {
+    if (!isMissingTable(error)) {
+      reportServerError("queries.getReputationSummaries", error)
+    }
+
+    return summaries
+  }
+
+  for (const summary of (data ?? []) as ReputationSummary[]) {
+    summaries.set(summary.target_id, summary)
+  }
+
+  return summaries
+}
+
+export async function getReputationSummary(
+  targetType: ReputationTargetType,
+  targetId: string,
+) {
+  const summaries = await getReputationSummaries(targetType, [targetId])
+  return summaries.get(targetId) ?? null
+}
+
+export async function getReputationBreakdowns(
+  targets: Array<{ targetType: ReputationTargetType; targetId: string }>,
+) {
+  const breakdowns = new Map<string, ReputationBreakdown[]>()
+  const supabase = await createClient()
+
+  await Promise.all(
+    targets.map(async ({ targetType, targetId }) => {
+      const key = `${targetType}:${targetId}`
+      const { data, error } = await supabase
+        .from("reputation_breakdown")
+        .select("*")
+        .eq("target_type", targetType)
+        .eq("target_id", targetId)
+        .order("category")
+
+      if (error) {
+        if (!isMissingTable(error)) {
+          reportServerError("queries.getReputationBreakdowns", error)
+        }
+        breakdowns.set(key, [])
+        return
+      }
+
+      breakdowns.set(key, (data ?? []) as ReputationBreakdown[])
+    }),
+  )
+
+  return breakdowns
+}
+
+export async function getReputationDetails(
+  targetType: ReputationTargetType,
+  targetId: string,
+) {
+  const [summary, breakdowns] = await Promise.all([
+    getReputationSummary(targetType, targetId),
+    getReputationBreakdowns([{ targetType, targetId }]),
+  ])
+
+  return {
+    summary,
+    breakdown: breakdowns.get(`${targetType}:${targetId}`) ?? [],
+  }
+}
+
+export async function getDashboardReputation() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      user: null,
+      targets: [],
+      isReputationTableMissing: false,
+    }
+  }
+
+  const [memberships, expertState] = await Promise.all([
+    getUserOrganizationMemberships(user.id),
+    getCurrentExpertProfile(),
+  ])
+  const targetDefinitions: Array<{
+    targetType: ReputationTargetType
+    targetId: string
+    name: string
+    href: string
+  }> = []
+
+  for (const membership of memberships) {
+    const organization = membership.organizations
+    if (!organization?.is_contractor) continue
+    if (
+      targetDefinitions.some(
+        (target) =>
+          target.targetType === "contractor" &&
+          target.targetId === organization.id,
+      )
+    ) {
+      continue
+    }
+
+    targetDefinitions.push({
+      targetType: "contractor",
+      targetId: organization.id,
+      name: organization.name,
+      href: `/contractors/${organization.slug}`,
+    })
+  }
+
+  if (expertState.profile) {
+    const profile = expertState.profile
+    targetDefinitions.push({
+      targetType: "expert",
+      targetId: profile.id,
+      name: [profile.first_name, profile.last_name].filter(Boolean).join(" "),
+      href: `/@${profile.slug}`,
+    })
+  }
+
+  const supabase = await createClient()
+  const summaries = await Promise.all(
+    targetDefinitions.map(async (target) => {
+      const [{ summary, breakdown }, { data: events, error }] =
+        await Promise.all([
+          getReputationDetails(target.targetType, target.targetId),
+          supabase
+            .from("reputation_events")
+            .select("*")
+            .eq("target_type", target.targetType)
+            .eq("target_id", target.targetId)
+            .order("created_at", { ascending: false })
+            .limit(30),
+        ])
+
+      return {
+        ...target,
+        summary,
+        breakdown,
+        events: error ? [] : ((events ?? []) as ReputationEvent[]),
+        isMissing: isMissingTable(error),
+      }
+    }),
+  )
+
+  return {
+    user,
+    targets: summaries,
+    isReputationTableMissing: summaries.some((target) => target.isMissing),
   }
 }
 
@@ -459,13 +637,22 @@ export type EventFilters = {
   tag?: string
 }
 
-function eventOwnerName(event: Event, organizations: Organization[], experts: ExpertProfile[]) {
+function eventOwnerName(
+  event: Event,
+  organizations: Organization[],
+  experts: ExpertProfile[],
+) {
   if (event.owner_type === "organization") {
-    return organizations.find((organization) => organization.id === event.owner_id)?.name ?? null
+    return (
+      organizations.find((organization) => organization.id === event.owner_id)
+        ?.name ?? null
+    )
   }
 
   const expert = experts.find((profile) => profile.id === event.owner_id)
-  return expert ? [expert.first_name, expert.last_name].filter(Boolean).join(" ") : null
+  return expert
+    ? [expert.first_name, expert.last_name].filter(Boolean).join(" ")
+    : null
 }
 
 async function hydrateEventOwners(events: Event[]) {
@@ -481,10 +668,16 @@ async function hydrateEventOwners(events: Event[]) {
 
   const [{ data: organizations }, { data: experts }] = await Promise.all([
     organizationIds.length > 0
-      ? supabase.from("organizations").select("id, name, logo_url").in("id", organizationIds)
+      ? supabase
+          .from("organizations")
+          .select("id, name, logo_url")
+          .in("id", organizationIds)
       : Promise.resolve({ data: [] }),
     expertIds.length > 0
-      ? supabase.from("expert_profiles").select("id, first_name, last_name, avatar_url").in("id", expertIds)
+      ? supabase
+          .from("expert_profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", expertIds)
       : Promise.resolve({ data: [] }),
   ])
 
@@ -512,7 +705,10 @@ export async function getPublishedEvents(filters: EventFilters = {}) {
     query = query.ilike("city", `%${filters.city}%`)
   }
 
-  if (filters.format && ["online", "offline", "hybrid"].includes(filters.format)) {
+  if (
+    filters.format &&
+    ["online", "offline", "hybrid"].includes(filters.format)
+  ) {
     query = query.eq("format", filters.format)
   }
 
@@ -521,7 +717,9 @@ export async function getPublishedEvents(filters: EventFilters = {}) {
   }
 
   if (filters.tag) {
-    query = query.or(`tags.ilike.%${filters.tag}%,categories.ilike.%${filters.tag}%`)
+    query = query.or(
+      `tags.ilike.%${filters.tag}%,categories.ilike.%${filters.tag}%`,
+    )
   }
 
   if (filters.month && /^\d{4}-\d{2}$/.test(filters.month)) {
@@ -562,7 +760,8 @@ export async function getPublishedEventBySlug(slug: string) {
 
   return {
     ...event,
-    my_participation: (participation?.status ?? null) as EventParticipationStatus | null,
+    my_participation: (participation?.status ??
+      null) as EventParticipationStatus | null,
   }
 }
 
@@ -580,41 +779,55 @@ export async function getDashboardEvents() {
 
   const memberships = await getUserOrganizationMemberships(user.id)
   const organizationIds = memberships
-    .filter((membership) => ["owner", "admin", "editor"].includes(membership.role ?? "member"))
-    .map((membership) => membership.organization_id ?? membership.organizations?.id)
+    .filter((membership) =>
+      ["owner", "admin", "editor"].includes(membership.role ?? "member"),
+    )
+    .map(
+      (membership) =>
+        membership.organization_id ?? membership.organizations?.id,
+    )
     .filter((id): id is string => Boolean(id))
 
   const expert = await getCurrentExpertProfile()
   const ownerFilters = [`created_by.eq.${user.id}`]
 
   if (expert.profile) {
-    ownerFilters.push(`and(owner_type.eq.expert,owner_id.eq.${expert.profile.id})`)
+    ownerFilters.push(
+      `and(owner_type.eq.expert,owner_id.eq.${expert.profile.id})`,
+    )
   }
 
   for (const organizationId of organizationIds) {
-    ownerFilters.push(`and(owner_type.eq.organization,owner_id.eq.${organizationId})`)
+    ownerFilters.push(
+      `and(owner_type.eq.organization,owner_id.eq.${organizationId})`,
+    )
   }
 
   const supabase = await createClient()
-  const [{ data, error }, { data: participationData, error: participationError }] =
-    await Promise.all([
-      supabase
-        .from("events")
-        .select("*")
-        .or(ownerFilters.join(","))
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("event_participants")
-        .select("*, events(*)")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false }),
-    ])
+  const [
+    { data, error },
+    { data: participationData, error: participationError },
+  ] = await Promise.all([
+    supabase
+      .from("events")
+      .select("*")
+      .or(ownerFilters.join(","))
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("event_participants")
+      .select("*, events(*)")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false }),
+  ])
 
   return {
     user,
     events: error ? [] : await hydrateEventOwners((data ?? []) as Event[]),
-    participations: participationError ? [] : ((participationData ?? []) as EventParticipant[]),
-    isEventsTableMissing: isMissingTable(error) || isMissingTable(participationError),
+    participations: participationError
+      ? []
+      : ((participationData ?? []) as EventParticipant[]),
+    isEventsTableMissing:
+      isMissingTable(error) || isMissingTable(participationError),
   }
 }
 
@@ -630,7 +843,11 @@ export async function getDashboardEventById(id: string) {
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase.from("events").select("*").eq("id", id).maybeSingle()
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
 
   if (isMissingTable(error)) {
     return {
@@ -689,7 +906,7 @@ export async function getPublishedMaterialBySlug(slug: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from("materials")
-    .select("*, organizations:organization_id(*)")
+    .select("*, organizations:organization_id(*), expert_profiles:expert_id(*)")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle()
@@ -824,7 +1041,7 @@ export async function getTenderResponses(tenderId: string) {
 
   const { data: responses } = await supabase
     .from("tender_responses")
-    .select("*, organizations(*)")
+    .select("*, organizations(*), expert_profiles:expert_id(*)")
     .eq("tender_id", tenderId)
     .order("created_at", { ascending: false })
 

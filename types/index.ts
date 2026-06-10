@@ -71,6 +71,49 @@ export type ExpertProfile = {
   organizations?: Organization[]
 }
 
+export type ReputationTargetType = "contractor" | "expert"
+export type ReputationCategory =
+  | "profile"
+  | "cases"
+  | "articles"
+  | "reviews"
+  | "recommendations"
+  | "tenders"
+  | "events"
+  | "activity"
+
+export type ReputationSummary = {
+  target_type: ReputationTargetType
+  target_id: string
+  total_points: number
+  events_count: number
+  reviews_count: number
+  recommendations_count: number
+  last_event_at?: string | null
+  updated_at?: string | null
+}
+
+export type ReputationBreakdown = {
+  target_type: ReputationTargetType
+  target_id: string
+  category: ReputationCategory
+  total_points: number
+  events_count: number
+  updated_at?: string | null
+}
+
+export type ReputationEvent = {
+  id: string
+  created_at: string
+  target_type: ReputationTargetType
+  target_id: string
+  event_type: string
+  points: number
+  source_type?: string | null
+  source_id?: string | null
+  comment?: string | null
+}
+
 export type OrganizationMember = {
   id?: string
   organization_id?: string | null
@@ -167,6 +210,7 @@ export type TenderResponse = {
   created_at?: string | null
   tenders?: Tender | null
   organizations?: Organization | null
+  expert_profiles?: ExpertProfile | null
 }
 
 export type EventOwnerType = "expert" | "organization"
@@ -236,7 +280,11 @@ export type EventParticipant = {
 
 export type NotificationChannel = "in_app" | "email" | "telegram"
 export type NotificationSeverity = "info" | "warning" | "error" | "critical"
-export type NotificationEventStatus = "new" | "processing" | "handled" | "ignored"
+export type NotificationEventStatus =
+  | "new"
+  | "processing"
+  | "handled"
+  | "ignored"
 
 export type NotificationEvent = {
   id: string

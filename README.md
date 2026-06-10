@@ -72,6 +72,28 @@ npm run security:check
 npm run build
 ```
 
+## Reputation
+
+The reputation module is installed separately from deploys:
+
+```bash
+docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres \
+  < supabase/sql/create-reputation.sql
+```
+
+The patch creates reputation rules, the immutable event journal, aggregate
+summaries, reviews, questionnaire answers, and triggers for existing SRCHR
+modules. Point values live in `reputation_rules` and can be adjusted without
+changing application code. The patch also performs an idempotent initial
+calculation for existing published profiles and content.
+
+After changing point values, an owner can deliberately reprice historical
+events and rebuild aggregates:
+
+```sql
+select private.reprice_reputation_events();
+```
+
 ## Что уже есть
 
 - Supabase Auth: регистрация, вход, выход, текущий пользователь.

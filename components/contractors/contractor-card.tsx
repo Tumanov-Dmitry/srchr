@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Building2, MapPin } from "lucide-react"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -10,7 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { ContractorProfile, Organization } from "@/types"
+import type {
+  ContractorProfile,
+  Organization,
+  ReputationSummary,
+} from "@/types"
 
 type ContractorCardData = Organization & {
   contractor_profiles?: ContractorProfile[]
@@ -19,9 +24,11 @@ type ContractorCardData = Organization & {
 export function ContractorCard({
   contractor,
   favoriteId,
+  reputation,
 }: {
   contractor: ContractorCardData
   favoriteId?: string | null
+  reputation?: ReputationSummary | null
 }) {
   const servicesCount = contractor.organization_services?.length ?? 0
   const profile = contractor.contractor_profiles?.[0]
@@ -68,6 +75,11 @@ export function ContractorCard({
               ? `${servicesCount} ${servicesCount === 1 ? "услуга" : "услуг"}`
               : "Услуги пока не указаны"}
           </div>
+          <ReputationStats
+            compact
+            href={`/contractors/${contractor.slug}#reputation`}
+            summary={reputation}
+          />
         </div>
       </CardContent>
       <CardFooter>

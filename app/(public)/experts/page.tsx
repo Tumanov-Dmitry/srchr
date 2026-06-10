@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import {
   getFavoriteMarkers,
   getPublishedExperts,
+  getReputationSummaries,
   type ExpertFilters,
 } from "@/lib/supabase/queries"
 
@@ -16,9 +17,38 @@ export default async function ExpertsPage({
 }) {
   const filters = await searchParams
   const experts = await getPublishedExperts(filters)
-  const favoriteMarkers = await getFavoriteMarkers(
-    experts.map((expert) => ({ targetType: "expert", targetId: expert.id })),
-  )
+  const [favoriteMarkers, reputationSummaries] = await Promise.all([
+    getFavoriteMarkers(
+      experts.map((expert) => ({ targetType: "expert", targetId: expert.id })),
+    ),
+    getReputationSummaries(
+      "expert",
+      experts.map((expert) => expert.id),
+    ),
+  ])
+  const sortedExperts = [...experts].sort((left, right) => {
+    const leftSummary = reputationSummaries.get(left.id)
+    const rightSummary = reputationSummaries.get(right.id)
+
+    if (filters.sort === "reputation") {
+      return (
+        (rightSummary?.total_points ?? 0) - (leftSummary?.total_points ?? 0)
+      )
+    }
+    if (filters.sort === "reviews") {
+      return (
+        (rightSummary?.reviews_count ?? 0) - (leftSummary?.reviews_count ?? 0)
+      )
+    }
+    if (filters.sort === "recommendations") {
+      return (
+        (rightSummary?.recommendations_count ?? 0) -
+        (leftSummary?.recommendations_count ?? 0)
+      )
+    }
+
+    return 0
+  })
 
   return (
     <PageShell>
@@ -27,13 +57,23 @@ export default async function ExpertsPage({
         description="Публичные профили специалистов, которые могут работать самостоятельно или быть связаны с компаниями."
       />
 
-      <form className="mb-8 grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-[1fr_180px_180px_180px_auto]">
+      <form className="mb-8 grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-[1fr_180px_180px_180px_200px_auto]">
         <Input defaultValue={filters.q ?? ""} name="q" placeholder="Поиск" />
         <Input
           defaultValue={filters.specialization ?? ""}
           name="specialization"
           placeholder="Специализация"
         />
+        <select
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          defaultValue={filters.sort ?? "newest"}
+          name="sort"
+        >
+          <option value="newest">Сначала новые</option>
+          <option value="reputation">По репутации</option>
+          <option value="reviews">По отзывам</option>
+          <option value="recommendations">По рекомендациям</option>
+        </select>
         <Input
           defaultValue={filters.city ?? ""}
           name="city"
@@ -68,11 +108,12 @@ export default async function ExpertsPage({
 
       {experts.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {experts.map((expert) => (
+          {sortedExperts.map((expert) => (
             <ExpertCard
               expert={expert}
               favoriteId={favoriteMarkers.get(`expert:${expert.id}`)}
               key={expert.id}
+              reputation={reputationSummaries.get(expert.id)}
             />
           ))}
         </div>

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,14 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { ExpertProfile } from "@/types"
+import type { ExpertProfile, ReputationSummary } from "@/types"
 
 export function ExpertCard({
   expert,
   favoriteId,
+  reputation,
 }: {
   expert: ExpertProfile
   favoriteId?: string | null
+  reputation?: ReputationSummary | null
 }) {
   const name = [expert.first_name, expert.last_name].filter(Boolean).join(" ")
 
@@ -61,6 +64,11 @@ export function ExpertCard({
             <Badge>Открыт к сотрудничеству</Badge>
           ) : null}
         </div>
+        <ReputationStats
+          compact
+          href={`/@${expert.slug}#reputation`}
+          summary={reputation}
+        />
       </CardContent>
       <CardFooter>
         <Button asChild className="w-full" variant="outline">

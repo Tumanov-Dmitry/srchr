@@ -4,6 +4,7 @@ import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import {
   getFavoriteMarkers,
   getPublishedContractors,
+  getReputationSummaries,
   getServices,
 } from "@/lib/supabase/queries"
 import type { ContractorProfile, Organization, Service } from "@/types"
@@ -19,6 +20,7 @@ export default async function ContractorsPage({
     city?: string
     service?: string
     budget?: string
+    sort?: string
   }>
 }) {
   const filters = await searchParams
@@ -26,12 +28,42 @@ export default async function ContractorsPage({
     getPublishedContractors(filters),
     getServices(),
   ])
-  const favoriteMarkers = await getFavoriteMarkers(
-    (contractors as ContractorListItem[]).map((contractor) => ({
-      targetType: "company",
-      targetId: contractor.id,
-    })),
-  )
+  const contractorItems = contractors as ContractorListItem[]
+  const [favoriteMarkers, reputationSummaries] = await Promise.all([
+    getFavoriteMarkers(
+      contractorItems.map((contractor) => ({
+        targetType: "company",
+        targetId: contractor.id,
+      })),
+    ),
+    getReputationSummaries(
+      "contractor",
+      contractorItems.map((contractor) => contractor.id),
+    ),
+  ])
+  const sortedContractors = [...contractorItems].sort((left, right) => {
+    const leftSummary = reputationSummaries.get(left.id)
+    const rightSummary = reputationSummaries.get(right.id)
+
+    if (filters.sort === "reputation") {
+      return (
+        (rightSummary?.total_points ?? 0) - (leftSummary?.total_points ?? 0)
+      )
+    }
+    if (filters.sort === "reviews") {
+      return (
+        (rightSummary?.reviews_count ?? 0) - (leftSummary?.reviews_count ?? 0)
+      )
+    }
+    if (filters.sort === "recommendations") {
+      return (
+        (rightSummary?.recommendations_count ?? 0) -
+        (leftSummary?.recommendations_count ?? 0)
+      )
+    }
+
+    return left.name.localeCompare(right.name, "ru")
+  })
 
   return (
     <PageShell>
@@ -44,14 +76,16 @@ export default async function ContractorsPage({
         defaultCity={filters.city}
         defaultService={filters.service}
         defaultBudget={filters.budget}
+        defaultSort={filters.sort}
       />
       {contractors.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {(contractors as ContractorListItem[]).map((contractor) => (
+          {sortedContractors.map((contractor) => (
             <ContractorCard
               key={contractor.id}
               contractor={contractor}
               favoriteId={favoriteMarkers.get(`company:${contractor.id}`)}
+              reputation={reputationSummaries.get(contractor.id)}
             />
           ))}
         </div>
