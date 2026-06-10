@@ -32,3 +32,8 @@ jobs:
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "select tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal;"
             docker restart supabase-auth
             sleep 5
+            docker logs supabase-auth --since 30m 2>&1 \
+              | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/[email]/g' \
+              | grep -Ei 'error|fatal|failed|sqlstate' \
+              | tail -80 \
+              || true
