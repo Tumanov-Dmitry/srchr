@@ -10,6 +10,16 @@ type CountRow = {
   count: number
 }
 
+const baseMarketCategories = [
+  "Employer Branding",
+  "HR",
+  "Event",
+  "Research",
+  "PR",
+  "Creative",
+  "Digital",
+]
+
 export type ServiceInsight = {
   id: string
   name: string
@@ -90,6 +100,24 @@ function countValues(values: string[]) {
 function numericValue(value: unknown) {
   const number = Number(value)
   return Number.isFinite(number) && number > 0 ? number : null
+}
+
+function publicTaxonomyValues(values: string[], services: ServiceRow[]) {
+  const taxonomy = [
+    ...services.map((service) => service.name),
+    ...baseMarketCategories,
+  ]
+  const uniqueTaxonomy = [...new Set(taxonomy)]
+
+  return values.flatMap((value) => {
+    const normalized = value.toLocaleLowerCase("ru")
+    const matched = uniqueTaxonomy.find((item) => {
+      const taxonomyValue = item.toLocaleLowerCase("ru")
+      return normalized === taxonomyValue || normalized.includes(taxonomyValue)
+    })
+
+    return matched ? [matched] : []
+  })
 }
 
 export async function getMarketInsights(): Promise<MarketInsights> {
@@ -196,10 +224,15 @@ export async function getMarketInsights(): Promise<MarketInsights> {
     }
   })
 
-  const categories = countValues([
-    ...materials.map((material) => String(material.category ?? "")),
-    ...experts.flatMap((expert) => list(expert.specializations)),
-  ]).slice(0, 20)
+  const categories = countValues(
+    publicTaxonomyValues(
+      [
+        ...materials.map((material) => String(material.category ?? "")),
+        ...experts.flatMap((expert) => list(expert.specializations)),
+      ],
+      services,
+    ),
+  ).slice(0, 20)
   const contractorSizes = countValues(
     contractorProfiles.map((profile) => {
       const size = numericValue(profile.team_size)
@@ -210,7 +243,10 @@ export async function getMarketInsights(): Promise<MarketInsights> {
     }),
   )
   const expertSpecializations = countValues(
-    experts.flatMap((expert) => list(expert.specializations)),
+    publicTaxonomyValues(
+      experts.flatMap((expert) => list(expert.specializations)),
+      services,
+    ),
   ).slice(0, 20)
   const materialTypes = countValues(
     materials.map((material) =>
