@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { CalendarDays } from "lucide-react"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +14,13 @@ import {
 import { formatDate, formatMoney } from "@/lib/utils"
 import type { Tender } from "@/types"
 
-export function TenderCard({ tender }: { tender: Tender }) {
+export function TenderCard({
+  tender,
+  views,
+}: {
+  tender: Tender
+  views?: number
+}) {
   const budget = tender.budget_from
     ? tender.budget_to
       ? `${formatMoney(tender.budget_from)} - ${formatMoney(tender.budget_to)}`
@@ -27,7 +34,9 @@ export function TenderCard({ tender }: { tender: Tender }) {
       <CardHeader>
         <div className="flex flex-wrap gap-2">
           <Badge className="w-fit">{budget}</Badge>
-          {tender.status ? <Badge variant="outline">{tender.status}</Badge> : null}
+          {tender.status ? (
+            <Badge variant="outline">{tender.status}</Badge>
+          ) : null}
         </div>
         <CardTitle>{tender.title}</CardTitle>
         <CardDescription className="line-clamp-3">
@@ -40,6 +49,7 @@ export function TenderCard({ tender }: { tender: Tender }) {
           <CalendarDays className="h-4 w-4" />
           {formatDate(tender.deadline)}
         </div>
+        <PublicViewCount views={views} />
       </CardContent>
       <CardFooter>
         <Button asChild variant="outline" className="w-full">

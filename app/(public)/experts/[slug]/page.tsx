@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { ExternalLink, Mail, MapPin, Send } from "lucide-react"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +14,7 @@ import {
   getPublishedExpertBySlug,
   getReputationDetails,
 } from "@/lib/supabase/queries"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 
 export default async function ExpertPage({
   params,
@@ -24,9 +26,10 @@ export default async function ExpertPage({
 
   if (!expert) notFound()
 
-  const [favoriteMarkers, reputation] = await Promise.all([
+  const [favoriteMarkers, reputation, views] = await Promise.all([
     getFavoriteMarkers([{ targetType: "expert", targetId: expert.id }]),
     getReputationDetails("expert", expert.id),
+    getPublicViewCount("expert", expert.id),
   ])
   const name = [expert.first_name, expert.last_name].filter(Boolean).join(" ")
   const qrDestination = `/analytics/qr/expert/${expert.id}?to=${encodeURIComponent(`/@${expert.slug}`)}`
@@ -86,6 +89,7 @@ export default async function ExpertPage({
                     {expert.city}
                   </p>
                 ) : null}
+                <PublicViewCount className="mt-3" views={views} />
                 <div id="reputation">
                   <ReputationStats
                     breakdown={reputation.breakdown}
@@ -160,7 +164,7 @@ export default async function ExpertPage({
               {expert.contact_email ? (
                 <AnalyticsLink
                   className="flex items-center gap-2"
-                  eventType="contact_click"
+                  eventType="profile_telegram_click"
                   href={`mailto:${expert.contact_email}`}
                   source="expert_email"
                   targetId={expert.id}
@@ -188,7 +192,7 @@ export default async function ExpertPage({
               {expert.website_url ? (
                 <Button asChild className="w-full" variant="outline">
                   <AnalyticsLink
-                    eventType="external_link_click"
+                    eventType="profile_website_click"
                     href={expert.website_url}
                     rel="noreferrer"
                     source="expert_website"

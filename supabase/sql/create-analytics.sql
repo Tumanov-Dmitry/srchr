@@ -68,6 +68,45 @@ create table if not exists public.analytics_daily_stats (
   )
 );
 
+create table if not exists public.analytics_public_totals (
+  target_type text not null,
+  target_id uuid not null,
+  views bigint not null default 0,
+  updated_at timestamptz not null default now(),
+  constraint analytics_public_totals_views_check check (views >= 0),
+  primary key (target_type, target_id)
+);
+
+create table if not exists public.analytics_object_dimensions (
+  target_type text not null,
+  target_id uuid not null,
+  owner_type text,
+  owner_id uuid,
+  category text,
+  region text,
+  size_bucket text,
+  specializations text[] not null default '{}'::text[],
+  services text[] not null default '{}'::text[],
+  material_type text,
+  dimensions jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (target_type, target_id)
+);
+
+create table if not exists public.analytics_tender_facts (
+  tender_id uuid primary key,
+  organization_id uuid,
+  budget_value numeric,
+  budget_from numeric,
+  budget_to numeric,
+  duration_days integer,
+  service_category text,
+  industry text,
+  status text,
+  published_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.market_survey_answers (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -106,6 +145,14 @@ create index if not exists analytics_daily_stats_owner_date_idx
   on public.analytics_daily_stats (owner_type, owner_id, date desc);
 create index if not exists analytics_daily_stats_target_date_idx
   on public.analytics_daily_stats (target_type, target_id, date desc);
+create index if not exists analytics_public_totals_views_idx
+  on public.analytics_public_totals (views desc);
+create index if not exists analytics_object_dimensions_category_idx
+  on public.analytics_object_dimensions (target_type, category);
+create index if not exists analytics_object_dimensions_region_idx
+  on public.analytics_object_dimensions (target_type, region);
+create index if not exists analytics_tender_facts_category_idx
+  on public.analytics_tender_facts (service_category, published_at desc);
 create index if not exists market_survey_answers_user_idx
   on public.market_survey_answers (user_id, updated_at desc);
 
@@ -212,6 +259,31 @@ as $$
       updated_at = now();
 $$;
 
+create or replace function private.increment_public_view(
+  analytics_target_type text,
+  analytics_target_id uuid,
+  amount bigint default 1
+)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.analytics_public_totals (
+    target_type,
+    target_id,
+    views
+  )
+  values (
+    analytics_target_type,
+    analytics_target_id,
+    greatest(amount, 0)
+  )
+  on conflict (target_type, target_id) do update
+  set views = public.analytics_public_totals.views + excluded.views,
+      updated_at = now();
+$$;
+
 create or replace function private.aggregate_analytics_event()
 returns trigger
 language plpgsql
@@ -232,11 +304,18 @@ begin
     when 'event_view' then 'views'
     when 'favorite_added' then 'favorites'
     when 'contact_click' then 'contact_clicks'
+    when 'profile_website_click' then 'external_clicks'
+    when 'profile_telegram_click' then 'contact_clicks'
     when 'external_link_click' then 'external_clicks'
+    when 'material_author_click' then 'author_clicks'
+    when 'material_organization_click' then 'organization_clicks'
     when 'tender_response_created' then 'responses'
+    when 'tender_response_status_changed' then 'response_status_changes'
+    when 'tender_saved' then 'saves'
     when 'event_participation_going' then 'participation_going'
     when 'event_participation_interested' then 'participation_interested'
     when 'event_participation_not_going' then 'participation_not_going'
+    when 'event_registration_click' then 'registration_clicks'
     when 'qr_scan' then 'qr_scans'
     when 'ics_download' then 'calendar_adds'
     when 'telegram_share' then 'shares'
@@ -260,6 +339,14 @@ begin
     metric_name,
     1
   );
+
+  if metric_name = 'views' then
+    perform private.increment_public_view(
+      new.target_type,
+      new.target_id,
+      1
+    );
+  end if;
 
   if metric_name = 'views'
      and (new.actor_user_id is not null or new.visitor_key is not null) then
@@ -308,8 +395,32 @@ create trigger analytics_events_aggregate_trigger
 after insert on public.analytics_events
 for each row execute function private.aggregate_analytics_event();
 
+insert into public.analytics_public_totals (
+  target_type,
+  target_id,
+  views,
+  updated_at
+)
+select
+  target_type,
+  target_id,
+  sum(metric_value),
+  now()
+from public.analytics_daily_stats
+where metric_key = 'views'
+group by target_type, target_id
+on conflict (target_type, target_id) do update
+set views = greatest(
+      public.analytics_public_totals.views,
+      excluded.views
+    ),
+    updated_at = now();
+
 alter table public.analytics_events enable row level security;
 alter table public.analytics_daily_stats enable row level security;
+alter table public.analytics_public_totals enable row level security;
+alter table public.analytics_object_dimensions enable row level security;
+alter table public.analytics_tender_facts enable row level security;
 alter table public.market_survey_answers enable row level security;
 
 drop policy if exists "Owners can read analytics events"
@@ -330,6 +441,37 @@ on public.analytics_daily_stats
 for select
 to authenticated
 using (private.can_view_analytics(owner_type, owner_id));
+
+drop policy if exists "Public can read analytics view totals"
+  on public.analytics_public_totals;
+create policy "Public can read analytics view totals"
+on public.analytics_public_totals
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Owners can read analytics dimensions"
+  on public.analytics_object_dimensions;
+create policy "Owners can read analytics dimensions"
+on public.analytics_object_dimensions
+for select
+to authenticated
+using (
+  owner_type is not null
+  and owner_id is not null
+  and private.can_view_analytics(owner_type, owner_id)
+);
+
+drop policy if exists "Owners can read tender analytics facts"
+  on public.analytics_tender_facts;
+create policy "Owners can read tender analytics facts"
+on public.analytics_tender_facts
+for select
+to authenticated
+using (
+  organization_id is not null
+  and private.can_view_analytics('organization', organization_id)
+);
 
 drop policy if exists "Users can read own survey answers"
   on public.market_survey_answers;
@@ -358,13 +500,22 @@ with check (user_id = auth.uid());
 
 revoke all on public.analytics_events from anon, authenticated;
 revoke all on public.analytics_daily_stats from anon, authenticated;
+revoke all on public.analytics_public_totals from anon, authenticated;
+revoke all on public.analytics_object_dimensions from anon, authenticated;
+revoke all on public.analytics_tender_facts from anon, authenticated;
 revoke all on public.market_survey_answers from anon, authenticated;
 
 grant select on public.analytics_events to authenticated;
 grant select on public.analytics_daily_stats to authenticated;
+grant select on public.analytics_public_totals to anon, authenticated;
+grant select on public.analytics_object_dimensions to authenticated;
+grant select on public.analytics_tender_facts to authenticated;
 grant select, insert, update on public.market_survey_answers to authenticated;
 grant all on public.analytics_events to service_role;
 grant all on public.analytics_daily_stats to service_role;
+grant all on public.analytics_public_totals to service_role;
+grant all on public.analytics_object_dimensions to service_role;
+grant all on public.analytics_tender_facts to service_role;
 grant all on public.market_survey_answers to service_role;
 
 notify pgrst, 'reload schema';

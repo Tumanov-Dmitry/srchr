@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { MaterialCard } from "@/components/media/material-card"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,7 @@ import {
   getPublishedMaterials,
   type MaterialFilters,
 } from "@/lib/supabase/queries"
+import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 
 const typeOptions = [
   { value: "", label: "Все типы" },
@@ -22,12 +24,19 @@ export default async function MediaPage({
 }) {
   const filters = await searchParams
   const materials = await getPublishedMaterials(filters)
-  const favoriteMarkers = await getFavoriteMarkers(
-    materials.map((item) => ({ targetType: item.type, targetId: item.id })),
-  )
+  const [favoriteMarkers, viewCounts] = await Promise.all([
+    getFavoriteMarkers(
+      materials.map((item) => ({ targetType: item.type, targetId: item.id })),
+    ),
+    getPublicViewCounts(
+      "material",
+      materials.map((item) => item.id),
+    ),
+  ])
 
   return (
     <PageShell>
+      <CatalogAnalyticsTracker catalog="media" filters={filters} />
       <PageHeader
         title="Медиа"
         description="Кейсы, статьи и экспертные материалы участников SRCHR."
@@ -70,6 +79,7 @@ export default async function MediaPage({
               favoriteId={favoriteMarkers.get(`${item.type}:${item.id}`)}
               item={item}
               key={item.id}
+              views={viewCounts.get(item.id)}
             />
           ))}
         </div>

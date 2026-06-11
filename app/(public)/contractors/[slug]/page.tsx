@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +28,7 @@ import {
   getFavoriteMarkers,
   getReputationDetails,
 } from "@/lib/supabase/queries"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 import { formatMoney } from "@/lib/utils"
 import type { ContractorProfile, Material, Organization } from "@/types"
 
@@ -88,9 +90,10 @@ export default async function ContractorPage({
     profile?.full_description ??
     item.description ??
     "Подробное описание подрядчика пока не заполнено."
-  const [favoriteMarkers, reputation] = await Promise.all([
+  const [favoriteMarkers, reputation, views] = await Promise.all([
     getFavoriteMarkers([{ targetType: "company", targetId: item.id }]),
     getReputationDetails("contractor", item.id),
+    getPublicViewCount("contractor", item.id),
   ])
   const services =
     item.organization_services
@@ -157,6 +160,7 @@ export default async function ContractorPage({
                       ? `${services.length} услуг`
                       : "Услуги не указаны"}
                   </span>
+                  <PublicViewCount views={views} />
                 </div>
                 <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
                   {shortDescription}
@@ -268,7 +272,7 @@ export default async function ContractorPage({
               {website ? (
                 <Button asChild variant="outline" className="w-full">
                   <AnalyticsLink
-                    eventType="external_link_click"
+                    eventType="profile_website_click"
                     href={website}
                     rel="noreferrer"
                     source="contractor_website"
@@ -291,20 +295,47 @@ export default async function ContractorPage({
             <CardContent className="space-y-4">
               {user ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    {profile?.contact_email ?? item.email ?? "Email не указан"}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    {profile?.contact_phone ??
-                      item.phone ??
-                      "Телефон не указан"}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Send className="h-4 w-4 text-muted-foreground" />
-                    {profile?.telegram_url ?? "Telegram не указан"}
-                  </div>
+                  {(profile?.contact_email ?? item.email) ? (
+                    <AnalyticsLink
+                      className="flex items-center gap-2 text-sm"
+                      eventType="contact_click"
+                      href={`mailto:${profile?.contact_email ?? item.email}`}
+                      source="contractor_email"
+                      targetId={item.id}
+                      targetType="contractor"
+                    >
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      {profile?.contact_email ?? item.email}
+                    </AnalyticsLink>
+                  ) : null}
+                  {(profile?.contact_phone ?? item.phone) ? (
+                    <AnalyticsLink
+                      className="flex items-center gap-2 text-sm"
+                      eventType="contact_click"
+                      href={`tel:${profile?.contact_phone ?? item.phone}`}
+                      source="contractor_phone"
+                      targetId={item.id}
+                      targetType="contractor"
+                    >
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      {profile?.contact_phone ?? item.phone}
+                    </AnalyticsLink>
+                  ) : null}
+                  {profile?.telegram_url ? (
+                    <AnalyticsLink
+                      className="flex items-center gap-2 text-sm"
+                      eventType="profile_telegram_click"
+                      href={profile.telegram_url}
+                      rel="noreferrer"
+                      source="contractor_telegram"
+                      target="_blank"
+                      targetId={item.id}
+                      targetType="contractor"
+                    >
+                      <Send className="h-4 w-4 text-muted-foreground" />
+                      Telegram
+                    </AnalyticsLink>
+                  ) : null}
                 </div>
               ) : (
                 <div className="space-y-4">

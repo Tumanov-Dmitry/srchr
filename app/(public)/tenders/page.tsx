@@ -1,10 +1,12 @@
 import Link from "next/link"
+import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { TenderCard } from "@/components/tenders/tender-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getPublishedTenders } from "@/lib/supabase/queries"
+import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 import type { Tender } from "@/types"
 
 export default async function TendersPage({
@@ -14,9 +16,15 @@ export default async function TendersPage({
 }) {
   const filters = await searchParams
   const tenders = await getPublishedTenders(filters)
+  const tenderItems = tenders as Tender[]
+  const viewCounts = await getPublicViewCounts(
+    "tender",
+    tenderItems.map((tender) => tender.id),
+  )
 
   return (
     <PageShell>
+      <CatalogAnalyticsTracker catalog="tenders" filters={filters} />
       <PageHeader
         title="Задачи"
         description="Публичные задачи от компаний, готовые к откликам подрядчиков."
@@ -24,11 +32,21 @@ export default async function TendersPage({
       <form className="mb-8 grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-5">
         <div className="space-y-2">
           <Label htmlFor="q">Поиск</Label>
-          <Input id="q" name="q" placeholder="Название задачи" defaultValue={filters.q} />
+          <Input
+            id="q"
+            name="q"
+            placeholder="Название задачи"
+            defaultValue={filters.q}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="city">Город</Label>
-          <Input id="city" name="city" placeholder="Москва" defaultValue={filters.city} />
+          <Input
+            id="city"
+            name="city"
+            placeholder="Москва"
+            defaultValue={filters.city}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="budget">Бюджет до</Label>
@@ -52,7 +70,9 @@ export default async function TendersPage({
           />
         </div>
         <div className="flex items-end gap-2">
-          <Button type="submit" className="flex-1">Применить</Button>
+          <Button type="submit" className="flex-1">
+            Применить
+          </Button>
           <Button asChild variant="outline">
             <Link href="/tenders">Сбросить</Link>
           </Button>
@@ -61,8 +81,12 @@ export default async function TendersPage({
 
       {tenders.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {(tenders as Tender[]).map((tender) => (
-            <TenderCard key={tender.id} tender={tender} />
+          {tenderItems.map((tender) => (
+            <TenderCard
+              key={tender.id}
+              tender={tender}
+              views={viewCounts.get(tender.id)}
+            />
           ))}
         </div>
       ) : (

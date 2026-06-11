@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createTenderResponse } from "@/app/actions/tenders"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { PageShell } from "@/components/layout/page-shell"
 import { ResponseForm } from "@/components/tenders/response-form"
 import { Button } from "@/components/ui/button"
@@ -14,6 +15,7 @@ import {
   getUserOrganizationMemberships,
 } from "@/lib/supabase/queries"
 import { createClient } from "@/lib/supabase/server"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 import { formatDate, formatMoney } from "@/lib/utils"
 import type { Tender } from "@/types"
 
@@ -52,6 +54,7 @@ export default async function TenderPage({
   if (!tender) notFound()
 
   const item = tender as Tender
+  const views = await getPublicViewCount("tender", item.id)
   const memberships = user ? await getUserOrganizationMemberships(user.id) : []
   const isOwner = memberships.some(
     (membership) => membership.organizations?.id === item.organization_id,
@@ -84,7 +87,10 @@ export default async function TenderPage({
   let hasResponse = false
   if (user && responseOptions.length > 0) {
     const supabase = await createClient()
-    let query = supabase.from("tender_responses").select("id").eq("tender_id", item.id)
+    let query = supabase
+      .from("tender_responses")
+      .select("id")
+      .eq("tender_id", item.id)
 
     if (contractorState.organization && !expertState.profile) {
       query = query.eq("organization_id", contractorState.organization.id)
@@ -112,6 +118,7 @@ export default async function TenderPage({
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
             {item.title}
           </h1>
+          <PublicViewCount className="mt-4" views={views} />
           <div className="mt-8 space-y-8">
             <section>
               <h2 className="mb-3 text-xl font-semibold tracking-normal">

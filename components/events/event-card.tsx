@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { CalendarDays, MapPin } from "lucide-react"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,7 +51,7 @@ export function formatEventDate(value?: string | null) {
   })
 }
 
-export function EventCard({ event }: { event: Event }) {
+export function EventCard({ event, views }: { event: Event; views?: number }) {
   const isPromoted =
     event.is_promoted &&
     (!event.promoted_until || new Date(event.promoted_until) > new Date())
@@ -62,7 +63,11 @@ export function EventCard({ event }: { event: Event }) {
     <Card className="flex h-full flex-col overflow-hidden">
       {event.cover_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt="" className="h-44 w-full object-cover" src={event.cover_url} />
+        <img
+          alt=""
+          className="h-44 w-full object-cover"
+          src={event.cover_url}
+        />
       ) : (
         <div className="flex h-44 items-center justify-center bg-secondary text-sm text-muted-foreground">
           {month}
@@ -89,6 +94,7 @@ export function EventCard({ event }: { event: Event }) {
           {event.city ?? eventFormatLabels[event.format]}
         </div>
         <div>{event.owner_name ?? "SRCHR"}</div>
+        <PublicViewCount views={views} />
       </CardContent>
       <CardFooter>
         <Button asChild className="w-full" variant="outline">

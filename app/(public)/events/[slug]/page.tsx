@@ -3,13 +3,19 @@ import { notFound } from "next/navigation"
 import { CalendarDays, ExternalLink, MapPin, Send } from "lucide-react"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { EventParticipationForm } from "@/components/events/event-participation-form"
-import { eventFormatLabels, eventTypeLabels, formatEventDate } from "@/components/events/event-card"
+import {
+  eventFormatLabels,
+  eventTypeLabels,
+  formatEventDate,
+} from "@/components/events/event-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { decodeMessage } from "@/lib/messages"
 import { getCurrentUser, getPublishedEventBySlug } from "@/lib/supabase/queries"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 
 function splitList(value?: string | null) {
   return (value ?? "")
@@ -32,6 +38,7 @@ export default async function EventPage({
   const user = await getCurrentUser()
 
   if (!event) notFound()
+  const views = await getPublicViewCount("event", event.id)
 
   const pageUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/events/${event.slug}`
   const qrDestination = `/analytics/qr/event/${event.id}?to=${encodeURIComponent(`/events/${event.slug}`)}`
@@ -59,7 +66,11 @@ export default async function EventPage({
         <main className="space-y-6">
           {event.cover_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img alt="" className="aspect-[16/7] w-full rounded-lg object-cover" src={event.cover_url} />
+            <img
+              alt=""
+              className="aspect-[16/7] w-full rounded-lg object-cover"
+              src={event.cover_url}
+            />
           ) : (
             <div className="aspect-[16/7] rounded-lg bg-secondary" />
           )}
@@ -68,9 +79,14 @@ export default async function EventPage({
             <div className="flex flex-wrap gap-2">
               <Badge>{eventTypeLabels[event.event_type]}</Badge>
               <Badge variant="outline">{eventFormatLabels[event.format]}</Badge>
-              {event.is_promoted ? <Badge variant="outline">Продвигается</Badge> : null}
+              {event.is_promoted ? (
+                <Badge variant="outline">Продвигается</Badge>
+              ) : null}
             </div>
-            <h1 className="text-4xl font-semibold tracking-normal">{event.title}</h1>
+            <h1 className="text-4xl font-semibold tracking-normal">
+              {event.title}
+            </h1>
+            <PublicViewCount views={views} />
             <p className="whitespace-pre-line text-lg text-muted-foreground">
               {event.description}
             </p>
@@ -118,7 +134,9 @@ export default async function EventPage({
                 <div>
                   <div>{formatEventDate(event.start_date)}</div>
                   {event.end_date ? (
-                    <div className="text-muted-foreground">до {formatEventDate(event.end_date)}</div>
+                    <div className="text-muted-foreground">
+                      до {formatEventDate(event.end_date)}
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -126,7 +144,9 @@ export default async function EventPage({
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                 <div>
                   <div>{event.city ?? eventFormatLabels[event.format]}</div>
-                  {event.address ? <div className="text-muted-foreground">{event.address}</div> : null}
+                  {event.address ? (
+                    <div className="text-muted-foreground">{event.address}</div>
+                  ) : null}
                 </div>
               </div>
               <div>
@@ -138,12 +158,16 @@ export default async function EventPage({
                 <div className="font-medium">
                   {event.price_type === "free" ? "Бесплатно" : "Платно"}
                 </div>
-                {event.price_note ? <div className="text-muted-foreground">{event.price_note}</div> : null}
+                {event.price_note ? (
+                  <div className="text-muted-foreground">
+                    {event.price_note}
+                  </div>
+                ) : null}
               </div>
               {event.external_url ? (
                 <Button asChild className="w-full">
                   <AnalyticsLink
-                    eventType="external_link_click"
+                    eventType="event_registration_click"
                     href={event.external_url}
                     rel="noreferrer"
                     source="event_registration"
@@ -156,7 +180,9 @@ export default async function EventPage({
                 </Button>
               ) : null}
               <Button asChild className="w-full" variant="outline">
-                <Link href={`/events/${event.slug}/ics`}>Добавить в календарь</Link>
+                <Link href={`/events/${event.slug}/ics`}>
+                  Добавить в календарь
+                </Link>
               </Button>
             </CardContent>
           </Card>
@@ -186,7 +212,11 @@ export default async function EventPage({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="QR события" className="h-44 w-44 rounded-md border bg-white p-2" src={qrUrl} />
+              <img
+                alt="QR события"
+                className="h-44 w-44 rounded-md border bg-white p-2"
+                src={qrUrl}
+              />
               <Button asChild variant="outline">
                 <AnalyticsLink
                   eventType="telegram_share"

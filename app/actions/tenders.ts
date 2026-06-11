@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { trackAnalyticsEvent } from "@/lib/analytics"
-import {
-  createNotificationEvent,
-  notifyAdmins,
-} from "@/lib/notifications"
+import { syncTenderAnalyticsFacts, trackAnalyticsEvent } from "@/lib/analytics"
+import { createNotificationEvent, notifyAdmins } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
@@ -106,7 +103,9 @@ async function notifyAdminsAboutTender({
     actor_id: actorId,
     target_type: "tender",
     target_id: id,
-    title: isPublished ? `Новая опубликованная задача: ${title}` : `Новая задача: ${title}`,
+    title: isPublished
+      ? `Новая опубликованная задача: ${title}`
+      : `Новая задача: ${title}`,
     text: isPublished
       ? "Пользователь опубликовал новую задачу."
       : "Пользователь создал новую задачу.",
@@ -195,6 +194,17 @@ export async function createTender(formData: FormData) {
     )
 
     if (createdTender) {
+      await syncTenderAnalyticsFacts(createdTender.id as string)
+      await trackAnalyticsEvent({
+        eventType: "tender_saved",
+        actorUserId: user.id,
+        targetType: "tender",
+        targetId: createdTender.id as string,
+        ownerType: "organization",
+        ownerId: organization.id,
+        source: "tender_editor",
+        metadata: { action: "created", status: tenderStatus(formData) },
+      })
       await notifyAdminsAboutTender({
         id: createdTender.id as string,
         title,
@@ -231,7 +241,9 @@ export async function updateTender(tenderId: string, formData: FormData) {
 
   const title = value(formData, "title")
   if (!title) {
-    redirect(`/dashboard/client/tenders/${tenderId}/edit?message=Укажите название задачи`)
+    redirect(
+      `/dashboard/client/tenders/${tenderId}/edit?message=Укажите название задачи`,
+    )
   }
 
   try {
@@ -255,6 +267,19 @@ export async function updateTender(tenderId: string, formData: FormData) {
         actorId: user.id,
       })
     }
+    if (updatedTender) {
+      await syncTenderAnalyticsFacts(tenderId)
+      await trackAnalyticsEvent({
+        eventType: "tender_saved",
+        actorUserId: user.id,
+        targetType: "tender",
+        targetId: tenderId,
+        ownerType: "organization",
+        ownerId: organization.id,
+        source: "tender_editor",
+        metadata: { action: "updated", status: tenderStatus(formData) },
+      })
+    }
   } catch (error) {
     reportServerError("tenders.update", error)
     redirect(
@@ -267,7 +292,10 @@ export async function updateTender(tenderId: string, formData: FormData) {
   redirect("/dashboard/client/tenders")
 }
 
-export async function createTenderResponse(tenderId: string, formData: FormData) {
+export async function createTenderResponse(
+  tenderId: string,
+  formData: FormData,
+) {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
 
@@ -324,22 +352,23 @@ export async function createTenderResponse(tenderId: string, formData: FormData)
   const { data: existing } = await existingQuery.limit(1).maybeSingle()
 
   if (existing) {
-    redirect(`/tenders/${tender.slug}?message=Вы уже откликнулись на эту задачу`)
+    redirect(
+      `/tenders/${tender.slug}?message=Вы уже откликнулись на эту задачу`,
+    )
   }
 
   const message = value(formData, "message")
   if (!message) {
-    redirect(
-      `/tenders/${tender.slug}?message=Напишите сообщение для заказчика`,
-    )
+    redirect(`/tenders/${tender.slug}?message=Напишите сообщение для заказчика`)
   }
 
   try {
     await writeWithSchemaFallback("tender_responses", {
       tender_id: tenderId,
       organization_id:
-        responderType === "contractor" ? organization?.id ?? null : null,
-      expert_id: responderType === "expert" ? expertProfile?.id ?? null : null,
+        responderType === "contractor" ? (organization?.id ?? null) : null,
+      expert_id:
+        responderType === "expert" ? (expertProfile?.id ?? null) : null,
       responder_type: responderType,
       user_id: user.id,
       message,
@@ -397,6 +426,20 @@ export async function updateTenderResponseStatus(
       `/dashboard/client/tenders/${tenderId}/responses?message=Не удалось изменить статус отклика`,
     )
   }
+
+  await trackAnalyticsEvent({
+    eventType: "tender_response_status_changed",
+    actorUserId: user.id,
+    targetType: "tender",
+    targetId: tenderId,
+    ownerType: "organization",
+    ownerId: organization.id,
+    source: "tender_responses",
+    metadata: {
+      response_id: responseId,
+      status: responseStatus(formData),
+    },
+  })
 
   revalidatePath(`/dashboard/client/tenders/${tenderId}/responses`)
   redirect(`/dashboard/client/tenders/${tenderId}/responses`)

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
+import { AnalyticsInternalLink } from "@/components/analytics/analytics-internal-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +12,7 @@ import {
   getPublishedMaterialBySlug,
   getReputationSummary,
 } from "@/lib/supabase/queries"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 import type { Material } from "@/types"
 
 type MaterialBlock = {
@@ -68,11 +70,12 @@ export default async function MaterialPage({
     : item.organizations?.is_contractor
       ? (item.organization_id ?? item.company_id)
       : null
-  const [favoriteMarkers, reputation] = await Promise.all([
+  const [favoriteMarkers, reputation, views] = await Promise.all([
     getFavoriteMarkers([{ targetType: item.type, targetId: item.id }]),
     reputationTargetId
       ? getReputationSummary(reputationTargetType, reputationTargetId)
       : Promise.resolve(null),
+    getPublicViewCount("material", item.id),
   ])
   const expertName = item.expert_profiles
     ? [item.expert_profiles.first_name, item.expert_profiles.last_name]
@@ -120,12 +123,20 @@ export default async function MaterialPage({
         </div>
         <div className="mb-3 space-y-2">
           {authorHref ? (
-            <Link
+            <AnalyticsInternalLink
               className="text-sm font-medium text-primary"
+              eventType={
+                isExpertOwner
+                  ? "material_author_click"
+                  : "material_organization_click"
+              }
               href={authorHref}
+              source="material_author"
+              targetId={item.id}
+              targetType="material"
             >
               {authorName}
-            </Link>
+            </AnalyticsInternalLink>
           ) : (
             <p className="text-sm font-medium text-primary">{authorName}</p>
           )}
@@ -143,6 +154,7 @@ export default async function MaterialPage({
         <p className="mt-4 text-lg leading-8 text-muted-foreground">
           {item.description ?? "Краткое описание материала скоро появится."}
         </p>
+        <PublicViewCount className="mt-4" views={views} />
 
         {blocks?.length ? (
           <div className="mt-8 space-y-6">

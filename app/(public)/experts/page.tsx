@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { ExpertCard } from "@/components/experts/expert-card"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import {
   getReputationSummaries,
   type ExpertFilters,
 } from "@/lib/supabase/queries"
+import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 
 export default async function ExpertsPage({
   searchParams,
@@ -17,11 +19,15 @@ export default async function ExpertsPage({
 }) {
   const filters = await searchParams
   const experts = await getPublishedExperts(filters)
-  const [favoriteMarkers, reputationSummaries] = await Promise.all([
+  const [favoriteMarkers, reputationSummaries, viewCounts] = await Promise.all([
     getFavoriteMarkers(
       experts.map((expert) => ({ targetType: "expert", targetId: expert.id })),
     ),
     getReputationSummaries(
+      "expert",
+      experts.map((expert) => expert.id),
+    ),
+    getPublicViewCounts(
       "expert",
       experts.map((expert) => expert.id),
     ),
@@ -52,6 +58,7 @@ export default async function ExpertsPage({
 
   return (
     <PageShell>
+      <CatalogAnalyticsTracker catalog="experts" filters={filters} />
       <PageHeader
         title="Эксперты"
         description="Публичные профили специалистов, которые могут работать самостоятельно или быть связаны с компаниями."
@@ -114,6 +121,7 @@ export default async function ExpertsPage({
               favoriteId={favoriteMarkers.get(`expert:${expert.id}`)}
               key={expert.id}
               reputation={reputationSummaries.get(expert.id)}
+              views={viewCounts.get(expert.id)}
             />
           ))}
         </div>

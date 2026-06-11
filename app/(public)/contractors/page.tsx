@@ -1,4 +1,5 @@
 import { ContractorCard } from "@/components/contractors/contractor-card"
+import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { ContractorFilters } from "@/components/contractors/contractor-filters"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import {
@@ -7,6 +8,7 @@ import {
   getReputationSummaries,
   getServices,
 } from "@/lib/supabase/queries"
+import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 import type { ContractorProfile, Organization, Service } from "@/types"
 
 type ContractorListItem = Organization & {
@@ -29,7 +31,7 @@ export default async function ContractorsPage({
     getServices(),
   ])
   const contractorItems = contractors as ContractorListItem[]
-  const [favoriteMarkers, reputationSummaries] = await Promise.all([
+  const [favoriteMarkers, reputationSummaries, viewCounts] = await Promise.all([
     getFavoriteMarkers(
       contractorItems.map((contractor) => ({
         targetType: "company",
@@ -37,6 +39,10 @@ export default async function ContractorsPage({
       })),
     ),
     getReputationSummaries(
+      "contractor",
+      contractorItems.map((contractor) => contractor.id),
+    ),
+    getPublicViewCounts(
       "contractor",
       contractorItems.map((contractor) => contractor.id),
     ),
@@ -67,6 +73,7 @@ export default async function ContractorsPage({
 
   return (
     <PageShell>
+      <CatalogAnalyticsTracker catalog="contractors" filters={filters} />
       <PageHeader
         title="Каталог подрядчиков"
         description="Опубликованные подрядчики SRCHR с фильтрами по городу, услуге и бюджету."
@@ -86,6 +93,7 @@ export default async function ContractorsPage({
               contractor={contractor}
               favoriteId={favoriteMarkers.get(`company:${contractor.id}`)}
               reputation={reputationSummaries.get(contractor.id)}
+              views={viewCounts.get(contractor.id)}
             />
           ))}
         </div>

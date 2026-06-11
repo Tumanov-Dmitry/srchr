@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,9 +21,11 @@ const typeLabels: Record<string, string> = {
 export function MaterialCard({
   item,
   favoriteId,
+  views,
 }: {
   item: Material
   favoriteId?: string | null
+  views?: number
 }) {
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -53,8 +56,9 @@ export function MaterialCard({
           {item.description ?? "Описание материала скоро появится."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 text-sm text-muted-foreground">
-        {item.organizations?.name ?? item.author ?? "SRCHR"}
+      <CardContent className="flex flex-1 items-end justify-between gap-3 text-sm text-muted-foreground">
+        <span>{item.organizations?.name ?? item.author ?? "SRCHR"}</span>
+        <PublicViewCount views={views} />
       </CardContent>
       <CardFooter>
         <Button asChild className="w-full" variant="outline">

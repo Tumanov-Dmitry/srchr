@@ -307,3 +307,37 @@ export async function getAdminAnalytics(period: AnalyticsPeriod) {
 export function getExpertName(profile: ExpertProfile) {
   return [profile.first_name, profile.last_name].filter(Boolean).join(" ")
 }
+
+export async function getPublicViewCounts(
+  targetType: string,
+  targetIds: string[],
+) {
+  const counts = new Map<string, number>()
+  const ids = [...new Set(targetIds.filter(Boolean))]
+  if (ids.length === 0) return counts
+
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("analytics_public_totals")
+    .select("target_id, views")
+    .eq("target_type", targetType)
+    .in("target_id", ids)
+
+  if (error) {
+    if (!isMissingTable(error)) {
+      console.error("[analytics.publicViews]", error.message)
+    }
+    return counts
+  }
+
+  for (const row of data ?? []) {
+    counts.set(row.target_id as string, Number(row.views ?? 0))
+  }
+
+  return counts
+}
+
+export async function getPublicViewCount(targetType: string, targetId: string) {
+  const counts = await getPublicViewCounts(targetType, [targetId])
+  return counts.get(targetId) ?? 0
+}

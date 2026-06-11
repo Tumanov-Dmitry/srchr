@@ -61,6 +61,30 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 204 })
   }
 
+  const isCatalogEvent =
+    targetType === "catalog" &&
+    targetId === "00000000-0000-4000-8000-000000000000" &&
+    (eventType === "search" || eventType === "filter_used")
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (isCatalogEvent) {
+    await trackAnalyticsEvent({
+      eventType,
+      actorUserId: user?.id ?? null,
+      targetType,
+      targetId,
+      source:
+        typeof body?.source === "string" ? body.source.slice(0, 120) : null,
+      metadata: safeMetadata(body?.metadata),
+      visitorKey,
+    })
+
+    return new NextResponse(null, { status: 204 })
+  }
+
   const resolved = await resolveAnalyticsTarget(targetType, targetId)
   if (!resolved?.ownerId) {
     return NextResponse.json(
@@ -68,11 +92,6 @@ export async function POST(request: Request) {
       { status: 404 },
     )
   }
-
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   await trackAnalyticsEvent({
     eventType,
