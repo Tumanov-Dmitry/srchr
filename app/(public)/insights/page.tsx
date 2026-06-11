@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarketInsights } from "@/lib/supabase/insights-queries"
 
+export const dynamic = "force-dynamic"
+
 const number = new Intl.NumberFormat("ru-RU")
 const money = new Intl.NumberFormat("ru-RU", {
   style: "currency",
