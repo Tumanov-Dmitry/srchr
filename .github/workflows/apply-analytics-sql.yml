@@ -43,17 +43,17 @@ jobs:
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -U "$ANALYTICS_OWNER" -d postgres -c "notify pgrst, 'reload schema';"
             docker restart supabase-rest supabase-kong
             sleep 10
-            ANON_KEY="$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2- || true)"
-            if [ -z "$ANON_KEY" ]; then
-              ANON_KEY="$(grep '^ANON_KEY=' /opt/supabase/docker/.env | cut -d= -f2- | tr -d '\"' || true)"
+            SERVICE_KEY="$(grep '^SUPABASE_SERVICE_ROLE_KEY=' .env.local | cut -d= -f2- || true)"
+            if [ -z "$SERVICE_KEY" ]; then
+              SERVICE_KEY="$(grep '^SERVICE_ROLE_KEY=' /opt/supabase/docker/.env | cut -d= -f2- | tr -d '\"' || true)"
             fi
-            if [ -z "$ANON_KEY" ]; then
-              echo "Anon key was not found"
+            if [ -z "$SERVICE_KEY" ]; then
+              echo "Service role key was not found"
               exit 1
             fi
             curl -fsS \
-              -H "apikey: ${ANON_KEY}" \
-              -H "Authorization: Bearer ${ANON_KEY}" \
+              -H "apikey: ${SERVICE_KEY}" \
+              -H "Authorization: Bearer ${SERVICE_KEY}" \
               "http://127.0.0.1:8000/rest/v1/analytics_daily_stats?select=date,metric_key,metric_value&limit=1" \
               || (docker logs supabase-rest --tail 120 && exit 1)
             pm2 restart srchr-dev --update-env || true
