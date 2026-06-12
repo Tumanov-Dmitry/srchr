@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { reportServerError } from "@/lib/security/errors"
+import {
+  calculateExpertCompletion,
+  calculateOrganizationCompletion,
+} from "@/lib/profile-completion"
 import type {
   ContractorProfile,
   ContentOwner,
   ExpertProfile,
   Favorite,
+  FavoriteCollection,
   FavoriteTargetType,
   Event,
   EventParticipant,
@@ -72,7 +77,7 @@ export async function getOnboardingState() {
       getUserOrganizationMemberships(user.id),
       supabase
         .from("expert_profiles")
-        .select("id")
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle(),
     ])
@@ -94,6 +99,7 @@ export async function getOnboardingState() {
   return {
     user,
     memberships,
+    expertProfile: (expertProfile ?? null) as ExpertProfile | null,
     isComplete: memberships.length > 0 || hasExpert,
     primaryRole,
     dashboardPath:
@@ -102,6 +108,97 @@ export async function getOnboardingState() {
         : primaryRole === "client"
           ? "/dashboard/client"
           : "/dashboard/expert",
+  }
+}
+
+export async function getProfileCompletionState() {
+  const state = await getOnboardingState()
+  if (!state.user) {
+    return {
+      expert: null,
+      organizations: [],
+    }
+  }
+
+  const supabase = await createClient()
+  const expert = state.expertProfile
+  const organizationIds = state.memberships
+    .map(
+      (membership) =>
+        membership.organization_id ??
+        membership.org_id ??
+        membership.organizations?.id,
+    )
+    .filter((id): id is string => Boolean(id))
+
+  const [{ data: expertMaterials }, { data: organizationMaterials }] =
+    await Promise.all([
+      expert
+        ? supabase
+            .from("materials")
+            .select("type")
+            .eq("expert_id", expert.id)
+            .eq("status", "published")
+        : Promise.resolve({ data: [] }),
+      organizationIds.length > 0
+        ? supabase
+            .from("materials")
+            .select("type, organization_id, company_id")
+            .or(
+              `organization_id.in.(${organizationIds.join(",")}),company_id.in.(${organizationIds.join(",")})`,
+            )
+            .eq("status", "published")
+        : Promise.resolve({ data: [] }),
+    ])
+
+  const expertScore = expert
+    ? calculateExpertCompletion(expert, {
+        cases: (expertMaterials ?? []).filter((item) => item.type === "case")
+          .length,
+        articles: (expertMaterials ?? []).filter(
+          (item) => item.type === "article",
+        ).length,
+      })
+    : null
+
+  const organizations = await Promise.all(
+    state.memberships
+      .filter((membership) => membership.organizations)
+      .map(async (membership) => {
+        const organization = membership.organizations as Organization
+        const organizationId = organization.id
+        const [{ count: servicesCount }, { count: membersCount }] =
+          await Promise.all([
+            supabase
+              .from("organization_services")
+              .select("*", { count: "exact", head: true })
+              .eq("organization_id", organizationId),
+            supabase
+              .from("organization_members")
+              .select("*", { count: "exact", head: true })
+              .eq("organization_id", organizationId),
+          ])
+        const cases = (organizationMaterials ?? []).filter(
+          (item) =>
+            item.type === "case" &&
+            (item.organization_id === organizationId ||
+              item.company_id === organizationId),
+        ).length
+
+        return {
+          organization,
+          score: calculateOrganizationCompletion(organization, {
+            services: servicesCount ?? 0,
+            cases,
+            members: membersCount ?? 0,
+          }),
+        }
+      }),
+  )
+
+  return {
+    expert: expert ? { profile: expert, score: expertScore } : null,
+    organizations,
   }
 }
 
@@ -1225,7 +1322,10 @@ export async function getUserTenderResponses() {
   }
 }
 
-export async function getUserFavorites(type?: string | null) {
+export async function getUserFavorites(
+  type?: string | null,
+  collectionId?: string | null,
+) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -1257,6 +1357,24 @@ export async function getUserFavorites(type?: string | null) {
     query = query.eq("target_type", targetType)
   }
 
+  if (collectionId) {
+    const { data: collectionItems } = await supabase
+      .from("favorite_collection_items")
+      .select("favorite_id, favorite_collections!inner(user_id)")
+      .eq("collection_id", collectionId)
+      .eq("favorite_collections.user_id", user.id)
+
+    const favoriteIds = (collectionItems ?? []).map((item) => item.favorite_id)
+    if (favoriteIds.length === 0) {
+      return {
+        user,
+        favorites: [] as Favorite[],
+        isFavoritesTableMissing: false,
+      }
+    }
+    query = query.in("id", favoriteIds)
+  }
+
   const { data, error } = await query
 
   if (isMissingTable(error)) {
@@ -1268,12 +1386,48 @@ export async function getUserFavorites(type?: string | null) {
   }
 
   const favorites = await hydrateFavorites(supabase, (data ?? []) as Favorite[])
+  const favoriteIds = favorites.map((favorite) => favorite.id)
+  const { data: collectionItems } =
+    favoriteIds.length > 0
+      ? await supabase
+          .from("favorite_collection_items")
+          .select("favorite_id, collection_id")
+          .in("favorite_id", favoriteIds)
+      : { data: [] }
+  const collectionMap = new Map<string, string[]>()
+  for (const item of collectionItems ?? []) {
+    const current = collectionMap.get(item.favorite_id) ?? []
+    current.push(item.collection_id)
+    collectionMap.set(item.favorite_id, current)
+  }
 
   return {
     user,
-    favorites,
+    favorites: favorites.map((favorite) => ({
+      ...favorite,
+      collection_ids: collectionMap.get(favorite.id) ?? [],
+    })),
     isFavoritesTableMissing: false,
   }
+}
+
+export async function getFavoriteCollections() {
+  const user = await getCurrentUser()
+  if (!user) return [] as FavoriteCollection[]
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("favorite_collections")
+    .select("*, favorite_collection_items(count)")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+
+  if (error) return [] as FavoriteCollection[]
+
+  return (data ?? []).map((collection) => ({
+    ...collection,
+    items_count: collection.favorite_collection_items?.[0]?.count ?? 0,
+  })) as FavoriteCollection[]
 }
 
 export async function getFavoriteMarkers(

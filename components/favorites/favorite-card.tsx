@@ -75,6 +75,7 @@ export function FavoriteCard({ favorite }: { favorite: Favorite }) {
         <FavoriteCardActions
           favoriteId={favorite.id}
           isPinned={favorite.is_pinned}
+          collectionIds={favorite.collection_ids}
         />
       </CardFooter>
     </Card>

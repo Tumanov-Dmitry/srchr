@@ -6,6 +6,7 @@ export const favoriteTargetTypes = [
   "expert",
   "case",
   "article",
+  "event",
 ] as const
 
 export const favoriteTypeLabels: Record<FavoriteTargetType, string> = {
@@ -13,6 +14,7 @@ export const favoriteTypeLabels: Record<FavoriteTargetType, string> = {
   expert: "Эксперт",
   case: "Кейс",
   article: "Статья",
+  event: "Мероприятие",
 }
 
 export const favoritePluralTypeMap = {
@@ -21,6 +23,7 @@ export const favoritePluralTypeMap = {
   experts: "expert",
   cases: "case",
   articles: "article",
+  events: "event",
 } as const satisfies Record<string, FavoriteTargetType | null>
 
 export type FavoriteTypeFilter = keyof typeof favoritePluralTypeMap
@@ -50,6 +53,7 @@ export function getFavoriteTargetPath(
 
   if (targetType === "company") return `/contractors/${slug}`
   if (targetType === "expert") return `/@${slug}`
+  if (targetType === "event") return `/events/${slug}`
 
   return `/media/${slug}`
 }
@@ -125,6 +129,38 @@ export async function buildFavoriteSnapshot(
         subtitle: textFrom(data.position),
         image: textFrom(data.avatar_url),
         description: textFrom(data.short_description),
+        object_type: targetType,
+      },
+    }
+  }
+
+  if (targetType === "event") {
+    const { data } = await supabase
+      .from("events")
+      .select(
+        "id, slug, title, description, cover_url, city, format, start_date, status",
+      )
+      .eq("id", targetId)
+      .maybeSingle()
+
+    if (!data) return null
+
+    const status =
+      data.status === "published" || data.status === "completed"
+        ? "active"
+        : "unavailable"
+
+    return {
+      status,
+      href:
+        status === "active"
+          ? getFavoriteTargetPath(targetType, data.slug)
+          : null,
+      snapshot: {
+        title: data.title,
+        subtitle: textFrom(data.city ?? data.format),
+        image: textFrom(data.cover_url),
+        description: textFrom(data.description),
         object_type: targetType,
       },
     }

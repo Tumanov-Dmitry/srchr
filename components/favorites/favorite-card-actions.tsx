@@ -4,13 +4,16 @@ import { Pin, PinOff, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
+import { FavoriteCollectionPicker } from "@/components/favorites/favorite-collection-picker"
 
 export function FavoriteCardActions({
   favoriteId,
   isPinned,
+  collectionIds = [],
 }: {
   favoriteId: string
   isPinned: boolean
+  collectionIds?: string[]
 }) {
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
@@ -64,6 +67,10 @@ export function FavoriteCardActions({
           Удалить
         </Button>
       </div>
+      <FavoriteCollectionPicker
+        favoriteId={favoriteId}
+        initialCollectionIds={collectionIds}
+      />
       {message ? <p className="text-xs text-destructive">{message}</p> : null}
     </div>
   )

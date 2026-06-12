@@ -7,10 +7,7 @@ import { getPublicErrorMessage, reportServerError } from "@/lib/security/errors"
 import { checkRateLimit, getRequestIdentifier } from "@/lib/security/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 
-async function upsertProfile(
-  userId: string,
-  email: string | undefined,
-) {
+async function upsertProfile(userId: string, email: string | undefined) {
   const supabase = await createClient()
   const baseProfile = {
     id: userId,
@@ -24,16 +21,14 @@ async function upsertProfile(
 
   if (!error) return
 
-  const { error: fallbackError } = await supabase
-    .from("profiles")
-    .upsert(
-      {
-        id: userId,
-        email: email ?? null,
-        account_type: "guest",
-      },
-      { onConflict: "id" },
-    )
+  const { error: fallbackError } = await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      email: email ?? null,
+      account_type: "guest",
+    },
+    { onConflict: "id" },
+  )
 
   if (fallbackError) {
     throw new Error(fallbackError.message)
@@ -77,7 +72,7 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect("/onboarding")
+  redirect("/dashboard/onboarding")
 }
 
 export async function login(formData: FormData) {
@@ -107,7 +102,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect("/onboarding")
+  redirect("/dashboard/onboarding")
 }
 
 export async function logout() {

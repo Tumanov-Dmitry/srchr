@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { reportServerError } from "@/lib/security/errors"
+import { createNotification } from "@/lib/notifications"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { createSlug } from "@/lib/slug"
-import type { OnboardingRole } from "@/types"
+import type { MarketRole, OnboardingRole } from "@/types"
 
 function slugify(value: string) {
   return `${createSlug(value)}-${Date.now().toString(36)}`
@@ -14,12 +16,14 @@ function slugify(value: string) {
 async function markOnboardingComplete(
   userId: string,
   email: string | undefined,
+  marketRole: MarketRole,
 ) {
   const supabase = await createClient()
   const payload = {
     id: userId,
     email: email ?? null,
     onboarding_completed: true,
+    market_role: marketRole,
   }
 
   const { error } = await supabase
@@ -107,19 +111,24 @@ async function createExpertProfile(
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`
-    const { error } = await supabase.from("expert_profiles").insert({
-      user_id: userId,
-      slug,
-      first_name: firstName,
-      last_name: lastName,
-      position: optionalValue(formData, "position"),
-      short_description: optionalValue(formData, "description"),
-      city: optionalValue(formData, "city"),
-      contact_email: email ?? null,
-      is_public: false,
-      is_open_to_work: true,
-      status: "draft",
-    })
+    const { error } = await supabase.from("expert_profiles").upsert(
+      {
+        user_id: userId,
+        slug,
+        first_name: firstName || email?.split("@")[0] || "Эксперт",
+        last_name: lastName,
+        position: optionalValue(formData, "position"),
+        short_description: optionalValue(formData, "description"),
+        city: optionalValue(formData, "city"),
+        specializations: optionalValue(formData, "specializations"),
+        skills: optionalValue(formData, "skills"),
+        contact_email: email ?? null,
+        is_public: false,
+        is_open_to_work: true,
+        status: "draft",
+      },
+      { onConflict: "user_id" },
+    )
 
     if (!error) return
     if (
@@ -131,6 +140,50 @@ async function createExpertProfile(
   }
 
   throw new Error("Не удалось подобрать свободный адрес профиля")
+}
+
+async function requestOrganizationAccess(
+  organizationId: string,
+  userId: string,
+  marketRole: MarketRole,
+) {
+  const supabase = await createClient()
+  const { error } = await supabase.from("organization_join_requests").insert({
+    organization_id: organizationId,
+    user_id: userId,
+    requested_role: "member",
+    message:
+      marketRole === "agency"
+        ? "Представитель агентства запросил доступ"
+        : "Представитель компании запросил доступ",
+  })
+
+  if (error && error.code !== "23505") {
+    throw new Error(error.message)
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return
+
+  const admin = createAdminClient()
+  const { data: owners } = await admin
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organizationId)
+    .in("role", ["owner", "admin"])
+
+  await Promise.all(
+    (owners ?? []).map((owner) =>
+      createNotification({
+        recipient_id: owner.user_id,
+        title: "Новый запрос в организацию",
+        text: "Пользователь хочет присоединиться к вашей организации.",
+        type: "organization_join_request",
+        target_type: "organization",
+        target_id: organizationId,
+        target_url: "/dashboard/organization",
+      }),
+    ),
+  )
 }
 
 function optionalNumber(formData: FormData, key: string) {
@@ -282,68 +335,93 @@ export async function completeOnboarding(formData: FormData) {
     redirect("/login")
   }
 
-  const requestedRole = String(formData.get("role") ?? "")
-  const onboardingRole: OnboardingRole =
-    requestedRole === "contractor"
-      ? "contractor"
-      : requestedRole === "expert"
-        ? "expert"
-        : "client"
+  const requestedMarketRole = String(formData.get("market_role") ?? "")
+  const marketRole: MarketRole =
+    requestedMarketRole === "agency"
+      ? "agency"
+      : requestedMarketRole === "company"
+        ? "company"
+        : "independent"
 
   const name = String(formData.get("name") ?? "").trim()
-  const description = String(formData.get("description") ?? "").trim()
-  const city = String(formData.get("city") ?? "").trim()
   const website = String(formData.get("website") ?? "").trim()
   const logoUrl = String(formData.get("logo_url") ?? "").trim()
   const serviceIds = formData.getAll("services").map(String).filter(Boolean)
 
-  if (!name || !description || !city) {
-    redirect("/onboarding?message=Заполните обязательные поля")
+  try {
+    await createExpertProfile(user.id, user.email, formData)
+    await markOnboardingComplete(user.id, user.email, marketRole)
+  } catch (error) {
+    reportServerError("onboarding.expert", error)
+    redirect(
+      "/dashboard/onboarding?message=Не удалось создать профиль эксперта",
+    )
   }
 
-  if (onboardingRole === "expert") {
-    try {
-      await createExpertProfile(user.id, user.email, formData)
-      await markOnboardingComplete(user.id, user.email)
-    } catch (error) {
-      reportServerError("onboarding.expert", error)
-      redirect(
-        "/onboarding?message=Не удалось создать профиль эксперта. Проверьте таблицу expert_profiles",
+  const organizationAction = String(formData.get("organization_action") ?? "")
+  const selectedOrganizationId = String(
+    formData.get("organization_id") ?? "",
+  ).trim()
+
+  try {
+    if (
+      marketRole !== "independent" &&
+      organizationAction === "request" &&
+      selectedOrganizationId
+    ) {
+      await requestOrganizationAccess(
+        selectedOrganizationId,
+        user.id,
+        marketRole,
       )
     }
 
-    revalidatePath("/", "layout")
-    redirect("/dashboard/expert")
-  }
+    if (marketRole !== "independent" && organizationAction === "create") {
+      const organizationName =
+        String(formData.get("organization_name") ?? "").trim() || name
+      const organizationDescription = String(
+        formData.get("organization_description") ?? "",
+      ).trim()
+      const organizationCity = String(
+        formData.get("organization_city") ?? "",
+      ).trim()
 
-  let organization: { id: string }
+      if (organizationName) {
+        const onboardingRole: Exclude<OnboardingRole, "expert"> =
+          marketRole === "agency" ? "contractor" : "client"
+        const organization = await createOrganization({
+          name: organizationName,
+          description: organizationDescription,
+          city: organizationCity,
+          website,
+          logoUrl,
+          onboardingRole,
+        })
+        await createOrganizationMember(organization.id, user.id, onboardingRole)
 
-  try {
-    organization = await createOrganization({
-      name,
-      description,
-      city,
-      website,
-      logoUrl,
-      onboardingRole,
-    })
+        if (onboardingRole === "contractor") {
+          await createContractorProfile(organization.id, formData)
+          await attachServices(organization.id, serviceIds)
+        }
+      }
+    }
   } catch (error) {
     reportServerError("onboarding.organization", error)
-    redirect("/onboarding?message=Не удалось создать организацию")
   }
 
-  await markOnboardingComplete(user.id, user.email)
-  await createOrganizationMember(organization.id, user.id, onboardingRole)
-
-  if (onboardingRole === "contractor") {
-    await createContractorProfile(organization.id, formData)
-    await attachServices(organization.id, serviceIds)
+  try {
+    await createNotification({
+      recipient_id: user.id,
+      title: "Завершите профиль эксперта",
+      text: "Добавьте фото, специализацию, навыки и контакты, чтобы профиль вызывал больше доверия.",
+      type: "profile_incomplete",
+      target_type: "expert",
+      target_url: "/dashboard/expert",
+    })
+  } catch (error) {
+    reportServerError("onboarding.completionNotification", error)
   }
 
   revalidatePath("/", "layout")
-  redirect(
-    onboardingRole === "contractor"
-      ? "/dashboard/contractor"
-      : "/dashboard/client",
-  )
+  redirect("/dashboard/expert")
 }

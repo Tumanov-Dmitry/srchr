@@ -6,6 +6,7 @@ import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { FavoriteTargetType } from "@/types"
+import { FavoriteCollectionPicker } from "@/components/favorites/favorite-collection-picker"
 
 type FavoriteButtonProps = {
   targetType: FavoriteTargetType
@@ -25,6 +26,7 @@ export function FavoriteButton({
   const router = useRouter()
   const [favoriteId, setFavoriteId] = useState(initialFavoriteId)
   const [message, setMessage] = useState<string | null>(null)
+  const [showCollections, setShowCollections] = useState(false)
   const [isPending, startTransition] = useTransition()
   const isFavorite = Boolean(favoriteId)
 
@@ -40,6 +42,7 @@ export function FavoriteButton({
           return
         }
         setFavoriteId(null)
+        setShowCollections(false)
         router.refresh()
         return
       }
@@ -62,6 +65,7 @@ export function FavoriteButton({
       }
 
       setFavoriteId(result?.favorite?.id ?? null)
+      setShowCollections(true)
       router.refresh()
     })
   }
@@ -83,6 +87,9 @@ export function FavoriteButton({
         {label ? <span>{isFavorite ? "В избранном" : label}</span> : null}
       </Button>
       {message ? <p className="text-xs text-destructive">{message}</p> : null}
+      {favoriteId && showCollections ? (
+        <FavoriteCollectionPicker favoriteId={favoriteId} initiallyOpen />
+      ) : null}
     </div>
   )
 }

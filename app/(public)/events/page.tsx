@@ -2,7 +2,7 @@ import { EventCard } from "@/components/events/event-card"
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getPublishedEvents } from "@/lib/supabase/queries"
+import { getFavoriteMarkers, getPublishedEvents } from "@/lib/supabase/queries"
 import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 
 export default async function EventsPage({
@@ -18,10 +18,18 @@ export default async function EventsPage({
 }) {
   const filters = await searchParams
   const events = await getPublishedEvents(filters)
-  const viewCounts = await getPublicViewCounts(
-    "event",
-    events.map((event) => event.id),
-  )
+  const [viewCounts, favoriteMarkers] = await Promise.all([
+    getPublicViewCounts(
+      "event",
+      events.map((event) => event.id),
+    ),
+    getFavoriteMarkers(
+      events.map((event) => ({
+        targetType: "event" as const,
+        targetId: event.id,
+      })),
+    ),
+  ])
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -91,6 +99,7 @@ export default async function EventsPage({
               event={event}
               key={event.id}
               views={viewCounts.get(event.id)}
+              initialFavoriteId={favoriteMarkers.get(`event:${event.id}`)}
             />
           ))}
         </div>

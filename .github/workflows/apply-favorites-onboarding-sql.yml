@@ -1,0 +1,39 @@
+name: Apply favorites and onboarding SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-favorites-onboarding-sql.yml"
+      - "supabase/sql/extend-favorites-and-onboarding.sql"
+  workflow_dispatch:
+
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Extend favorites and onboarding on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply SQL patch over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/extend-favorites-and-onboarding.sql
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "select to_regclass('public.favorite_collections'), to_regclass('public.favorite_collection_items'), to_regclass('public.organization_join_requests');"
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
+            docker restart supabase-rest supabase-kong
+            pm2 restart srchr-dev --update-env

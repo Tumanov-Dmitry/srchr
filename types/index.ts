@@ -1,5 +1,6 @@
 export type AccountRole = "guest" | "expert" | "contractor" | "client" | "admin"
 export type OnboardingRole = "expert" | "contractor" | "client"
+export type MarketRole = "agency" | "company" | "independent"
 
 export type ContentOwner = {
   owner_type: "expert" | "organization"
@@ -196,7 +197,12 @@ export type Material = {
   expert_profiles?: ExpertProfile | null
 }
 
-export type FavoriteTargetType = "company" | "expert" | "case" | "article"
+export type FavoriteTargetType =
+  | "company"
+  | "expert"
+  | "case"
+  | "article"
+  | "event"
 export type FavoriteStatus = "active" | "unavailable"
 
 export type FavoriteSnapshot = {
@@ -219,6 +225,40 @@ export type Favorite = {
   snapshot: FavoriteSnapshot
   status: FavoriteStatus
   href?: string | null
+  collection_ids?: string[]
+}
+
+export type FavoriteCollection = {
+  id: string
+  user_id: string
+  name: string
+  description?: string | null
+  icon?: string | null
+  color?: string | null
+  is_public: boolean
+  slug?: string | null
+  created_at: string
+  updated_at: string
+  items_count?: number
+}
+
+export type OrganizationJoinRequest = {
+  id: string
+  organization_id: string
+  user_id: string
+  requested_role: "admin" | "editor" | "member"
+  status: "pending" | "approved" | "rejected" | "cancelled"
+  message?: string | null
+  created_at: string
+  updated_at: string
+  organizations?: Organization | null
+}
+
+export type CompletionScore = {
+  percent: number
+  completed: number
+  total: number
+  missing: string[]
 }
 
 export type Tender = {

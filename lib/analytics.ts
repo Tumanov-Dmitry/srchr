@@ -414,7 +414,7 @@ export async function trackFavoriteAdded({
   targetId,
   actorUserId,
 }: {
-  targetType: "company" | "expert" | "case" | "article"
+  targetType: "company" | "expert" | "case" | "article" | "event"
   targetId: string
   actorUserId: string
 }) {
@@ -423,7 +423,9 @@ export async function trackFavoriteAdded({
       ? "contractor"
       : targetType === "case" || targetType === "article"
         ? "material"
-        : "expert"
+        : targetType === "event"
+          ? "event"
+          : "expert"
   const target = await resolveAnalyticsTarget(analyticsTargetType, targetId)
   if (!target) return
 

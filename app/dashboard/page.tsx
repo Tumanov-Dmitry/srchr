@@ -6,6 +6,10 @@ import { getOnboardingState } from "@/lib/supabase/queries"
 export default async function DashboardPage() {
   const state = await getOnboardingState()
 
+  if (!state.isComplete) {
+    redirect("/dashboard/onboarding")
+  }
+
   if (state.primaryRole) {
     redirect(state.dashboardPath)
   }
@@ -13,9 +17,12 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Личный кабинет</h1>
+        <h1 className="text-3xl font-semibold tracking-normal">
+          Личный кабинет
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          {state.user?.email} · управляйте профилем, организациями, задачами и кейсами.
+          {state.user?.email} · управляйте профилем, организациями, задачами и
+          кейсами.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -39,10 +46,16 @@ export default async function DashboardPage() {
           <TabsTrigger value="next">Ближайшее</TabsTrigger>
           <TabsTrigger value="profile">Профиль</TabsTrigger>
         </TabsList>
-        <TabsContent value="next" className="rounded-lg border bg-background p-5">
+        <TabsContent
+          value="next"
+          className="rounded-lg border bg-background p-5"
+        >
           MVP-дашборд готов к подключению реальных виджетов.
         </TabsContent>
-        <TabsContent value="profile" className="rounded-lg border bg-background p-5">
+        <TabsContent
+          value="profile"
+          className="rounded-lg border bg-background p-5"
+        >
           Тип аккаунта хранится в profiles и выбирается при регистрации.
         </TabsContent>
       </Tabs>

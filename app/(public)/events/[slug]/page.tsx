@@ -5,6 +5,7 @@ import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { EventParticipationForm } from "@/components/events/event-participation-form"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import {
   eventFormatLabels,
   eventTypeLabels,
@@ -14,7 +15,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { decodeMessage } from "@/lib/messages"
-import { getCurrentUser, getPublishedEventBySlug } from "@/lib/supabase/queries"
+import {
+  getCurrentUser,
+  getFavoriteMarkers,
+  getPublishedEventBySlug,
+} from "@/lib/supabase/queries"
 import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 
 function splitList(value?: string | null) {
@@ -38,7 +43,10 @@ export default async function EventPage({
   const user = await getCurrentUser()
 
   if (!event) notFound()
-  const views = await getPublicViewCount("event", event.id)
+  const [views, favoriteMarkers] = await Promise.all([
+    getPublicViewCount("event", event.id),
+    getFavoriteMarkers([{ targetType: "event", targetId: event.id }]),
+  ])
 
   const pageUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://srchr.ru"}/events/${event.slug}`
   const qrDestination = `/analytics/qr/event/${event.id}?to=${encodeURIComponent(`/events/${event.slug}`)}`
@@ -87,6 +95,12 @@ export default async function EventPage({
               {event.title}
             </h1>
             <PublicViewCount views={views} />
+            <FavoriteButton
+              initialFavoriteId={favoriteMarkers.get(`event:${event.id}`)}
+              label="Добавить в избранное"
+              targetId={event.id}
+              targetType="event"
+            />
             <p className="whitespace-pre-line text-lg text-muted-foreground">
               {event.description}
             </p>

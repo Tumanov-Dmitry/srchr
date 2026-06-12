@@ -13,7 +13,7 @@ const navItems = [
   { href: "/events", label: "Мероприятия" },
   { href: "/tenders", label: "Задачи" },
   { href: "/insights", label: "Аналитика рынка" },
-  { href: "/favorites", label: "Избранное" },
+  { href: "/dashboard/favorites", label: "Избранное" },
 ]
 
 export async function SiteHeader() {

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CalendarDays, MapPin } from "lucide-react"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -51,7 +52,15 @@ export function formatEventDate(value?: string | null) {
   })
 }
 
-export function EventCard({ event, views }: { event: Event; views?: number }) {
+export function EventCard({
+  event,
+  views,
+  initialFavoriteId,
+}: {
+  event: Event
+  views?: number
+  initialFavoriteId?: string | null
+}) {
   const isPromoted =
     event.is_promoted &&
     (!event.promoted_until || new Date(event.promoted_until) > new Date())
@@ -96,10 +105,15 @@ export function EventCard({ event, views }: { event: Event; views?: number }) {
         <div>{event.owner_name ?? "SRCHR"}</div>
         <PublicViewCount views={views} />
       </CardContent>
-      <CardFooter>
+      <CardFooter className="gap-2">
         <Button asChild className="w-full" variant="outline">
           <Link href={`/events/${event.slug}`}>Открыть событие</Link>
         </Button>
+        <FavoriteButton
+          initialFavoriteId={initialFavoriteId}
+          targetId={event.id}
+          targetType="event"
+        />
       </CardFooter>
     </Card>
   )
