@@ -4,6 +4,7 @@ import { ArrowLeft, Search } from "@/components/ui/icons"
 
 import { logout } from "@/app/actions/auth"
 import { DashboardNav } from "@/components/layout/dashboard-nav"
+import { DashboardMobileNav } from "@/components/layout/dashboard-mobile-nav"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { CompletionBanner } from "@/components/onboarding/completion-banner"
 import { Button } from "@/components/ui/button"
@@ -66,8 +67,11 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
+      <div className="mx-auto max-w-[1440px] px-4 pt-4 sm:px-6 lg:hidden">
+        <DashboardMobileNav primaryRole={state.primaryRole} />
+      </div>
       <div className="mx-auto grid max-w-[1440px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8 lg:px-8 lg:py-8">
-        <aside className="h-fit rounded-xl border bg-card p-3 shadow-elevation-1 lg:sticky lg:top-24">
+        <aside className="hidden h-fit rounded-xl border bg-card p-3 shadow-elevation-1 lg:sticky lg:top-24 lg:block">
           <div className="mb-3 border-b px-3 pb-3">
             <p className="text-xs font-medium uppercase text-muted-foreground">
               Личный кабинет

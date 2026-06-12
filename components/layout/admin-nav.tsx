@@ -1,6 +1,10 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   BarChart3,
+  BookOpenText,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -13,6 +17,7 @@ import {
   UserRound,
   Users,
 } from "@/components/ui/icons"
+import { cn } from "@/lib/utils"
 
 const items = [
   { href: "/admin", label: "Дашборд", icon: Home },
@@ -24,20 +29,35 @@ const items = [
   { href: "/admin/articles", label: "Статьи", icon: Newspaper },
   { href: "/admin/tenders", label: "Задачи", icon: BriefcaseBusiness },
   { href: "/admin/events", label: "Мероприятия", icon: CalendarDays },
-  { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/system-events", label: "System Events", icon: CircleAlert },
+  { href: "/admin/notifications", label: "Уведомления", icon: Bell },
+  {
+    href: "/admin/system-events",
+    label: "Системные события",
+    icon: CircleAlert,
+  },
   { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
+  { href: "/admin/knowledge", label: "База знаний", icon: BookOpenText },
 ]
 
 export function AdminNav() {
+  const pathname = usePathname()
+
   return (
     <nav className="grid gap-1">
       {items.map((item) => {
         const Icon = item.icon
+        const active =
+          pathname === item.href ||
+          (item.href !== "/admin" && pathname.startsWith(`${item.href}/`))
 
         return (
           <Link
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/75 hover:text-foreground"
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/75 hover:text-foreground",
+              active &&
+                "bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+            )}
             href={item.href}
             key={item.href}
           >

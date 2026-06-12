@@ -25,7 +25,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="max-w-3xl space-y-3">
+      <div className="min-w-0 max-w-3xl space-y-3">
         {eyebrow ? (
           <Badge variant="secondary" className="rounded-full">
             {eyebrow}
@@ -33,7 +33,9 @@ export function PageHeader({
         ) : null}
         <h1 className="type-h1">{title}</h1>
         {description ? (
-          <p className="type-body text-muted-foreground">{description}</p>
+          <p className="type-body break-words text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (

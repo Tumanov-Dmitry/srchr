@@ -1,0 +1,156 @@
+[
+  {
+    "slug": "platform",
+    "title": "Платформа и роли",
+    "summary": "Общая модель SRCHR, роли пользователей и границы основных сущностей.",
+    "category": "Основа",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["architecture", "roles"],
+    "dependsOn": []
+  },
+  {
+    "slug": "authentication",
+    "title": "Авторизация и онбординг",
+    "summary": "Регистрация, вход, профиль пользователя и первичная настройка аккаунта.",
+    "category": "Основа",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["engineering"],
+    "tags": ["auth", "profiles", "onboarding"],
+    "dependsOn": ["platform"]
+  },
+  {
+    "slug": "organizations",
+    "title": "Организации",
+    "summary": "Компании-заказчики, агентства-подрядчики, участники и роли организации.",
+    "category": "Профили",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["organizations", "memberships"],
+    "dependsOn": ["authentication"]
+  },
+  {
+    "slug": "contractors",
+    "title": "Подрядчики",
+    "summary": "Профиль подрядчика, публикация, услуги и публичный каталог.",
+    "category": "Профили",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["contractors", "catalog"],
+    "dependsOn": ["organizations"]
+  },
+  {
+    "slug": "experts",
+    "title": "Эксперты",
+    "summary": "Независимый публичный профиль эксперта и его связи с организациями.",
+    "category": "Профили",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["experts", "catalog"],
+    "dependsOn": ["authentication", "organizations"]
+  },
+  {
+    "slug": "materials",
+    "title": "Медиа и материалы",
+    "summary": "Кейсы, статьи, черновики, модерация, авторство и публикация.",
+    "category": "Контент",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["content", "engineering"],
+    "tags": ["materials", "cases", "articles"],
+    "dependsOn": ["organizations", "experts"]
+  },
+  {
+    "slug": "tenders",
+    "title": "Задачи и отклики",
+    "summary": "Создание задач, публикация и отклики экспертов или подрядчиков.",
+    "category": "Маркетплейс",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["tenders", "responses"],
+    "dependsOn": ["organizations", "experts"]
+  },
+  {
+    "slug": "price-requests",
+    "title": "Запрос стоимости",
+    "summary": "Публичный запрос цены, подбор исполнителей и управление ответами.",
+    "category": "Маркетплейс",
+    "status": "beta",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["price-requests", "responses"],
+    "dependsOn": ["organizations", "experts", "notifications"]
+  },
+  {
+    "slug": "events",
+    "title": "Мероприятия",
+    "summary": "Создание, модерация, продвижение и участие в мероприятиях.",
+    "category": "Контент",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["events", "participants"],
+    "dependsOn": ["organizations", "experts", "notifications"]
+  },
+  {
+    "slug": "favorites",
+    "title": "Избранное и коллекции",
+    "summary": "Персональные сохранения, снимки объектов, закрепление и коллекции.",
+    "category": "Персонализация",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["favorites", "collections"],
+    "dependsOn": ["authentication"]
+  },
+  {
+    "slug": "notifications",
+    "title": "Уведомления",
+    "summary": "Системные события, пользовательские уведомления и настройки каналов.",
+    "category": "Платформа",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["engineering"],
+    "tags": ["notifications", "system-events"],
+    "dependsOn": ["authentication"]
+  },
+  {
+    "slug": "reputation",
+    "title": "Репутация",
+    "summary": "Правила начисления, журнал событий и агрегированная репутация.",
+    "category": "Доверие",
+    "status": "beta",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["reputation", "reviews"],
+    "dependsOn": ["contractors", "experts", "materials", "tenders", "events"]
+  },
+  {
+    "slug": "analytics",
+    "title": "Аналитика",
+    "summary": "События поведения, сводные показатели и статистика объектов.",
+    "category": "Платформа",
+    "status": "beta",
+    "updatedAt": "2026-06-12",
+    "owners": ["product", "engineering"],
+    "tags": ["analytics", "events"],
+    "dependsOn": ["authentication"]
+  },
+  {
+    "slug": "administration",
+    "title": "Администрирование",
+    "summary": "Доступ администраторов, модерация и системные операции.",
+    "category": "Управление",
+    "status": "active",
+    "updatedAt": "2026-06-12",
+    "owners": ["engineering", "operations"],
+    "tags": ["admin", "moderation", "security"],
+    "dependsOn": ["platform", "notifications"]
+  }
+]

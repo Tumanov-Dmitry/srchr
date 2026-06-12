@@ -48,7 +48,7 @@ export default async function EventsPage({
 
       <Card className="mb-8 shadow-none">
         <CardContent className="p-4">
-          <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[160px_1fr_180px_190px_1fr_auto]">
+          <form className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[160px_1fr_180px_190px_1fr_auto]">
             <Input
               defaultValue={filters.month ?? ""}
               name="month"
@@ -90,8 +90,8 @@ export default async function EventsPage({
               name="tag"
               placeholder="Тег или категория"
             />
-            <div className="flex gap-2">
-              <Button type="submit">
+            <div className="grid grid-cols-[1fr_auto] gap-2 md:flex">
+              <Button className="w-full md:w-auto" type="submit">
                 <Search />
                 Найти
               </Button>
