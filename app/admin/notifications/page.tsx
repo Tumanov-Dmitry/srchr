@@ -1,74 +1,91 @@
+import { BellRing } from "lucide-react"
+
+import { EmptyState } from "@/components/srchr"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { getAdminNotificationEvents } from "@/lib/supabase/notification-queries"
 
 export default async function AdminNotificationsPage() {
-  const { events, isNotificationsTableMissing } = await getAdminNotificationEvents()
+  const { events, isNotificationsTableMissing } =
+    await getAdminNotificationEvents()
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Notifications</h1>
+        <h1 className="type-h1">Notifications</h1>
         <p className="mt-2 text-muted-foreground">
           Системный журнал событий платформы за последние 30 дней.
         </p>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Notification Events</CardTitle>
         </CardHeader>
         <CardContent>
           {isNotificationsTableMissing ? (
-            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              Примените SQL из supabase/sql/create-notifications.sql.
-            </div>
+            <EmptyState
+              description="Примените SQL-патч уведомлений."
+              icon={BellRing}
+              title="Таблица уведомлений недоступна"
+            />
           ) : events.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr className="border-b">
-                    <th className="py-3 pr-4">Событие</th>
-                    <th className="py-3 pr-4">Источник</th>
-                    <th className="py-3 pr-4">Цель</th>
-                    <th className="py-3 pr-4">Уровень</th>
-                    <th className="py-3 pr-4">Статус</th>
-                    <th className="py-3 pr-4">Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-[900px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Событие</TableHead>
+                    <TableHead>Источник</TableHead>
+                    <TableHead>Цель</TableHead>
+                    <TableHead>Уровень</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead>Дата</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {events.map((event) => (
-                    <tr className="border-b last:border-0" key={event.id}>
-                      <td className="py-3 pr-4">
+                    <TableRow key={event.id}>
+                      <TableCell>
                         <div className="font-medium">{event.event_key}</div>
                         <div className="max-w-md truncate text-xs text-muted-foreground">
                           {event.title ?? event.text ?? "Без описания"}
                         </div>
-                      </td>
-                      <td className="py-3 pr-4">{event.source ?? "srchr"}</td>
-                      <td className="py-3 pr-4">
-                        {[event.target_type, event.target_id].filter(Boolean).join(": ") || "—"}
-                      </td>
-                      <td className="py-3 pr-4">
+                      </TableCell>
+                      <TableCell>{event.source ?? "srchr"}</TableCell>
+                      <TableCell>
+                        {[event.target_type, event.target_id]
+                          .filter(Boolean)
+                          .join(": ") || "—"}
+                      </TableCell>
+                      <TableCell>
                         <Badge>{event.severity}</Badge>
-                      </td>
-                      <td className="py-3 pr-4">
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline">{event.status}</Badge>
-                      </td>
-                      <td className="py-3 pr-4">
+                      </TableCell>
+                      <TableCell>
                         {event.created_at
                           ? new Date(event.created_at).toLocaleString("ru-RU")
                           : "—"}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              Событий пока нет.
-            </div>
+            <EmptyState
+              description="Новые события появятся здесь автоматически."
+              icon={BellRing}
+              title="Событий пока нет"
+            />
           )}
         </CardContent>
       </Card>

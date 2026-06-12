@@ -106,12 +106,8 @@ export function OnboardingForm({ message }: { message?: string }) {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {roles.map((role) => (
-            <button
-              className={`min-h-36 rounded-md border p-4 text-left transition-colors ${
-                marketRole === role.value
-                  ? "border-primary bg-primary/5"
-                  : "hover:bg-accent"
-              }`}
+            <Button
+              className="min-h-40 h-auto items-start justify-start whitespace-normal p-5 text-left"
               key={role.value}
               onClick={() => {
                 setMarketRole(role.value)
@@ -119,6 +115,7 @@ export function OnboardingForm({ message }: { message?: string }) {
                 setSelectedOrganization(null)
               }}
               type="button"
+              variant={marketRole === role.value ? "default" : "outline"}
             >
               {role.value === "independent" ? (
                 <UserRound className="mb-3 h-5 w-5 text-primary" />
@@ -129,7 +126,7 @@ export function OnboardingForm({ message }: { message?: string }) {
               <span className="mt-2 block text-sm text-muted-foreground">
                 {role.description}
               </span>
-            </button>
+            </Button>
           ))}
         </CardContent>
       </Card>
@@ -159,24 +156,25 @@ export function OnboardingForm({ message }: { message?: string }) {
             {organizations.length > 0 ? (
               <div className="grid gap-2">
                 {organizations.map((organization) => (
-                  <button
-                    className={`rounded-md border p-3 text-left ${
-                      selectedOrganization?.id === organization.id
-                        ? "border-primary bg-primary/5"
-                        : ""
-                    }`}
+                  <Button
+                    className="h-auto justify-start p-3 text-left"
                     key={organization.id}
                     onClick={() => {
                       setSelectedOrganization(organization)
                       setOrganizationAction("request")
                     }}
                     type="button"
+                    variant={
+                      selectedOrganization?.id === organization.id
+                        ? "default"
+                        : "outline"
+                    }
                   >
                     <span className="font-medium">{organization.name}</span>
                     <span className="ml-2 text-sm text-muted-foreground">
                       {organization.city}
                     </span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}

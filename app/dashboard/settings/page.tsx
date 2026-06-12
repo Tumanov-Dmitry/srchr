@@ -1,8 +1,21 @@
+import { BellOff } from "lucide-react"
+
 import { saveNotificationPreferences } from "@/app/actions/notifications"
+import { EmptyState } from "@/components/srchr"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { decodeMessage } from "@/lib/messages"
 import {
   getNotificationPreferences,
@@ -27,18 +40,16 @@ export default async function SettingsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Настройки</h1>
+        <h1 className="type-h1">Настройки</h1>
         <p className="mt-2 text-muted-foreground">
-          Настройки пользователя, аккаунта и уведомлений.
+          Аккаунт и каналы уведомлений.
         </p>
       </div>
-
       {message ? (
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-primary">
-          {message}
-        </div>
+        <Alert>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
       ) : null}
-
       <Card>
         <CardHeader>
           <CardTitle>Профиль</CardTitle>
@@ -47,71 +58,67 @@ export default async function SettingsPage({
           <form className="max-w-xl space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" value={user?.email ?? ""} readOnly />
+              <Input id="email" readOnly value={user?.email ?? ""} />
             </div>
             <Button type="button">Сохранить</Button>
           </form>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Уведомления</CardTitle>
         </CardHeader>
         <CardContent>
           {isNotificationsTableMissing ? (
-            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              Примените SQL из supabase/sql/create-notifications.sql, чтобы
-              включить настройки уведомлений.
-            </div>
+            <EmptyState
+              description="Примените SQL-патч уведомлений, чтобы включить настройки каналов."
+              icon={BellOff}
+              title="Настройки уведомлений недоступны"
+            />
           ) : (
             <form action={saveNotificationPreferences} className="space-y-6">
               {notificationPreferenceGroups.map((group) => (
                 <div className="space-y-3" key={group.category}>
                   <h2 className="font-medium">{group.title}</h2>
                   <div className="overflow-x-auto rounded-lg border">
-                    <table className="w-full min-w-[620px] text-sm">
-                      <thead className="bg-secondary/60 text-left text-muted-foreground">
-                        <tr>
-                          <th className="px-3 py-2">Событие</th>
-                          <th className="px-3 py-2">В платформе</th>
-                          <th className="px-3 py-2">Email</th>
-                          <th className="px-3 py-2">Telegram</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table className="min-w-[620px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Событие</TableHead>
+                          <TableHead>В платформе</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Telegram</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {group.items.map(([eventKey, label]) => {
                           const preference = preferencesByKey.get(eventKey)
-
                           return (
-                            <tr className="border-t" key={eventKey}>
-                              <td className="px-3 py-3">{label}</td>
-                              <td className="px-3 py-3">
-                                <input
+                            <TableRow key={eventKey}>
+                              <TableCell>{label}</TableCell>
+                              <TableCell>
+                                <Checkbox
                                   defaultChecked={preference?.in_app ?? true}
                                   name={`${eventKey}:in_app`}
-                                  type="checkbox"
                                 />
-                              </td>
-                              <td className="px-3 py-3">
-                                <input
+                              </TableCell>
+                              <TableCell>
+                                <Checkbox
                                   defaultChecked={preference?.email ?? false}
                                   name={`${eventKey}:email`}
-                                  type="checkbox"
                                 />
-                              </td>
-                              <td className="px-3 py-3">
-                                <input
+                              </TableCell>
+                              <TableCell>
+                                <Checkbox
                                   defaultChecked={preference?.telegram ?? false}
                                   name={`${eventKey}:telegram`}
-                                  type="checkbox"
                                 />
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           )
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               ))}

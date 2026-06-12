@@ -6,9 +6,19 @@ import {
   FileText,
   Users,
 } from "lucide-react"
+
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
+import { EmptyState } from "@/components/srchr"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarketInsights } from "@/lib/supabase/insights-queries"
 
@@ -42,24 +52,24 @@ export default async function InsightsPage() {
   return (
     <PageShell>
       <PageHeader
+        description="Агрегированные данные SRCHR по услугам, участникам рынка, задачам и публикациям."
         title="Аналитика рынка"
-        description="Агрегированные данные SRCHR по услугам, участникам рынка, задачам и публикациям. Показатели обновляются по мере накопления данных."
       />
-
-      <section className="mb-8 grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-5">
+      <section className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {totals.map((item) => (
-          <div className="bg-background p-5" key={item.label}>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </div>
-            <div className="mt-2 text-2xl font-semibold">
-              {number.format(item.value)}
-            </div>
-          </div>
+          <Card className="shadow-none" key={item.label}>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <item.icon className="size-4" />
+                {item.label}
+              </div>
+              <div className="mt-2 text-2xl font-semibold">
+                {number.format(item.value)}
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </section>
-
       <Tabs defaultValue="services">
         <TabsList className="mb-5 h-auto w-full justify-start overflow-x-auto">
           <TabsTrigger value="services">Услуги</TabsTrigger>
@@ -68,7 +78,6 @@ export default async function InsightsPage() {
           <TabsTrigger value="experts">Эксперты</TabsTrigger>
           <TabsTrigger value="research">Исследования</TabsTrigger>
         </TabsList>
-
         <TabsContent value="services">
           <Card>
             <CardHeader>
@@ -76,53 +85,54 @@ export default async function InsightsPage() {
             </CardHeader>
             <CardContent className="overflow-x-auto">
               {insights.services.length > 0 ? (
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="border-b text-muted-foreground">
-                    <tr>
-                      <th className="pb-3 font-medium">Услуга</th>
-                      <th className="pb-3 font-medium">Подрядчики</th>
-                      <th className="pb-3 font-medium">Эксперты</th>
-                      <th className="pb-3 font-medium">Задачи</th>
-                      <th className="pb-3 font-medium">Кейсы</th>
-                      <th className="pb-3 font-medium">Средний бюджет</th>
-                      <th className="pb-3 font-medium">Средний срок</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-[760px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Услуга</TableHead>
+                      <TableHead>Подрядчики</TableHead>
+                      <TableHead>Эксперты</TableHead>
+                      <TableHead>Задачи</TableHead>
+                      <TableHead>Кейсы</TableHead>
+                      <TableHead>Средний бюджет</TableHead>
+                      <TableHead>Средний срок</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {insights.services.map((service) => (
-                      <tr className="border-b last:border-0" key={service.id}>
-                        <td className="py-4 font-medium">{service.name}</td>
-                        <td className="py-4">
+                      <TableRow key={service.id}>
+                        <TableCell className="font-medium">
+                          {service.name}
+                        </TableCell>
+                        <TableCell>
                           {number.format(service.contractors)}
-                        </td>
-                        <td className="py-4">
-                          {number.format(service.experts)}
-                        </td>
-                        <td className="py-4">
-                          {number.format(service.tenders)}
-                        </td>
-                        <td className="py-4">{number.format(service.cases)}</td>
-                        <td className="py-4">
+                        </TableCell>
+                        <TableCell>{number.format(service.experts)}</TableCell>
+                        <TableCell>{number.format(service.tenders)}</TableCell>
+                        <TableCell>{number.format(service.cases)}</TableCell>
+                        <TableCell>
                           {service.averageBudget
                             ? money.format(service.averageBudget)
-                            : "Накапливаем данные"}
-                        </td>
-                        <td className="py-4">
+                            : "Недостаточно данных"}
+                        </TableCell>
+                        <TableCell>
                           {service.averageDuration
                             ? `${Math.round(service.averageDuration)} дн.`
-                            : "Накапливаем данные"}
-                        </td>
-                      </tr>
+                            : "Недостаточно данных"}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               ) : (
-                <EmptyState text="Справочник услуг пока пуст." />
+                <EmptyState
+                  description="Данные появятся после заполнения справочника услуг."
+                  icon={BarChart3}
+                  title="Справочник услуг пока пуст"
+                />
               )}
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="demand">
           <div className="grid gap-6 lg:grid-cols-2">
             <Ranking
@@ -135,12 +145,11 @@ export default async function InsightsPage() {
             />
             <Ranking
               items={insights.categories}
-              title="Категории контента и экспертизы"
+              title="Категории контента"
               unit="упоминаний"
             />
           </div>
         </TabsContent>
-
         <TabsContent value="contractors">
           <Ranking
             items={insights.contractorSizes}
@@ -148,7 +157,6 @@ export default async function InsightsPage() {
             unit="компаний"
           />
         </TabsContent>
-
         <TabsContent value="experts">
           <Ranking
             items={insights.expertSpecializations}
@@ -156,7 +164,6 @@ export default async function InsightsPage() {
             unit="экспертов"
           />
         </TabsContent>
-
         <TabsContent value="research">
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             <Card>
@@ -166,39 +173,24 @@ export default async function InsightsPage() {
               <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
                 <p>
                   Раздел собирает обезличенные агрегаты из задач, профилей,
-                  кейсов, статей и поведения пользователей. По мере роста
-                  выборки здесь появятся регулярные исследования рынка.
+                  кейсов, статей и поведения пользователей.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">Бюджеты</Badge>
-                  <Badge variant="outline">Сроки</Badge>
-                  <Badge variant="outline">Спрос</Badge>
-                  <Badge variant="outline">Специализации</Badge>
-                  <Badge variant="outline">Динамика рынка</Badge>
+                  {[
+                    "Бюджеты",
+                    "Сроки",
+                    "Спрос",
+                    "Специализации",
+                    "Динамика",
+                  ].map((item) => (
+                    <Badge key={item} variant="outline">
+                      {item}
+                    </Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Материалы
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {insights.materialTypes.map((item) => (
-                  <div
-                    className="flex items-center justify-between border-b py-3 last:border-0"
-                    key={item.name}
-                  >
-                    <span>{item.name}</span>
-                    <span className="font-medium">
-                      {number.format(item.count)}
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <Ranking items={insights.materialTypes} title="Материалы" unit="" />
           </div>
         </TabsContent>
       </Tabs>
@@ -239,15 +231,13 @@ function Ranking({
             ))}
           </div>
         ) : (
-          <EmptyState text="Данных пока недостаточно." />
+          <EmptyState
+            description="Показатели появятся по мере накопления данных."
+            icon={BarChart3}
+            title="Данных пока недостаточно"
+          />
         )}
       </CardContent>
     </Card>
-  )
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <p className="py-8 text-center text-sm text-muted-foreground">{text}</p>
   )
 }

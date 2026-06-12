@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FormSelect } from "@/components/ui/form-select"
 import { RequiredLabel } from "@/components/ui/required-label"
 import type { ContentOwner, Material } from "@/types"
 
@@ -17,7 +18,7 @@ export function MaterialOwnerSelect({
         : null
   const defaultOwner =
     materialOwner ??
-    (owners[0] ? `${owners[0].owner_type}:${owners[0].owner_id}` : "")
+    (owners[0] ? `${owners[0].owner_type}:${owners[0].owner_id}` : undefined)
 
   return (
     <Card>
@@ -28,23 +29,15 @@ export function MaterialOwnerSelect({
         <RequiredLabel htmlFor="owner" required>
           Публиковать от имени
         </RequiredLabel>
-        <select
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        <FormSelect
           defaultValue={defaultOwner}
-          id="owner"
           name="owner"
-        >
-          <option value="">Выберите владельца</option>
-          {owners.map((owner) => (
-            <option
-              key={`${owner.owner_type}:${owner.owner_id}`}
-              value={`${owner.owner_type}:${owner.owner_id}`}
-            >
-              {owner.owner_type === "expert" ? "Эксперт" : "Организация"}:{" "}
-              {owner.label}
-            </option>
-          ))}
-        </select>
+          options={owners.map((owner) => ({
+            value: `${owner.owner_type}:${owner.owner_id}`,
+            label: `${owner.owner_type === "expert" ? "Эксперт" : "Организация"}: ${owner.label}`,
+          }))}
+          placeholder="Выберите владельца"
+        />
       </CardContent>
     </Card>
   )

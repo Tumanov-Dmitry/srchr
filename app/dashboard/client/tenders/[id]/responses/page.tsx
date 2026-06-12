@@ -4,6 +4,7 @@ import { updateTenderResponseStatus } from "@/app/actions/tenders"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SelectField } from "@/components/ui/select-field"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   getReputationSummaries,
@@ -118,7 +119,7 @@ export default async function ClientTenderResponsesPage({
                   )}
                   className="flex flex-wrap gap-2"
                 >
-                  <select
+                  <SelectField
                     className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                     defaultValue={response.status ?? "sent"}
                     name="status"
@@ -126,7 +127,7 @@ export default async function ClientTenderResponsesPage({
                     <option value="viewed">Просмотрен</option>
                     <option value="accepted">Принят</option>
                     <option value="rejected">Отклонён</option>
-                  </select>
+                  </SelectField>
                   <Button type="submit" variant="outline">
                     Обновить статус
                   </Button>

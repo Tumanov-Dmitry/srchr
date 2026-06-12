@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SelectField } from "@/components/ui/select-field"
 import { getAdminNotificationEvents } from "@/lib/supabase/notification-queries"
 
 const severities = ["all", "warning", "error", "critical"]
@@ -20,14 +21,16 @@ export default async function AdminSystemEventsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">System Events</h1>
+        <h1 className="text-3xl font-semibold tracking-normal">
+          System Events
+        </h1>
         <p className="mt-2 text-muted-foreground">
           Предупреждения, ошибки и критические события платформы.
         </p>
       </div>
 
       <form className="flex max-w-xs gap-2">
-        <select
+        <SelectField
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           defaultValue={severity ?? "all"}
           name="severity"
@@ -37,7 +40,7 @@ export default async function AdminSystemEventsPage({
               {item === "all" ? "Все уровни" : item}
             </option>
           ))}
-        </select>
+        </SelectField>
         <Button type="submit" variant="outline">
           Фильтр
         </Button>
@@ -55,7 +58,10 @@ export default async function AdminSystemEventsPage({
           ) : systemEvents.length > 0 ? (
             <div className="divide-y rounded-lg border">
               {systemEvents.map((event) => (
-                <div className="grid gap-3 p-4 md:grid-cols-[140px_1fr_140px]" key={event.id}>
+                <div
+                  className="grid gap-3 p-4 md:grid-cols-[140px_1fr_140px]"
+                  key={event.id}
+                >
                   <div>
                     <Badge>{event.severity}</Badge>
                     <div className="mt-2 text-xs text-muted-foreground">
@@ -63,7 +69,9 @@ export default async function AdminSystemEventsPage({
                     </div>
                   </div>
                   <div>
-                    <div className="font-medium">{event.title ?? event.event_key}</div>
+                    <div className="font-medium">
+                      {event.title ?? event.event_key}
+                    </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {event.text ?? "Описание не указано"}
                     </div>

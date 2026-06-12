@@ -1,18 +1,37 @@
 import Link from "next/link"
+import { CalendarDays } from "lucide-react"
+
 import {
   updateAdminEventPromotion,
   updateAdminEventStatus,
 } from "@/app/actions/admin"
-import { eventFormatLabels, eventStatusLabels, eventTypeLabels } from "@/components/events/event-card"
+import { AdminStatusForm } from "@/components/admin/status-form"
+import {
+  eventFormatLabels,
+  eventStatusLabels,
+  eventTypeLabels,
+} from "@/components/events/event-card"
+import { EmptyState } from "@/components/srchr"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { decodeMessage } from "@/lib/messages"
 import { getAdminEvents } from "@/lib/supabase/admin-queries"
 
 const statuses = [
-  "all",
   "draft",
   "moderation",
   "published",
@@ -21,6 +40,10 @@ const statuses = [
   "cancelled",
   "completed",
 ]
+const statusOptions = statuses.map((status) => ({
+  value: status,
+  label: eventStatusLabels[status],
+}))
 
 export default async function AdminEventsPage({
   searchParams,
@@ -34,35 +57,34 @@ export default async function AdminEventsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Мероприятия</h1>
+        <h1 className="type-h1">Мероприятия</h1>
         <p className="mt-2 text-muted-foreground">
           Модерация, статусы и ручное продвижение событий.
         </p>
       </div>
-
       {message ? (
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-primary">
-          {message}
-        </div>
+        <Alert>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
       ) : null}
-
-      <form className="flex max-w-xs gap-2">
-        <select
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-          defaultValue={status ?? "all"}
-          name="status"
-        >
-          {statuses.map((item) => (
-            <option key={item} value={item}>
-              {item === "all" ? "Все статусы" : eventStatusLabels[item]}
-            </option>
-          ))}
-        </select>
-        <Button type="submit" variant="outline">
-          Фильтр
-        </Button>
-      </form>
-
+      <Card className="max-w-sm shadow-none">
+        <CardContent className="p-3">
+          <form className="flex gap-2">
+            <FormSelect
+              className="flex-1"
+              defaultValue={status ?? "all"}
+              name="status"
+              options={[
+                { value: "all", label: "Все статусы" },
+                ...statusOptions,
+              ]}
+            />
+            <Button type="submit" variant="outline">
+              Фильтр
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Список событий</CardTitle>
@@ -70,98 +92,102 @@ export default async function AdminEventsPage({
         <CardContent>
           {events.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr className="border-b">
-                    <th className="py-3 pr-4">Событие</th>
-                    <th className="py-3 pr-4">Тип</th>
-                    <th className="py-3 pr-4">Дата</th>
-                    <th className="py-3 pr-4">Статус</th>
-                    <th className="py-3 pr-4">Промо</th>
-                    <th className="py-3 pr-4">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-[1180px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Событие</TableHead>
+                    <TableHead>Тип</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead>Продвижение</TableHead>
+                    <TableHead>Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {events.map((event) => (
-                    <tr className="border-b last:border-0" key={event.id}>
-                      <td className="py-3 pr-4">
+                    <TableRow key={event.id}>
+                      <TableCell>
                         <div className="font-medium">{event.title}</div>
                         <div className="max-w-md truncate text-xs text-muted-foreground">
-                          {event.city ?? eventFormatLabels[event.format]} · {event.slug}
+                          {event.city ?? eventFormatLabels[event.format]} ·{" "}
+                          {event.slug}
                         </div>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge variant="outline">{eventTypeLabels[event.event_type]}</Badge>
-                      </td>
-                      <td className="py-3 pr-4">
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {eventTypeLabels[event.event_type]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {event.start_date
                           ? new Date(event.start_date).toLocaleString("ru-RU")
                           : "Дата не указана"}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <Badge>{eventStatusLabels[event.status] ?? event.status}</Badge>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <form action={updateAdminEventPromotion} className="grid gap-2">
+                      </TableCell>
+                      <TableCell>
+                        <Badge>
+                          {eventStatusLabels[event.status] ?? event.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <form
+                          action={updateAdminEventPromotion}
+                          className="grid min-w-60 gap-2"
+                        >
                           <input name="id" type="hidden" value={event.id} />
-                          <label className="flex items-center gap-2">
-                            <input
+                          <div className="flex items-center gap-2">
+                            <Checkbox
                               defaultChecked={Boolean(event.is_promoted)}
+                              id={`promoted-${event.id}`}
                               name="is_promoted"
-                              type="checkbox"
                             />
-                            Продвигать
-                          </label>
+                            <Label htmlFor={`promoted-${event.id}`}>
+                              Продвигать
+                            </Label>
+                          </div>
                           <Input
-                            defaultValue={event.promoted_until?.slice(0, 16) ?? ""}
+                            defaultValue={
+                              event.promoted_until?.slice(0, 16) ?? ""
+                            }
                             name="promoted_until"
                             type="datetime-local"
                           />
                           <Input
                             defaultValue={event.promotion_url ?? ""}
                             name="promotion_url"
-                            placeholder="promotion_url"
+                            placeholder="Ссылка продвижения"
                           />
                           <Button size="sm" type="submit" variant="outline">
                             Сохранить промо
                           </Button>
                         </form>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <div className="flex flex-wrap gap-2">
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button asChild size="sm" variant="outline">
-                            <Link href={`/admin/events/${event.id}/edit`}>Открыть</Link>
+                            <Link href={`/admin/events/${event.id}/edit`}>
+                              Открыть
+                            </Link>
                           </Button>
-                          <form action={updateAdminEventStatus} className="flex gap-2">
-                            <input name="id" type="hidden" value={event.id} />
-                            <select
-                              className="h-9 rounded-md border border-input bg-background px-2"
-                              defaultValue={event.status}
-                              name="status"
-                            >
-                              {statuses
-                                .filter((item) => item !== "all")
-                                .map((item) => (
-                                  <option key={item} value={item}>
-                                    {eventStatusLabels[item]}
-                                  </option>
-                                ))}
-                            </select>
-                            <Button size="sm" type="submit">
-                              Статус
-                            </Button>
-                          </form>
+                          <AdminStatusForm
+                            action={updateAdminEventStatus}
+                            defaultValue={event.status}
+                            id={event.id}
+                            options={statusOptions}
+                            submitLabel="Статус"
+                          />
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-              Событий пока нет.
-            </div>
+            <EmptyState
+              description="Измените фильтр или дождитесь новых событий."
+              icon={CalendarDays}
+              title="Событий пока нет"
+            />
           )}
         </CardContent>
       </Card>

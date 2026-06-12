@@ -1,6 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -20,51 +22,48 @@ export function ResponseForm({
   const defaultOption = options[0]?.value
 
   return (
-    <form action={action} className="space-y-4 rounded-lg border bg-card p-5">
-      {options.length > 1 ? (
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">Как откликнуться?</legend>
-          <div className="grid gap-2">
-            {options.map((option) => (
-              <label
-                className="flex gap-3 rounded-md border p-3 text-sm"
-                key={option.value}
-              >
-                <input
-                  defaultChecked={option.value === defaultOption}
-                  name="responder_type"
-                  type="radio"
-                  value={option.value}
-                />
-                <span>
-                  <span className="block font-medium">{option.label}</span>
-                  <span className="text-muted-foreground">
-                    {option.description}
-                  </span>
-                </span>
-              </label>
-            ))}
+    <Card>
+      <CardContent className="pt-6">
+        <form action={action} className="space-y-5">
+          {options.length > 1 ? (
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium">Как откликнуться?</legend>
+              <RadioGroup defaultValue={defaultOption} name="responder_type">
+                {options.map((option) => (
+                  <label
+                    className="flex cursor-pointer gap-3 rounded-lg border p-4 text-sm transition-colors hover:bg-muted"
+                    key={option.value}
+                  >
+                    <RadioGroupItem value={option.value} />
+                    <span>
+                      <span className="block font-medium">{option.label}</span>
+                      <span className="text-muted-foreground">
+                        {option.description}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </RadioGroup>
+            </fieldset>
+          ) : defaultOption ? (
+            <input name="responder_type" type="hidden" value={defaultOption} />
+          ) : null}
+          <div className="space-y-2">
+            <RequiredLabel htmlFor="message" required>
+              Отклик
+            </RequiredLabel>
+            <Textarea
+              id="message"
+              name="message"
+              placeholder="Коротко расскажите, как можете помочь с задачей"
+              required
+            />
           </div>
-        </fieldset>
-      ) : defaultOption ? (
-        <input name="responder_type" type="hidden" value={defaultOption} />
-      ) : null}
-
-      <div className="space-y-2">
-        <RequiredLabel htmlFor="message" required>
-          Отклик
-        </RequiredLabel>
-        <Textarea
-          id="message"
-          name="message"
-          placeholder="Коротко расскажите, как можете помочь с задачей"
-          required
-        />
-      </div>
-
-      <Button disabled={options.length === 0} type="submit">
-        Отправить отклик
-      </Button>
-    </form>
+          <Button disabled={options.length === 0} type="submit">
+            Отправить отклик
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

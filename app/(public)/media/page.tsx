@@ -1,8 +1,13 @@
 import Link from "next/link"
+import { BookOpenText, RotateCcw, Search } from "lucide-react"
+
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
-import { MaterialCard } from "@/components/media/material-card"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
+import { MaterialCard } from "@/components/media/material-card"
+import { EmptyState } from "@/components/srchr"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
 import {
   getFavoriteMarkers,
@@ -10,12 +15,6 @@ import {
   type MaterialFilters,
 } from "@/lib/supabase/queries"
 import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
-
-const typeOptions = [
-  { value: "", label: "Все типы" },
-  { value: "case", label: "Кейсы" },
-  { value: "article", label: "Статьи" },
-]
 
 export default async function MediaPage({
   searchParams,
@@ -38,39 +37,46 @@ export default async function MediaPage({
     <PageShell>
       <CatalogAnalyticsTracker catalog="media" filters={filters} />
       <PageHeader
-        title="Медиа"
         description="Кейсы, статьи и экспертные материалы участников SRCHR."
+        title="Медиа"
       />
 
-      <form className="mb-8 grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-[1fr_180px_220px_auto]">
-        <Input
-          defaultValue={filters.q ?? ""}
-          name="q"
-          placeholder="Поиск по названию или описанию"
-        />
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-          defaultValue={filters.type ?? ""}
-          name="type"
-        >
-          {typeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <Input
-          defaultValue={filters.category ?? ""}
-          name="category"
-          placeholder="Рубрика / услуга"
-        />
-        <div className="flex gap-2">
-          <Button type="submit">Фильтровать</Button>
-          <Button asChild variant="outline">
-            <Link href="/media">Сбросить</Link>
-          </Button>
-        </div>
-      </form>
+      <Card className="mb-8 shadow-none">
+        <CardContent className="p-4">
+          <form className="grid gap-3 md:grid-cols-[1fr_180px_220px_auto]">
+            <Input
+              defaultValue={filters.q ?? ""}
+              name="q"
+              placeholder="Поиск по названию или описанию"
+            />
+            <FormSelect
+              defaultValue={filters.type || undefined}
+              name="type"
+              options={[
+                { value: "case", label: "Кейсы" },
+                { value: "article", label: "Статьи" },
+              ]}
+              placeholder="Все типы"
+            />
+            <Input
+              defaultValue={filters.category ?? ""}
+              name="category"
+              placeholder="Рубрика или услуга"
+            />
+            <div className="flex gap-2">
+              <Button type="submit">
+                <Search />
+                Найти
+              </Button>
+              <Button asChild size="icon" variant="outline">
+                <Link aria-label="Сбросить фильтры" href="/media">
+                  <RotateCcw />
+                </Link>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {materials.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -84,9 +90,11 @@ export default async function MediaPage({
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Материалы пока не опубликованы.
-        </div>
+        <EmptyState
+          description="Попробуйте изменить параметры поиска или загляните позже."
+          icon={BookOpenText}
+          title="Материалы не найдены"
+        />
       )}
     </PageShell>
   )

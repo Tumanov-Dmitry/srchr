@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
+
+import { AppProviders } from "@/components/layout/app-providers"
+
 import "./globals.css"
 
 export const metadata: Metadata = {
   title: "SRCHR",
-  description: "Платформа для поиска digital-подрядчиков и задач",
+  description: "Платформа для поиска подрядчиков, экспертов и задач",
 }
 
 export default function RootLayout({
@@ -13,7 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   )
 }

@@ -1,16 +1,23 @@
 import Link from "next/link"
+import { RotateCcw, Search, UsersRound } from "lucide-react"
+
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { ExpertCard } from "@/components/experts/expert-card"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
+import { EmptyState } from "@/components/srchr"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 import {
   getFavoriteMarkers,
   getPublishedExperts,
   getReputationSummaries,
   type ExpertFilters,
 } from "@/lib/supabase/queries"
-import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 
 export default async function ExpertsPage({
   searchParams,
@@ -35,7 +42,6 @@ export default async function ExpertsPage({
   const sortedExperts = [...experts].sort((left, right) => {
     const leftSummary = reputationSummaries.get(left.id)
     const rightSummary = reputationSummaries.get(right.id)
-
     if (filters.sort === "reputation") {
       return (
         (rightSummary?.total_points ?? 0) - (leftSummary?.total_points ?? 0)
@@ -52,7 +58,6 @@ export default async function ExpertsPage({
         (leftSummary?.recommendations_count ?? 0)
       )
     }
-
     return 0
   })
 
@@ -60,58 +65,71 @@ export default async function ExpertsPage({
     <PageShell>
       <CatalogAnalyticsTracker catalog="experts" filters={filters} />
       <PageHeader
+        description="Публичные профили специалистов, которые работают самостоятельно или связаны с компаниями."
         title="Эксперты"
-        description="Публичные профили специалистов, которые могут работать самостоятельно или быть связаны с компаниями."
       />
 
-      <form className="mb-8 grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-[1fr_180px_180px_180px_200px_auto]">
-        <Input defaultValue={filters.q ?? ""} name="q" placeholder="Поиск" />
-        <Input
-          defaultValue={filters.specialization ?? ""}
-          name="specialization"
-          placeholder="Специализация"
-        />
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-          defaultValue={filters.sort ?? "newest"}
-          name="sort"
-        >
-          <option value="newest">Сначала новые</option>
-          <option value="reputation">По репутации</option>
-          <option value="reviews">По отзывам</option>
-          <option value="recommendations">По рекомендациям</option>
-        </select>
-        <Input
-          defaultValue={filters.city ?? ""}
-          name="city"
-          placeholder="Город"
-        />
-        <Input
-          defaultValue={filters.skills ?? ""}
-          name="skills"
-          placeholder="Навыки"
-        />
-        <div className="flex gap-2">
-          <Button type="submit">Искать</Button>
-          <Button asChild variant="outline">
-            <Link href="/experts">Сбросить</Link>
-          </Button>
-        </div>
-        <Input
-          defaultValue={filters.company ?? ""}
-          name="company"
-          placeholder="Компания"
-        />
-        <label className="flex items-center gap-2 rounded-md border px-3 text-sm md:col-span-2">
-          <input
-            defaultChecked={filters.open === "true"}
-            name="open"
-            type="checkbox"
-            value="true"
-          />
-          Открыт к сотрудничеству
-        </label>
-      </form>
+      <Card className="mb-8 shadow-none">
+        <CardContent className="p-4">
+          <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_180px_180px_180px_1fr_auto]">
+            <Input
+              defaultValue={filters.q ?? ""}
+              name="q"
+              placeholder="Имя, должность или компания"
+            />
+            <Input
+              defaultValue={filters.specialization ?? ""}
+              name="specialization"
+              placeholder="Специализация"
+            />
+            <FormSelect
+              defaultValue={filters.sort ?? "newest"}
+              name="sort"
+              options={[
+                { value: "newest", label: "Сначала новые" },
+                { value: "reputation", label: "По репутации" },
+                { value: "reviews", label: "По отзывам" },
+                { value: "recommendations", label: "По рекомендациям" },
+              ]}
+            />
+            <Input
+              defaultValue={filters.city ?? ""}
+              name="city"
+              placeholder="Город"
+            />
+            <Input
+              defaultValue={filters.skills ?? ""}
+              name="skills"
+              placeholder="Навыки"
+            />
+            <div className="flex gap-2">
+              <Button type="submit">
+                <Search />
+                Найти
+              </Button>
+              <Button asChild size="icon" variant="outline">
+                <Link aria-label="Сбросить фильтры" href="/experts">
+                  <RotateCcw />
+                </Link>
+              </Button>
+            </div>
+            <Input
+              defaultValue={filters.company ?? ""}
+              name="company"
+              placeholder="Компания"
+            />
+            <div className="flex min-h-11 items-center gap-3 rounded-lg border bg-card px-3.5 xl:col-span-2">
+              <Checkbox
+                defaultChecked={filters.open === "true"}
+                id="open"
+                name="open"
+                value="true"
+              />
+              <Label htmlFor="open">Открыт к сотрудничеству</Label>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {experts.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -126,9 +144,11 @@ export default async function ExpertsPage({
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Эксперты пока не опубликованы.
-        </div>
+        <EmptyState
+          description="Попробуйте изменить параметры поиска."
+          icon={UsersRound}
+          title="Эксперты не найдены"
+        />
       )}
     </PageShell>
   )

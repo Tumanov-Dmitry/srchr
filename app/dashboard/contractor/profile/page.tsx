@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RequiredLabel } from "@/components/ui/required-label"
+import { SelectField } from "@/components/ui/select-field"
 import { Textarea } from "@/components/ui/textarea"
 import { getCurrentContractorOrganization } from "@/lib/supabase/queries"
 
@@ -71,15 +72,25 @@ export default async function ContractorProfilePage({
           <CardTitle>Профиль подрядчика</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={updateContractorProfile} className="grid gap-5 md:grid-cols-2">
+          <form
+            action={updateContractorProfile}
+            className="grid gap-5 md:grid-cols-2"
+          >
             <ContractorSlugFields
               defaultName={organization.name}
               defaultSlug={organization.slug}
               defaultWebsite={website}
             />
             <div className="space-y-2">
-              <RequiredLabel htmlFor="city" required>Город</RequiredLabel>
-              <Input id="city" name="city" defaultValue={organization.city ?? ""} required />
+              <RequiredLabel htmlFor="city" required>
+                Город
+              </RequiredLabel>
+              <Input
+                id="city"
+                name="city"
+                defaultValue={organization.city ?? ""}
+                required
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <RequiredLabel htmlFor="description" required>
@@ -94,16 +105,17 @@ export default async function ContractorProfilePage({
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Статус публикации</Label>
-              <select
+              <SelectField
                 name="status"
                 defaultValue={organization.status ?? "draft"}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="draft">Черновик</option>
                 <option value="published">Опубликован</option>
-              </select>
+              </SelectField>
               <p className="text-sm text-muted-foreground">
-                Подрядчик появляется в публичном каталоге, когда статус опубликован.
+                Подрядчик появляется в публичном каталоге, когда статус
+                опубликован.
               </p>
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -111,7 +123,9 @@ export default async function ContractorProfilePage({
               <Textarea
                 id="short_description"
                 name="short_description"
-                defaultValue={profile?.short_description ?? profile?.description ?? ""}
+                defaultValue={
+                  profile?.short_description ?? profile?.description ?? ""
+                }
               />
             </div>
             <div className="space-y-2 md:col-span-2">
@@ -181,7 +195,9 @@ export default async function ContractorProfilePage({
             </div>
 
             {message ? (
-              <p className="text-sm text-destructive md:col-span-2">{message}</p>
+              <p className="text-sm text-destructive md:col-span-2">
+                {message}
+              </p>
             ) : null}
 
             <div className="flex flex-wrap gap-3 md:col-span-2">

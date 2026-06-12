@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RequiredLabel } from "@/components/ui/required-label"
+import { SelectField } from "@/components/ui/select-field"
 import { Textarea } from "@/components/ui/textarea"
 import { decodeMessage } from "@/lib/messages"
 import { getUserContentOwners } from "@/lib/supabase/queries"
@@ -72,7 +73,7 @@ export default async function NewCaseMaterialPage({
             <Label htmlFor="client_name_visible">
               Показывать название клиента
             </Label>
-            <select
+            <SelectField
               id="client_name_visible"
               name="client_name_visible"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -80,7 +81,7 @@ export default async function NewCaseMaterialPage({
             >
               <option value="yes">Да</option>
               <option value="no">Нет</option>
-            </select>
+            </SelectField>
           </div>
         </CardContent>
       </Card>
