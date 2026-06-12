@@ -294,6 +294,65 @@ export type TenderResponse = {
   expert_profiles?: ExpertProfile | null
 }
 
+export type PriceRequestFormat = "online" | "offline" | "hybrid"
+export type PriceRequestStatus =
+  | "draft"
+  | "active"
+  | "completed"
+  | "cancelled"
+  | "converted_to_tender"
+export type PriceRequestResponderType = "expert" | "organization"
+
+export type PriceRequest = {
+  id: string
+  title: string
+  description?: string | null
+  service_category: string
+  industry?: string | null
+  project_scale?: string | null
+  expected_start_date?: string | null
+  expected_deadline?: string | null
+  location?: string | null
+  format: PriceRequestFormat
+  created_by: string
+  organization_id?: string | null
+  status: PriceRequestStatus
+  converted_tender_id?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  organizations?: Organization | null
+  responses_count?: number
+}
+
+export type PriceRequestResponse = {
+  id: string
+  price_request_id: string
+  responder_type: PriceRequestResponderType
+  expert_id?: string | null
+  organization_id?: string | null
+  created_by: string
+  min_cost: number
+  max_cost: number
+  min_duration_days: number
+  max_duration_days: number
+  comment?: string | null
+  willing_to_participate: boolean
+  created_at?: string | null
+  updated_at?: string | null
+  expert_profiles?: ExpertProfile | null
+  organizations?: Organization | null
+}
+
+export type PriceRequestInsights = {
+  samples: number
+  minCost: number | null
+  maxCost: number | null
+  averageCost: number | null
+  medianCost: number | null
+  averageDurationDays: number | null
+  confidence: "low" | "medium" | "high"
+}
+
 export type EventOwnerType = "expert" | "organization"
 export type EventType =
   | "conference"

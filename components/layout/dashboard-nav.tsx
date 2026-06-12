@@ -15,6 +15,7 @@ import {
   MessageSquareReply,
   Settings,
   UserRound,
+  WalletCards,
 } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -54,6 +55,11 @@ const items: Array<{
   },
   { href: "/dashboard/media", label: "Медиа", icon: FolderKanban },
   { href: "/dashboard/events", label: "Мероприятия", icon: CalendarDays },
+  {
+    href: "/dashboard/price-requests",
+    label: "Запросы стоимости",
+    icon: WalletCards,
+  },
   { href: "/dashboard/notifications", label: "Уведомления", icon: Bell },
   { href: "/dashboard/favorites", label: "Избранное", icon: Heart },
   { href: "/dashboard/settings", label: "Настройки", icon: Settings },
@@ -77,6 +83,7 @@ export function DashboardNav({ primaryRole }: { primaryRole?: string | null }) {
 
         return (
           <Link
+            aria-current={active ? "page" : undefined}
             className={cn(
               "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               active &&

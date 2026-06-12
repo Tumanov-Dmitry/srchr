@@ -15,6 +15,7 @@ const navItems = [
   { href: "/media", label: "Медиа" },
   { href: "/events", label: "Мероприятия" },
   { href: "/tenders", label: "Задачи" },
+  { href: "/price-requests", label: "Стоимость" },
   { href: "/insights", label: "Аналитика" },
 ]
 
@@ -57,8 +58,14 @@ export async function SiteHeader() {
             items={[
               ...navItems,
               ...(user
-                ? [{ href: "/dashboard/favorites", label: "Избранное" }]
-                : []),
+                ? [
+                    { href: "/dashboard", label: "Личный кабинет" },
+                    { href: "/dashboard/favorites", label: "Избранное" },
+                  ]
+                : [
+                    { href: "/login", label: "Войти" },
+                    { href: "/signup", label: "Регистрация" },
+                  ]),
             ]}
           />
           {adminAccess?.isAdmin ? (
@@ -74,7 +81,7 @@ export async function SiteHeader() {
           {user ? (
             <>
               <NotificationBell />
-              <Button asChild size="sm">
+              <Button asChild className="hidden sm:inline-flex" size="sm">
                 <Link href="/dashboard">
                   Кабинет
                   <ArrowUpRight />
@@ -96,7 +103,7 @@ export async function SiteHeader() {
               >
                 <Link href="/login">Войти</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild className="hidden sm:inline-flex" size="sm">
                 <Link href="/signup">Регистрация</Link>
               </Button>
             </>
