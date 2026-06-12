@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NumberInput } from "@/components/ui/number-input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { SelectField } from "@/components/ui/select-field"
 import { Textarea } from "@/components/ui/textarea"
@@ -146,14 +147,25 @@ function Field({
   ...props
 }: React.ComponentProps<typeof Input> & {
   label: string
+  name: string
   requiredLabel?: boolean
 }) {
+  const isNumber = props.type === "number"
+
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
       <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
-      <Input id={name} name={name} {...props} />
+      {isNumber ? (
+        <NumberInput
+          defaultValue={props.defaultValue as string | number | undefined}
+          id={name}
+          name={name}
+        />
+      ) : (
+        <Input id={name} name={name} {...props} />
+      )}
     </div>
   )
 }

@@ -41,3 +41,9 @@ test("conversion creates a normal tender without changing tender schema", () => 
   assert.match(actions, /status: "converted_to_tender"/)
   assert.match(actions, /converted_tender_id/)
 })
+
+test("published price requests notify their author", () => {
+  assert.match(actions, /recipient_id: user\.id/)
+  assert.match(actions, /Запрос стоимости опубликован/)
+  assert.match(actions, /target_url: `\/price-requests\/\$\{requestId\}`/)
+})

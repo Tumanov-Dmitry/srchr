@@ -3,6 +3,14 @@
 import { FolderPlus, Plus, X } from "@/components/ui/icons"
 import { useEffect, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import type { FavoriteCollection } from "@/types"
 
@@ -87,19 +95,21 @@ export function FavoriteCollectionPicker({
   }
 
   return (
-    <div className="space-y-2">
-      <Button
-        onClick={() => setIsOpen((value) => !value)}
-        size="sm"
-        type="button"
-        variant="outline"
-      >
-        <FolderPlus className="h-4 w-4" />
-        Коллекции
-      </Button>
-
-      {isOpen ? (
-        <div className="min-w-64 space-y-3 rounded-md border bg-background p-3">
+    <Dialog onOpenChange={setIsOpen} open={isOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" type="button" variant="outline">
+          <FolderPlus className="h-4 w-4" />
+          Коллекции
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm gap-5 rounded-xl p-5">
+        <DialogHeader>
+          <DialogTitle>Сохранить в коллекцию</DialogTitle>
+          <DialogDescription>
+            Выберите папки или создайте новую.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
           <div className="flex gap-2">
             <Input
               aria-label="Название новой коллекции"
@@ -148,7 +158,7 @@ export function FavoriteCollectionPicker({
             <p className="text-xs text-destructive">{message}</p>
           ) : null}
         </div>
-      ) : null}
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

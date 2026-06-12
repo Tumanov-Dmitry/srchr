@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NumberInput } from "@/components/ui/number-input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { SelectField } from "@/components/ui/select-field"
 import { Textarea } from "@/components/ui/textarea"
@@ -85,7 +86,7 @@ export default async function ContractorProfilePage({
               <RequiredLabel htmlFor="city" required>
                 Город
               </RequiredLabel>
-              <Input
+              <NumberInput
                 id="city"
                 name="city"
                 defaultValue={organization.city ?? ""}
@@ -108,7 +109,6 @@ export default async function ContractorProfilePage({
               <SelectField
                 name="status"
                 defaultValue={organization.status ?? "draft"}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="draft">Черновик</option>
                 <option value="published">Опубликован</option>
@@ -142,7 +142,6 @@ export default async function ContractorProfilePage({
               <Input
                 id="min_budget"
                 name="min_budget"
-                type="number"
                 min="0"
                 step="1000"
                 defaultValue={profile?.min_budget ?? ""}
@@ -150,10 +149,9 @@ export default async function ContractorProfilePage({
             </div>
             <div className="space-y-2">
               <Label htmlFor="team_size">Размер команды</Label>
-              <Input
+              <NumberInput
                 id="team_size"
                 name="team_size"
-                type="number"
                 min="1"
                 step="1"
                 defaultValue={profile?.team_size ?? ""}

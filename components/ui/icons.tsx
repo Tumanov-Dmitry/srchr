@@ -41,6 +41,7 @@ import {
   MapPinIcon,
   Menu01Icon,
   MessageCircleReplyIcon,
+  MinusSignIcon,
   MoreHorizontalIcon,
   NewsIcon,
   PencilEdit01Icon,
@@ -65,10 +66,7 @@ import {
   WalletCardsIcon,
 } from "@hugeicons/core-free-icons"
 
-export type IconProps = Omit<
-  React.ComponentProps<typeof HugeiconsIcon>,
-  "icon"
->
+export type IconProps = Omit<React.ComponentProps<typeof HugeiconsIcon>, "icon">
 export type IconComponent = React.ComponentType<IconProps>
 export type LucideIcon = IconComponent
 
@@ -125,6 +123,7 @@ export const MapPin = createIcon(MapPinIcon)
 export const Menu = createIcon(Menu01Icon)
 export const MessageSquareReply = createIcon(MessageCircleReplyIcon)
 export const MessageSquareText = createIcon(MessageCircleReplyIcon)
+export const Minus = createIcon(MinusSignIcon)
 export const MoreHorizontal = createIcon(MoreHorizontalIcon)
 export const MousePointerClick = createIcon(CursorPointer01Icon)
 export const Newspaper = createIcon(NewsIcon)

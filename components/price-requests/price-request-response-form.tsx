@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FormSelect } from "@/components/ui/form-select"
-import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -81,7 +81,7 @@ function NumberField({
       <RequiredLabel htmlFor={name} required>
         {label}
       </RequiredLabel>
-      <Input id={name} min={min} name={name} required step="1" type="number" />
+      <NumberInput id={name} min={min} name={name} required step={1} />
     </div>
   )
 }

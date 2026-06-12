@@ -1,6 +1,7 @@
 import { savePriceRequest } from "@/app/actions/price-requests"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
 import { RequiredLabel } from "@/components/ui/required-label"
@@ -82,17 +83,15 @@ export function PriceRequestForm({
               ]}
             />
           </div>
-          <Field
+          <DateField
             defaultValue={request?.expected_start_date ?? ""}
             label="Ожидаемый старт"
             name="expected_start_date"
-            type="date"
           />
-          <Field
+          <DateField
             defaultValue={request?.expected_deadline ?? ""}
             label="Желаемый дедлайн"
             name="expected_deadline"
-            type="date"
           />
           <Field
             defaultValue={request?.location ?? ""}
@@ -125,6 +124,25 @@ export function PriceRequestForm({
         </Button>
       </div>
     </form>
+  )
+}
+
+function DateField({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string
+  name: string
+  defaultValue?: string | null
+  className?: string
+  required?: boolean
+}) {
+  return (
+    <div className="space-y-2">
+      <RequiredLabel htmlFor={name}>{label}</RequiredLabel>
+      <DatePicker defaultValue={defaultValue} name={name} />
+    </div>
   )
 }
 

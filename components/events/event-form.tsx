@@ -2,6 +2,7 @@ import { createEvent, updateEvent } from "@/app/actions/events"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DateTimePicker } from "@/components/ui/date-picker"
 import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
 import { RequiredLabel } from "@/components/ui/required-label"
@@ -272,12 +273,22 @@ function Field({
   label: string
   name: string
 }) {
+  const isDateTime = props.type === "datetime-local"
+
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
       <RequiredLabel htmlFor={name} required={required}>
         {label}
       </RequiredLabel>
-      <Input id={name} name={name} required={required} {...props} />
+      {isDateTime ? (
+        <DateTimePicker
+          defaultValue={String(props.defaultValue ?? "")}
+          name={name}
+          required={required}
+        />
+      ) : (
+        <Input id={name} name={name} required={required} {...props} />
+      )}
     </div>
   )
 }

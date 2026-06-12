@@ -4,9 +4,10 @@ import { TenderSlugFields } from "@/components/tenders/tender-slug-fields"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { FormSelect } from "@/components/ui/form-select"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NumberInput } from "@/components/ui/number-input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Organization, Tender } from "@/types"
 
@@ -63,33 +64,29 @@ export function TenderForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="budget_from">Бюджет от</Label>
-            <Input
+            <NumberInput
               defaultValue={tender?.budget_from ?? tender?.budget ?? ""}
               id="budget_from"
               min="0"
               name="budget_from"
               step="1000"
-              type="number"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="budget_to">Бюджет до</Label>
-            <Input
+            <NumberInput
               defaultValue={tender?.budget_to ?? ""}
               id="budget_to"
               min="0"
               name="budget_to"
               step="1000"
-              type="number"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">Дедлайн</Label>
-            <Input
+            <DatePicker
               defaultValue={tender?.deadline?.slice(0, 10) ?? ""}
-              id="deadline"
               name="deadline"
-              type="date"
             />
           </div>
           <div className="space-y-2">

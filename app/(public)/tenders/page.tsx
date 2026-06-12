@@ -5,6 +5,7 @@ import { TenderCard } from "@/components/tenders/tender-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NumberInput } from "@/components/ui/number-input"
 import { getPublishedTenders } from "@/lib/supabase/queries"
 import { getPublicViewCounts } from "@/lib/supabase/analytics-queries"
 import type { Tender } from "@/types"
@@ -32,7 +33,7 @@ export default async function TendersPage({
       <form className="mb-8 grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-5">
         <div className="space-y-2">
           <Label htmlFor="q">Поиск</Label>
-          <Input
+          <NumberInput
             id="q"
             name="q"
             placeholder="Название задачи"
@@ -53,7 +54,6 @@ export default async function TendersPage({
           <Input
             id="budget"
             name="budget"
-            type="number"
             min="0"
             step="1000"
             placeholder="500000"
@@ -69,11 +69,11 @@ export default async function TendersPage({
             disabled
           />
         </div>
-        <div className="flex items-end gap-2">
-          <Button type="submit" className="flex-1">
+        <div className="grid grid-cols-2 items-end gap-2 md:flex">
+          <Button type="submit" className="w-full md:flex-1">
             Применить
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild className="w-full" variant="outline">
             <Link href="/tenders">Сбросить</Link>
           </Button>
         </div>

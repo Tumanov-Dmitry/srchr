@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DateTimePicker } from "@/components/ui/date-picker"
 import { FormSelect } from "@/components/ui/form-select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -144,12 +145,11 @@ export default async function AdminEventsPage({
                               Продвигать
                             </Label>
                           </div>
-                          <Input
+                          <DateTimePicker
                             defaultValue={
                               event.promoted_until?.slice(0, 16) ?? ""
                             }
                             name="promoted_until"
-                            type="datetime-local"
                           />
                           <Input
                             defaultValue={event.promotion_url ?? ""}

@@ -233,6 +233,15 @@ export async function savePriceRequest(formData: FormData) {
       title,
       text: serviceCategory,
     })
+    await createNotification({
+      recipient_id: user.id,
+      title: "Запрос стоимости опубликован",
+      text: `${title} · исполнители получат приглашения, когда совпадут услуги`,
+      type: "price_request",
+      target_type: "price_request",
+      target_id: requestId,
+      target_url: `/price-requests/${requestId}`,
+    })
     await notifyMatchingProviders(requestId, title, serviceCategory, user.id)
   }
 

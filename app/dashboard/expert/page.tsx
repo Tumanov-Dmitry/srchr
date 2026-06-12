@@ -3,7 +3,9 @@ import { saveExpertProfile } from "@/app/actions/expert-profile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 import { decodeMessage } from "@/lib/messages"
@@ -205,19 +207,17 @@ export default async function DashboardExpertPage({
           <CardTitle>Настройки</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <label className="flex items-center gap-3 rounded-md border p-4 text-sm">
-            <input
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 text-sm transition-colors hover:bg-muted/50">
+            <Checkbox
               defaultChecked={Boolean(profile?.is_public)}
               name="is_public"
-              type="checkbox"
             />
             Публичный профиль
           </label>
-          <label className="flex items-center gap-3 rounded-md border p-4 text-sm">
-            <input
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 text-sm transition-colors hover:bg-muted/50">
+            <Checkbox
               defaultChecked={profile?.is_open_to_work ?? true}
               name="is_open_to_work"
-              type="checkbox"
             />
             Открыт к сотрудничеству
           </label>
@@ -263,14 +263,25 @@ function Field({
   ...props
 }: React.ComponentProps<typeof Input> & {
   label: string
+  name: string
   requiredLabel?: boolean
 }) {
+  const isNumber = props.type === "number"
+
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
       <RequiredLabel htmlFor={name} required={requiredLabel}>
         {label}
       </RequiredLabel>
-      <Input id={name} name={name} {...props} />
+      {isNumber ? (
+        <NumberInput
+          defaultValue={props.defaultValue as string | number | undefined}
+          id={name}
+          name={name}
+        />
+      ) : (
+        <Input id={name} name={name} {...props} />
+      )}
     </div>
   )
 }
