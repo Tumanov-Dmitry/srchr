@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowUpRight, BookOpenText } from "lucide-react"
+import { ArrowUpRight, BookOpenText } from "@/components/ui/icons"
 
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"

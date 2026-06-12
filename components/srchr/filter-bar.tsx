@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"

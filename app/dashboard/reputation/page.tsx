@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Award, ExternalLink } from "lucide-react"
+import { Award, ExternalLink } from "@/components/ui/icons"
 
 import { EmptyState } from "@/components/srchr"
 import { Button } from "@/components/ui/button"

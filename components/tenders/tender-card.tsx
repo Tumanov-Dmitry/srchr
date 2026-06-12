@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowUpRight, CalendarDays } from "lucide-react"
+import { ArrowUpRight, CalendarDays } from "@/components/ui/icons"
 
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { Badge } from "@/components/ui/badge"

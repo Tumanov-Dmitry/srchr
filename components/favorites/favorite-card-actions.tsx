@@ -1,6 +1,6 @@
 "use client"
 
-import { Pin, PinOff, Trash2 } from "lucide-react"
+import { Pin, PinOff, Trash2 } from "@/components/ui/icons"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Bell } from "lucide-react"
+import { Bell } from "@/components/ui/icons"
 
 import { NotificationOpenLink } from "@/components/notifications/notification-open-link"
 import { Badge } from "@/components/ui/badge"

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Search, X } from "lucide-react"
+import { Search, X } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

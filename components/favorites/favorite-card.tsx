@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ImageOff, Pin } from "lucide-react"
+import { ImageOff, Pin } from "@/components/ui/icons"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,

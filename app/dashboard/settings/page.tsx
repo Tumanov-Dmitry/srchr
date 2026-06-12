@@ -1,4 +1,4 @@
-import { BellOff } from "lucide-react"
+import { BellOff } from "@/components/ui/icons"
 
 import { saveNotificationPreferences } from "@/app/actions/notifications"
 import { EmptyState } from "@/components/srchr"

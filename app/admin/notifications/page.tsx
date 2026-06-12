@@ -1,4 +1,4 @@
-import { BellRing } from "lucide-react"
+import { BellRing } from "@/components/ui/icons"
 
 import { EmptyState } from "@/components/srchr"
 import { Badge } from "@/components/ui/badge"

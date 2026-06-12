@@ -1,6 +1,19 @@
+"use client"
+
 import Link from "next/link"
 import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts"
+
+import {
   CalendarPlus,
+  CircleAlert,
   Contact,
   ExternalLink,
   Eye,
@@ -9,11 +22,24 @@ import {
   Send,
   Share2,
   Users,
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import type { AnalyticsMetricKey, AnalyticsPeriod } from "@/types"
+} from "@/components/ui/icons"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 import type { AnalyticsReport } from "@/lib/supabase/analytics-queries"
+import type { AnalyticsMetricKey, AnalyticsPeriod } from "@/types"
 
 const periods: Array<{ value: AnalyticsPeriod; label: string }> = [
   { value: "7", label: "7 дней" },
@@ -60,6 +86,27 @@ const metrics: Array<{
   { key: "shares", label: "Поделились", icon: Share2 },
 ]
 
+const viewsConfig = {
+  value: {
+    label: "Просмотры",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig
+
+const activityConfig = {
+  value: {
+    label: "Действия",
+    color: "var(--chart-3)",
+  },
+} satisfies ChartConfig
+
+function shortDate(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "short",
+  }).format(new Date(`${value}T00:00:00`))
+}
+
 export function AnalyticsOverview({
   report,
   period,
@@ -79,7 +126,13 @@ export function AnalyticsOverview({
       metric.key === "unique_views" ||
       (report.totals[metric.key] ?? 0) > 0,
   )
-  const maxValue = Math.max(...report.series.map((point) => point.value), 1)
+  const activityData = visibleMetrics
+    .filter((metric) => metric.key !== "views")
+    .map((metric) => ({
+      name: metric.label,
+      value: report.totals[metric.key] ?? 0,
+    }))
+    .filter((item) => item.value > 0)
 
   return (
     <div className="space-y-6">
@@ -90,33 +143,28 @@ export function AnalyticsOverview({
             <p className="mt-2 text-muted-foreground">{description}</p>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-1 rounded-md border bg-background p-1">
+        <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-1 shadow-elevation-1">
           {periods.map((item) => (
-            <Link
-              className={cn(
-                "rounded px-3 py-1.5 text-sm transition-colors",
-                period === item.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-              href={`${basePath}?period=${item.value}`}
+            <Button
+              asChild
               key={item.value}
+              size="sm"
+              variant={period === item.value ? "default" : "ghost"}
             >
-              {item.label}
-            </Link>
+              <Link href={`${basePath}?period=${item.value}`}>{item.label}</Link>
+            </Button>
           ))}
         </div>
       </div>
 
       {report.isMissing ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Нужен модуль аналитики</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
+        <Alert>
+          <CircleAlert />
+          <AlertTitle>Нужен модуль аналитики</AlertTitle>
+          <AlertDescription>
             Примените SQL из `supabase/sql/create-analytics.sql`.
-          </CardContent>
-        </Card>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -127,12 +175,12 @@ export function AnalyticsOverview({
             <Card key={metric.key}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Icon className="h-4 w-4" />
+                  <Icon className="size-4" />
                   {metric.label}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-semibold">
+                <div className="text-3xl font-semibold tabular-nums">
                   {(report.totals[metric.key] ?? 0).toLocaleString("ru-RU")}
                 </div>
               </CardContent>
@@ -141,35 +189,131 @@ export function AnalyticsOverview({
         })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Динамика просмотров</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {report.series.length > 0 ? (
-            <div className="flex h-52 items-end gap-1 overflow-hidden border-b border-l px-2 pt-4">
-              {report.series.map((point) => (
-                <div
-                  className="group relative flex min-w-2 flex-1 items-end"
-                  key={point.date}
-                  title={`${point.date}: ${point.value}`}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Динамика просмотров</CardTitle>
+            <CardDescription>
+              Изменение просмотров за выбранный период
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {report.series.length > 0 ? (
+              <ChartContainer
+                config={viewsConfig}
+                className="h-[300px] w-full"
+              >
+                <AreaChart
+                  accessibilityLayer
+                  data={report.series}
+                  margin={{ left: 0, right: 8 }}
                 >
-                  <div
-                    className="w-full min-w-2 bg-primary transition-colors group-hover:bg-primary/80"
-                    style={{
-                      height: `${Math.max((point.value / maxValue) * 100, 4)}%`,
-                    }}
+                  <defs>
+                    <linearGradient id="viewsFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-value)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-value)"
+                        stopOpacity={0.02}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    axisLine={false}
+                    dataKey="date"
+                    minTickGap={28}
+                    tickFormatter={shortDate}
+                    tickLine={false}
+                    tickMargin={10}
                   />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Данные появятся после первых просмотров.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                  <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    width={30}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => shortDate(String(value))}
+                      />
+                    }
+                  />
+                  <Area
+                    dataKey="value"
+                    fill="url(#viewsFill)"
+                    fillOpacity={1}
+                    isAnimationActive
+                    stroke="var(--color-value)"
+                    strokeWidth={2}
+                    type="monotone"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            ) : (
+              <div className="grid h-[300px] place-items-center rounded-xl border border-dashed bg-muted/20 text-sm text-muted-foreground">
+                Данные появятся после первых просмотров
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Активность</CardTitle>
+            <CardDescription>Действия аудитории кроме просмотров</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {activityData.length > 0 ? (
+              <ChartContainer
+                config={activityConfig}
+                className="h-[300px] w-full"
+              >
+                <BarChart
+                  accessibilityLayer
+                  data={activityData}
+                  layout="vertical"
+                  margin={{ left: 6, right: 16 }}
+                >
+                  <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                  <XAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    type="number"
+                  />
+                  <YAxis
+                    axisLine={false}
+                    dataKey="name"
+                    tickLine={false}
+                    type="category"
+                    width={112}
+                  />
+                  <ChartTooltip
+                    content={<ChartTooltipContent hideLabel />}
+                    cursor={{ fill: "var(--muted)", opacity: 0.5 }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="var(--color-value)"
+                    isAnimationActive
+                    radius={[0, 6, 6, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="grid h-[300px] place-items-center rounded-xl border border-dashed bg-muted/20 text-center text-sm text-muted-foreground">
+                Действия аудитории появятся здесь
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

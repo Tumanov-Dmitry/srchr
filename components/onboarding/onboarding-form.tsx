@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, Search, UserRound } from "lucide-react"
+import { Building2, Search, UserRound } from "@/components/ui/icons"
 import { useEffect, useState } from "react"
 import { completeOnboarding } from "@/app/actions/onboarding"
 import { Button } from "@/components/ui/button"

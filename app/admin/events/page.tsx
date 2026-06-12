@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays } from "@/components/ui/icons"
 
 import {
   updateAdminEventPromotion,

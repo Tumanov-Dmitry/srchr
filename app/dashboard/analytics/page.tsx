@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { BarChart3 } from "lucide-react"
+import { BarChart3 } from "@/components/ui/icons"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getDashboardAnalyticsOwners } from "@/lib/supabase/analytics-queries"
 

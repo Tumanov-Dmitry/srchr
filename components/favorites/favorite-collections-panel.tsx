@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Folder, Pencil, Plus, Trash2 } from "lucide-react"
+import { Folder, Pencil, Plus, Trash2 } from "@/components/ui/icons"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"

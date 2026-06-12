@@ -1,4 +1,4 @@
-import { ArrowUpRight, Building2, MapPin } from "lucide-react"
+import { ArrowUpRight, Building2, MapPin } from "@/components/ui/icons"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"

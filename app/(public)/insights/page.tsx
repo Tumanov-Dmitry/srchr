@@ -5,7 +5,7 @@ import {
   Eye,
   FileText,
   Users,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import { PageHeader, PageShell } from "@/components/layout/page-shell"
 import { EmptyState } from "@/components/srchr"

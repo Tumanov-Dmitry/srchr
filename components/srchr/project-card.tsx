@@ -1,4 +1,4 @@
-import { ArrowUpRight, MessageSquareText, WalletCards } from "lucide-react"
+import { ArrowUpRight, MessageSquareText, WalletCards } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

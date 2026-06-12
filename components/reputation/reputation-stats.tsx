@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Award, MessageSquareText, ThumbsUp } from "lucide-react"
+import { Award, MessageSquareText, ThumbsUp } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { RotateCcw, Search, UsersRound } from "lucide-react"
+import { RotateCcw, Search, UsersRound } from "@/components/ui/icons"
 
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { ExpertCard } from "@/components/experts/expert-card"

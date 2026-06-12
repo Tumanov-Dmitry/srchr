@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowUpRight, Search } from "lucide-react"
+import { ArrowUpRight, Search } from "@/components/ui/icons"
 
 import { logout } from "@/app/actions/auth"
 import { SiteMobileNav } from "@/components/layout/site-mobile-nav"
@@ -37,7 +37,7 @@ export async function SiteHeader() {
               SRCHR
             </Link>
             <Badge
-              className="hidden rounded-full border-srchr-pink/30 bg-srchr-pink/15 sm:inline-flex"
+              className="hidden border-border bg-secondary text-secondary-foreground hover:bg-foreground/[0.055] sm:inline-flex"
               variant="outline"
             >
               beta

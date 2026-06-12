@@ -1,6 +1,6 @@
 "use client"
 
-import { FolderPlus, Plus, X } from "lucide-react"
+import { FolderPlus, Plus, X } from "@/components/ui/icons"
 import { useEffect, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

@@ -1,6 +1,11 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -23,10 +28,16 @@
   --color-srchr-pink: var(--srchr-pink);
   --color-srchr-yellow: var(--srchr-yellow);
   --color-srchr-green: var(--srchr-green);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
   --shadow-elevation-1: 0 1px 2px rgb(30 36 32 / 0.04);
   --shadow-elevation-2: 0 8px 24px rgb(30 36 32 / 0.06);
 }
@@ -40,11 +51,11 @@
   --popover-foreground: #1e2420;
   --primary: #06b53f;
   --primary-foreground: #ffffff;
-  --secondary: #f1efeb;
+  --secondary: #f0efec;
   --secondary-foreground: #1e2420;
   --muted: #f1efeb;
   --muted-foreground: #68706a;
-  --accent: #ec8acb;
+  --accent: #f4f2ef;
   --accent-foreground: #1e2420;
   --destructive: #dc3f45;
   --destructive-foreground: #ffffff;
@@ -54,11 +65,24 @@
   --srchr-green: #06b53f;
   --srchr-pink: #ec8acb;
   --srchr-yellow: #f7d11a;
-  --radius: 1rem;
+  --chart-1: #06b53f;
+  --chart-2: #2f7ff7;
+  --chart-3: #ec8acb;
+  --chart-4: #f7d11a;
+  --chart-5: #6d756f;
+  --radius: 0.75rem;
 }
 
-* {
-  border-color: var(--border);
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
 }
 
 html {
@@ -69,7 +93,7 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
   text-rendering: optimizeLegibility;
 }
 
@@ -97,6 +121,17 @@ select:not([multiple]) {
 select:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(a, button, [role="button"], input, textarea, select) {
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
 }
 
 @utility type-display {

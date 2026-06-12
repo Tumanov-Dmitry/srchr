@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CalendarDays, ExternalLink, MapPin, Send } from "lucide-react"
+import { CalendarDays, ExternalLink, MapPin, Send } from "@/components/ui/icons"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"

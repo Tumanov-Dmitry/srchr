@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { ArrowLeft, Search } from "lucide-react"
+import { ArrowLeft, Search } from "@/components/ui/icons"
 
 import { logout } from "@/app/actions/auth"
 import { DashboardNav } from "@/components/layout/dashboard-nav"

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Search } from "lucide-react"
+import { Search } from "@/components/ui/icons"
 import { logout } from "@/app/actions/auth"
 import { AdminNav } from "@/components/layout/admin-nav"
 import { NotificationBell } from "@/components/notifications/notification-bell"

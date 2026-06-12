@@ -7,7 +7,7 @@ import {
   CalendarDays,
   Search,
   UserRound,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import { PageShell } from "@/components/layout/page-shell"
 import { Badge } from "@/components/ui/badge"

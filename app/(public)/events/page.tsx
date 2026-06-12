@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CalendarDays, RotateCcw, Search } from "lucide-react"
+import { CalendarDays, RotateCcw, Search } from "@/components/ui/icons"
 
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { EventCard } from "@/components/events/event-card"

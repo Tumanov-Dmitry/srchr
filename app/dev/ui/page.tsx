@@ -1,18 +1,25 @@
 "use client"
 
 import * as React from "react"
+import { motion } from "motion/react"
 import {
+  Award,
   Bell,
+  Building2,
+  CalendarDays,
   ChevronDown,
   CircleHelp,
+  Heart,
   Inbox,
   Menu,
   MoreHorizontal,
   Plus,
   Search,
+  Send,
   Settings2,
   Sparkles,
-} from "lucide-react"
+  UserRound,
+} from "@/components/ui/icons"
 import {
   Bar,
   BarChart as RechartsBarChart,
@@ -183,6 +190,17 @@ const serviceOptions = [
   { value: "research", label: "Исследования" },
 ]
 
+const iconSamples = [
+  { icon: Search, label: "Поиск" },
+  { icon: Bell, label: "Уведомления" },
+  { icon: Heart, label: "Избранное" },
+  { icon: Building2, label: "Организация" },
+  { icon: UserRound, label: "Эксперт" },
+  { icon: CalendarDays, label: "Событие" },
+  { icon: Award, label: "Репутация" },
+  { icon: Send, label: "Отклик" },
+]
+
 export default function UiPlaygroundPage() {
   const [service, setService] = React.useState("")
   const [collapsibleOpen, setCollapsibleOpen] = React.useState(false)
@@ -191,9 +209,9 @@ export default function UiPlaygroundPage() {
     <TooltipProvider>
       <PageShell className="space-y-12 pb-24">
         <PageHeader
-          eyebrow="SRCHR 2.0"
-          title="Дизайн-система"
-          description="Внутренний каталог компонентов, токенов и продуктовых паттернов платформы."
+          eyebrow="SRCHR · NOVA"
+          title="Component Lab"
+          description="Живой каталог дизайн-системы: интерактивные компоненты, состояния, анимации, Hugeicons и продуктовые паттерны."
           actions={
             <>
               <Button variant="outline">
@@ -208,7 +226,7 @@ export default function UiPlaygroundPage() {
           }
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="grid gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -220,10 +238,13 @@ export default function UiPlaygroundPage() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <NavigationMenu>
-            <NavigationMenuList>
+          <NavigationMenu className="max-w-full overflow-x-auto pb-1">
+            <NavigationMenuList className="w-max">
               <NavigationMenuItem>
                 <NavigationMenuLink href="#base">Основа</NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink href="#motion">Motion</NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink href="#data">Данные</NavigationMenuLink>
@@ -234,6 +255,49 @@ export default function UiPlaygroundPage() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
+
+        <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <Card className="overflow-hidden bg-foreground text-background">
+            <CardContent className="grid min-h-72 content-between gap-12 p-8">
+              <div className="flex items-center gap-2 text-sm text-background/65">
+                <Sparkles className="size-4" />
+                Radix NOVA · Hugeicons · Motion
+              </div>
+              <div>
+                <p className="max-w-xl text-4xl font-semibold leading-tight">
+                  Один визуальный язык для всей платформы.
+                </p>
+                <p className="mt-4 max-w-lg text-sm leading-6 text-background/65">
+                  Здесь компоненты можно нажимать, переключать и проверять до
+                  внедрения в продуктовые экраны.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Конфигурация</CardTitle>
+              <CardDescription>Текущий фундамент SRCHR 2.0</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {[
+                ["Style", "NOVA"],
+                ["Icons", "Hugeicons"],
+                ["Font", "Geist · self-hosted"],
+                ["Motion", "Motion + Radix states"],
+                ["Grid", "8 px"],
+              ].map(([label, value]) => (
+                <div
+                  className="flex items-center justify-between border-b py-2 text-sm last:border-0"
+                  key={label}
+                >
+                  <span className="text-muted-foreground">{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
 
         <section className="space-y-5">
           <h2 className="type-h2">Токены</h2>
@@ -269,6 +333,74 @@ export default function UiPlaygroundPage() {
               </p>
             </CardContent>
           </Card>
+        </section>
+
+        <section className="space-y-5">
+          <div>
+            <h2 className="type-h2">Hugeicons</h2>
+            <p className="mt-2 text-muted-foreground">
+              Единый набор Stroke Rounded с толщиной линии 1.7.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            {iconSamples.map(({ icon: Icon, label }) => (
+              <Card key={label} className="group">
+                <CardContent className="grid min-h-28 place-items-center gap-3 p-4 text-center">
+                  <Icon className="size-6 transition-transform group-hover:scale-110" />
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <section id="motion" className="space-y-5">
+          <div>
+            <h2 className="type-h2">Motion</h2>
+            <p className="mt-2 text-muted-foreground">
+              Базовые переходы интерфейса и анимации состояний компонентов.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              { label: "Enter", color: "bg-primary" },
+              { label: "Feedback", color: "bg-srchr-pink" },
+              { label: "Progress", color: "bg-srchr-yellow" },
+            ].map((item, index) => (
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                key={item.label}
+                transition={{
+                  delay: index * 0.12,
+                  duration: 2.4,
+                  ease: "easeInOut",
+                  repeat: Infinity,
+                }}
+              >
+                <Card className="overflow-hidden">
+                  <CardContent className="flex items-center gap-4 p-5">
+                    <motion.span
+                      animate={{ rotate: [0, 8, -8, 0], scale: [1, 1.08, 1] }}
+                      className={`grid size-11 place-items-center rounded-xl ${item.color}`}
+                      transition={{
+                        delay: index * 0.12,
+                        duration: 2.4,
+                        repeat: Infinity,
+                      }}
+                    >
+                      <Sparkles className="size-5" />
+                    </motion.span>
+                    <div>
+                      <strong>{item.label}</strong>
+                      <p className="text-sm text-muted-foreground">
+                        180–240 ms · ease-out
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </section>
 
         <section id="base" className="space-y-5">

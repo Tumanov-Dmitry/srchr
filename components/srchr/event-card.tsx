@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react"
+import { ArrowUpRight, CalendarDays, MapPin } from "@/components/ui/icons"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"

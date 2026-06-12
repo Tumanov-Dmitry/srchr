@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpenText, RotateCcw, Search } from "lucide-react"
+import { BookOpenText, RotateCcw, Search } from "@/components/ui/icons"
 
 import { CatalogAnalyticsTracker } from "@/components/analytics/catalog-analytics-tracker"
 import { PageHeader, PageShell } from "@/components/layout/page-shell"

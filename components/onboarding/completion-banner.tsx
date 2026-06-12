@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, CircleAlert } from "lucide-react"
+import { ArrowRight, CircleAlert } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import type { CompletionScore } from "@/types"
 

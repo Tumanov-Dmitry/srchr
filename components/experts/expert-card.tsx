@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowUpRight, MapPin } from "lucide-react"
+import { ArrowUpRight, MapPin } from "@/components/ui/icons"
 
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"

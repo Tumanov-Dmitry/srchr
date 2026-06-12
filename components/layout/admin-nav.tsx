@@ -12,7 +12,7 @@ import {
   Newspaper,
   UserRound,
   Users,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 const items = [
   { href: "/admin", label: "Дашборд", icon: Home },
@@ -37,7 +37,7 @@ export function AdminNav() {
 
         return (
           <Link
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/75 hover:text-foreground"
             href={item.href}
             key={item.href}
           >

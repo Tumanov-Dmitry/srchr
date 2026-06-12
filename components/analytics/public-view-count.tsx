@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react"
+import { Eye } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 export function PublicViewCount({

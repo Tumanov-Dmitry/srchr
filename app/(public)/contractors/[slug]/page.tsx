@@ -12,7 +12,7 @@ import {
   Phone,
   Send,
   Users,
-} from "lucide-react"
+} from "@/components/ui/icons"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"

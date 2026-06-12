@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FileText, FolderKanban } from "lucide-react"
+import { FileText, FolderKanban } from "@/components/ui/icons"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function NewMaterialPage() {
