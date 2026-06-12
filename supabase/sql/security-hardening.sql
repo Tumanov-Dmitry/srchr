@@ -390,9 +390,22 @@ create policy "Users create material drafts"
   with check (
     created_by = (select auth.uid())
     and status in ('draft', 'moderation')
-    and private.is_org_member(
-      coalesce(organization_id, company_id),
-      array['owner', 'admin', 'editor']
+    and (
+      (
+        owner_type = 'expert'
+        and expert_id is not null
+        and private.owns_expert(expert_id)
+        and organization_id is null
+        and company_id is null
+      )
+      or (
+        coalesce(owner_type, 'company') in ('company', 'organization')
+        and expert_id is null
+        and private.is_org_member(
+          coalesce(organization_id, company_id),
+          array['owner', 'admin', 'editor']
+        )
+      )
     )
   );
 
@@ -402,6 +415,7 @@ create policy "Owners update unpublished materials"
     status in ('draft', 'moderation', 'rejected')
     and (
       created_by = (select auth.uid())
+      or (owner_type = 'expert' and private.owns_expert(expert_id))
       or private.is_org_member(
         coalesce(organization_id, company_id),
         array['owner', 'admin', 'editor']
@@ -411,10 +425,20 @@ create policy "Owners update unpublished materials"
   with check (
     status in ('draft', 'moderation', 'archived')
     and (
-      created_by = (select auth.uid())
-      or private.is_org_member(
-        coalesce(organization_id, company_id),
-        array['owner', 'admin', 'editor']
+      (
+        owner_type = 'expert'
+        and expert_id is not null
+        and private.owns_expert(expert_id)
+        and organization_id is null
+        and company_id is null
+      )
+      or (
+        coalesce(owner_type, 'company') in ('company', 'organization')
+        and expert_id is null
+        and private.is_org_member(
+          coalesce(organization_id, company_id),
+          array['owner', 'admin', 'editor']
+        )
       )
     )
   );
@@ -425,6 +449,7 @@ create policy "Owners delete material drafts"
     status = 'draft'
     and (
       created_by = (select auth.uid())
+      or (owner_type = 'expert' and private.owns_expert(expert_id))
       or private.is_org_member(
         coalesce(organization_id, company_id),
         array['owner', 'admin', 'editor']
@@ -611,6 +636,37 @@ create policy "Owners update unpublished events"
         owner_type = 'organization'
         and private.is_org_member(owner_id, array['owner', 'admin', 'editor'])
       )
+    )
+  );
+
+alter table public.event_participants enable row level security;
+
+drop policy if exists "Participants can upsert own participation"
+  on public.event_participants;
+create policy "Participants can upsert own participation"
+  on public.event_participants for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.status in ('published', 'completed')
+    )
+  );
+
+drop policy if exists "Participants can update own participation"
+  on public.event_participants;
+create policy "Participants can update own participation"
+  on public.event_participants for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1
+      from public.events e
+      where e.id = event_id
+        and e.status in ('published', 'completed')
     )
   );
 

@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { reportServerError } from "@/lib/security/errors"
 import type {
   ContractorProfile,
+  ContentOwner,
   ExpertProfile,
   Favorite,
   FavoriteTargetType,
@@ -64,21 +66,42 @@ export async function getOnboardingState() {
     }
   }
 
-  const memberships = await getUserOrganizationMemberships(user.id)
-  const organization = memberships[0]?.organizations
-  const isContractor = Boolean(organization?.is_contractor)
-  const isClient = Boolean(organization?.is_client)
-  const primaryRole = isContractor ? "contractor" : isClient ? "client" : null
+  const supabase = await createClient()
+  const [memberships, { data: expertProfile, error: expertError }] =
+    await Promise.all([
+      getUserOrganizationMemberships(user.id),
+      supabase
+        .from("expert_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ])
+  const hasContractor = memberships.some(
+    (membership) => membership.organizations?.is_contractor,
+  )
+  const hasClient = memberships.some(
+    (membership) => membership.organizations?.is_client,
+  )
+  const hasExpert = !isMissingTable(expertError) && Boolean(expertProfile)
+  const primaryRole = hasContractor
+    ? "contractor"
+    : hasClient
+      ? "client"
+      : hasExpert
+        ? "expert"
+        : null
 
   return {
     user,
     memberships,
-    isComplete: memberships.length > 0,
+    isComplete: memberships.length > 0 || hasExpert,
     primaryRole,
     dashboardPath:
       primaryRole === "contractor"
         ? "/dashboard/contractor"
-        : "/dashboard/client",
+        : primaryRole === "client"
+          ? "/dashboard/client"
+          : "/dashboard/expert",
   }
 }
 
@@ -137,50 +160,64 @@ export async function getCurrentContractorOrganization() {
   }
 }
 
-export async function getCurrentClientOrganization() {
+export async function getUserContentOwners(): Promise<{
+  user: Awaited<ReturnType<typeof getCurrentUser>>
+  owners: ContentOwner[]
+}> {
   const user = await getCurrentUser()
+  if (!user) return { user: null, owners: [] }
 
-  if (!user) {
-    return {
-      user: null,
-      organization: null,
+  const [memberships, expert] = await Promise.all([
+    getUserOrganizationMemberships(user.id),
+    getCurrentExpertProfile(),
+  ])
+  const owners: ContentOwner[] = []
+
+  if (expert.profile) {
+    owners.push({
+      owner_type: "expert",
+      owner_id: expert.profile.id,
+      label:
+        [expert.profile.first_name, expert.profile.last_name]
+          .filter(Boolean)
+          .join(" ") || "Эксперт",
+    })
+  }
+
+  for (const membership of memberships) {
+    if (!["owner", "admin", "editor"].includes(membership.role ?? "member")) {
+      continue
     }
+
+    const organizationId =
+      membership.organization_id ??
+      membership.org_id ??
+      membership.organizations?.id
+
+    if (!organizationId) continue
+
+    owners.push({
+      owner_type: "organization",
+      owner_id: organizationId,
+      label: membership.organizations?.name ?? "Организация",
+    })
   }
 
-  const memberships = await getUserOrganizationMemberships(user.id)
-  const organization =
-    memberships.find((membership) => membership.organizations?.is_client)
-      ?.organizations ?? null
-
-  return {
-    user,
-    organization,
-  }
+  return { user, owners }
 }
 
-export async function getCurrentTenderOwnerOrganization() {
+export async function getUserTenderOrganizations() {
   const user = await getCurrentUser()
-
-  if (!user) {
-    return {
-      user: null,
-      organization: null,
-    }
-  }
+  if (!user) return { user: null, organizations: [] as Organization[] }
 
   const memberships = await getUserOrganizationMemberships(user.id)
-  const organization =
-    memberships.find((membership) => membership.organizations?.is_client)
-      ?.organizations ??
-    memberships.find((membership) => membership.organizations?.is_contractor)
-      ?.organizations ??
-    memberships[0]?.organizations ??
-    null
+  const organizations = memberships
+    .map((membership) => membership.organizations)
+    .filter((organization): organization is Organization =>
+      Boolean(organization),
+    )
 
-  return {
-    user,
-    organization,
-  }
+  return { user, organizations }
 }
 
 function isMissingTable(error: { message?: string } | null) {
@@ -191,44 +228,92 @@ function isMissingTable(error: { message?: string } | null) {
   )
 }
 
-export async function getDashboardMaterials() {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+function postgrestPattern(value: string) {
+  return `"%${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}%"`
+}
 
-  if (!user || !organization) {
+async function getPublicOrganizationsForUsers(userIds: string[]) {
+  const result = new Map<string, Organization[]>()
+  if (userIds.length === 0) return result
+
+  try {
+    const supabase = createAdminClient()
+    for (const userColumn of ["user_id", "profile_id"]) {
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select(`${userColumn}, organizations(*)`)
+        .in(userColumn, userIds)
+
+      if (error) continue
+
+      for (const membership of data ?? []) {
+        const row = membership as unknown as Record<string, unknown>
+        const userId = row[userColumn] as string | null
+        const organization = row.organizations as Organization | null
+
+        if (!userId || !organization || organization.status !== "published") {
+          continue
+        }
+
+        const current = result.get(userId) ?? []
+        if (!current.some((item) => item.id === organization.id)) {
+          result.set(userId, [...current, organization])
+        }
+      }
+    }
+  } catch {
+    return result
+  }
+
+  return result
+}
+
+export async function getDashboardMaterials() {
+  const { user, owners } = await getUserContentOwners()
+
+  if (!user) {
     return {
       user,
-      organization,
+      owners,
       materials: [] as Material[],
       isMaterialsTableMissing: false,
     }
   }
 
   const supabase = await createClient()
+  const organizationIds = owners
+    .filter((owner) => owner.owner_type === "organization")
+    .map((owner) => owner.owner_id)
+  const ownerFilters = [`created_by.eq.${user.id}`]
+
+  for (const organizationId of organizationIds) {
+    ownerFilters.push(`organization_id.eq.${organizationId}`)
+    ownerFilters.push(`company_id.eq.${organizationId}`)
+  }
+
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, type, title, slug, description, cover_url, author, status, category, tags, reading_time, company_id, organization_id, created_by, created_at, updated_at, published_at",
+      "id, type, title, slug, description, cover_url, author, status, category, tags, reading_time, company_id, organization_id, owner_type, expert_id, created_by, created_at, updated_at, published_at",
     )
-    .or(
-      `company_id.eq.${organization.id},organization_id.eq.${organization.id},created_by.eq.${user.id}`,
-    )
+    .or(ownerFilters.join(","))
     .order("created_at", { ascending: false })
 
   return {
     user,
-    organization,
+    owners,
     materials: error ? [] : ((data ?? []) as Material[]),
     isMaterialsTableMissing: isMissingTable(error),
   }
 }
 
 export async function getDashboardMaterialById(id: string) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, owners } = await getUserContentOwners()
 
-  if (!user || !organization) {
+  if (!user) {
     return {
       user,
-      organization,
+      owners,
       material: null,
       isMaterialsTableMissing: false,
     }
@@ -239,14 +324,11 @@ export async function getDashboardMaterialById(id: string) {
     .from("materials")
     .select("*")
     .eq("id", id)
-    .or(
-      `company_id.eq.${organization.id},organization_id.eq.${organization.id},created_by.eq.${user.id}`,
-    )
     .maybeSingle()
 
   return {
     user,
-    organization,
+    owners,
     material: error ? null : ((data ?? null) as Material | null),
     isMaterialsTableMissing: isMissingTable(error),
   }
@@ -314,34 +396,42 @@ export async function getPublishedExperts(filters: ExpertFilters = {}) {
     query = query.eq("is_open_to_work", true)
   }
 
-  if (filters.q) {
-    query = query.or(
-      `first_name.ilike.%${filters.q}%,last_name.ilike.%${filters.q}%,position.ilike.%${filters.q}%,specializations.ilike.%${filters.q}%`,
-    )
-  }
-
   const { data, error } = await query
   if (isMissingTable(error)) return []
+  if (error) reportServerError("experts.catalog", error)
 
   let experts = (data ?? []) as ExpertProfile[]
 
+  if (filters.company || filters.q) {
+    const organizationsByUser = await getPublicOrganizationsForUsers(
+      experts.map((expert) => expert.user_id),
+    )
+    experts = experts.map((expert) => ({
+      ...expert,
+      organizations: organizationsByUser.get(expert.user_id) ?? [],
+    }))
+  }
+
   if (filters.company) {
     const company = filters.company.toLowerCase()
-    const expertsWithOrganizations = await Promise.all(
-      experts.map(async (expert) => ({
-        ...expert,
-        organizations: (await getUserOrganizationMemberships(expert.user_id))
-          .map((membership) => membership.organizations)
-          .filter((organization): organization is Organization =>
-            Boolean(organization),
-          ),
-      })),
-    )
-
-    experts = expertsWithOrganizations.filter((expert) =>
+    experts = experts.filter((expert) =>
       expert.organizations?.some((organization) =>
         organization.name.toLowerCase().includes(company),
       ),
+    )
+  }
+
+  if (filters.q) {
+    const search = filters.q.toLowerCase()
+    experts = experts.filter((expert) =>
+      [
+        expert.first_name,
+        expert.last_name,
+        expert.position,
+        expert.specializations,
+        ...(expert.organizations?.map((organization) => organization.name) ??
+          []),
+      ].some((item) => item?.toLowerCase().includes(search)),
     )
   }
 
@@ -361,16 +451,38 @@ export async function getPublishedExpertBySlug(slug: string) {
   if (isMissingTable(error) || !data) return null
 
   const profile = data as ExpertProfile
-  const memberships = await getUserOrganizationMemberships(profile.user_id)
-  const organizations = memberships
-    .map((membership) => membership.organizations)
-    .filter((organization): organization is Organization =>
-      Boolean(organization),
-    )
+  const organizationsByUser = await getPublicOrganizationsForUsers([
+    profile.user_id,
+  ])
+  const organizations = organizationsByUser.get(profile.user_id) ?? []
+  const [{ data: ownedMaterials }, { data: authoredRows }] = await Promise.all([
+    supabase
+      .from("materials")
+      .select("*, organizations:organization_id(*)")
+      .eq("status", "published")
+      .eq("owner_type", "expert")
+      .eq("expert_id", profile.id),
+    supabase
+      .from("material_expert_authors")
+      .select("materials(*)")
+      .eq("expert_id", profile.id),
+  ])
+  const materialsById = new Map<string, Material>()
+
+  for (const material of (ownedMaterials ?? []) as Material[]) {
+    materialsById.set(material.id, material)
+  }
+
+  for (const row of authoredRows ?? []) {
+    const material = row.materials as unknown as Material | null
+    if (material?.status === "published")
+      materialsById.set(material.id, material)
+  }
 
   return {
     ...profile,
     organizations,
+    materials: [...materialsById.values()],
   } as ExpertProfile
 }
 
@@ -393,7 +505,8 @@ export async function getPublishedContractors(filters: ContractorFilters = {}) {
     query = query.ilike("city", `%${filters.city}%`)
   }
 
-  const { data } = await query
+  const { data, error } = await query
+  if (error) reportServerError("contractors.catalog", error)
   const maxBudget = filters.budget ? Number(filters.budget) : null
   let contractors = (data ?? []) as Organization[]
 
@@ -717,9 +830,8 @@ export async function getPublishedEvents(filters: EventFilters = {}) {
   }
 
   if (filters.tag) {
-    query = query.or(
-      `tags.ilike.%${filters.tag}%,categories.ilike.%${filters.tag}%`,
-    )
+    const pattern = postgrestPattern(filters.tag)
+    query = query.or(`tags.ilike.${pattern},categories.ilike.${pattern}`)
   }
 
   if (filters.month && /^\d{4}-\d{2}$/.test(filters.month)) {
@@ -731,6 +843,7 @@ export async function getPublishedEvents(filters: EventFilters = {}) {
 
   const { data, error } = await query
   if (isMissingTable(error)) return []
+  if (error) reportServerError("events.catalog", error)
 
   return hydrateEventOwners((data ?? []) as Event[])
 }
@@ -878,7 +991,7 @@ export async function getPublishedMaterials(filters: MaterialFilters = {}) {
   const supabase = await createClient()
   let query = supabase
     .from("materials")
-    .select("*, organizations:organization_id(*)")
+    .select("*, organizations:organization_id(*), expert_profiles:expert_id(*)")
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -892,25 +1005,26 @@ export async function getPublishedMaterials(filters: MaterialFilters = {}) {
   }
 
   if (filters.q) {
-    query = query.or(
-      `title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`,
-    )
+    const pattern = postgrestPattern(filters.q)
+    query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`)
   }
 
-  const { data } = await query
+  const { data, error } = await query
+  if (error) reportServerError("materials.catalog", error)
 
   return (data ?? []) as Material[]
 }
 
 export async function getPublishedMaterialBySlug(slug: string) {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("materials")
     .select("*, organizations:organization_id(*), expert_profiles:expert_id(*)")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle()
 
+  if (error) reportServerError("materials.publicBySlug", error)
   return (data ?? null) as Material | null
 }
 
@@ -926,7 +1040,8 @@ export async function getPublishedTenders(filters: TenderFilters = {}) {
     query = query.ilike("title", `%${filters.q}%`)
   }
 
-  const { data } = await query
+  const { data, error } = await query
+  if (error) reportServerError("tenders.catalog", error)
   let tenders = data ?? []
 
   if (filters.city) {
@@ -949,23 +1064,24 @@ export async function getPublishedTenders(filters: TenderFilters = {}) {
 
 export async function getTenderBySlug(slug: string) {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tenders")
     .select("*, organizations(*)")
     .eq("slug", slug)
     .eq("status", "published")
-    .single()
+    .maybeSingle()
 
+  if (error) reportServerError("tenders.publicBySlug", error)
   return data
 }
 
 export async function getClientTenders() {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, organizations } = await getUserTenderOrganizations()
 
-  if (!user || !organization) {
+  if (!user || organizations.length === 0) {
     return {
       user,
-      organization,
+      organizations,
       tenders: [],
     }
   }
@@ -974,23 +1090,26 @@ export async function getClientTenders() {
   const { data } = await supabase
     .from("tenders")
     .select("*, organizations(*)")
-    .eq("organization_id", organization.id)
+    .in(
+      "organization_id",
+      organizations.map((organization) => organization.id),
+    )
     .order("created_at", { ascending: false })
 
   return {
     user,
-    organization,
+    organizations,
     tenders: data ?? [],
   }
 }
 
 export async function getClientTenderById(id: string) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, organizations } = await getUserTenderOrganizations()
 
-  if (!user || !organization) {
+  if (!user || organizations.length === 0) {
     return {
       user,
-      organization,
+      organizations,
       tender: null,
     }
   }
@@ -1000,23 +1119,26 @@ export async function getClientTenderById(id: string) {
     .from("tenders")
     .select("*, organizations(*)")
     .eq("id", id)
-    .eq("organization_id", organization.id)
+    .in(
+      "organization_id",
+      organizations.map((organization) => organization.id),
+    )
     .maybeSingle()
 
   return {
     user,
-    organization,
+    organizations,
     tender: data,
   }
 }
 
 export async function getTenderResponses(tenderId: string) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, organizations } = await getUserTenderOrganizations()
 
-  if (!user || !organization) {
+  if (!user || organizations.length === 0) {
     return {
       user,
-      organization,
+      organizations,
       tender: null,
       responses: [],
     }
@@ -1027,13 +1149,16 @@ export async function getTenderResponses(tenderId: string) {
     .from("tenders")
     .select("*, organizations(*)")
     .eq("id", tenderId)
-    .eq("organization_id", organization.id)
+    .in(
+      "organization_id",
+      organizations.map((organization) => organization.id),
+    )
     .maybeSingle()
 
   if (!tender) {
     return {
       user,
-      organization,
+      organizations,
       tender: null,
       responses: [],
     }
@@ -1047,33 +1172,55 @@ export async function getTenderResponses(tenderId: string) {
 
   return {
     user,
-    organization,
+    organizations,
     tender,
     responses: (responses ?? []) as TenderResponse[],
   }
 }
 
-export async function getContractorResponses() {
-  const { user, organization } = await getCurrentContractorOrganization()
+export async function getUserTenderResponses() {
+  const user = await getCurrentUser()
 
-  if (!user || !organization) {
+  if (!user) {
     return {
-      user,
-      organization,
-      responses: [],
+      user: null,
+      responses: [] as TenderResponse[],
     }
+  }
+
+  const [memberships, expert] = await Promise.all([
+    getUserOrganizationMemberships(user.id),
+    getCurrentExpertProfile(),
+  ])
+  const organizationIds = memberships
+    .map(
+      (membership) =>
+        membership.organization_id ??
+        membership.org_id ??
+        membership.organizations?.id,
+    )
+    .filter((id): id is string => Boolean(id))
+  const filters = [`user_id.eq.${user.id}`]
+
+  for (const organizationId of organizationIds) {
+    filters.push(`organization_id.eq.${organizationId}`)
+  }
+
+  if (expert.profile?.id) {
+    filters.push(`expert_id.eq.${expert.profile.id}`)
   }
 
   const supabase = await createClient()
   const { data } = await supabase
     .from("tender_responses")
-    .select("*, tenders(*, organizations(*))")
-    .eq("organization_id", organization.id)
+    .select(
+      "*, tenders(*, organizations(*)), organizations(*), expert_profiles:expert_id(*)",
+    )
+    .or(filters.join(","))
     .order("created_at", { ascending: false })
 
   return {
     user,
-    organization,
     responses: (data ?? []) as TenderResponse[],
   }
 }

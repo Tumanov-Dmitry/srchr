@@ -1,18 +1,25 @@
+import { redirect } from "next/navigation"
 import { createArticleMaterial } from "@/app/actions/media"
 import { AutosaveForm } from "@/components/media/autosave-form"
+import { MaterialOwnerSelect } from "@/components/media/material-owner-select"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 import { decodeMessage } from "@/lib/messages"
+import { getUserContentOwners } from "@/lib/supabase/queries"
 
 export default async function NewArticleMaterialPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
-  const { message: rawMessage } = await searchParams
+  const [{ message: rawMessage }, { user, owners }] = await Promise.all([
+    searchParams,
+    getUserContentOwners(),
+  ])
+  if (!user) redirect("/login")
   const message = decodeMessage(rawMessage)
 
   return (
@@ -22,7 +29,9 @@ export default async function NewArticleMaterialPage({
       storageKey="srchr:material:article:draft"
     >
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Создать статью</h1>
+        <h1 className="text-3xl font-semibold tracking-normal">
+          Создать статью
+        </h1>
         <p className="mt-2 text-muted-foreground">
           Подготовьте экспертный материал: гайд, обзор рынка, исследование,
           подборку или мнение.
@@ -35,6 +44,8 @@ export default async function NewArticleMaterialPage({
         </div>
       ) : null}
 
+      <MaterialOwnerSelect owners={owners} />
+
       <Card>
         <CardHeader>
           <CardTitle>Основная информация</CardTitle>
@@ -42,10 +53,20 @@ export default async function NewArticleMaterialPage({
         <CardContent className="grid gap-4 md:grid-cols-2">
           <Field name="title" label="Название статьи" requiredLabel />
           <Field name="cover_url" label="Обложка" placeholder="https://..." />
-          <TextField name="description" label="Короткое описание" className="md:col-span-2" requiredLabel />
+          <TextField
+            name="description"
+            label="Короткое описание"
+            className="md:col-span-2"
+            requiredLabel
+          />
           <Field name="author" label="Автор" />
           <Field name="category" label="Рубрика" requiredLabel />
-          <Field name="tags" label="Теги" placeholder="гайд, EVP, подборка" requiredLabel />
+          <Field
+            name="tags"
+            label="Теги"
+            placeholder="гайд, EVP, подборка"
+            requiredLabel
+          />
           <Field name="reading_time" label="Время чтения, мин" type="number" />
           <Field name="published_at" label="Дата публикации" type="date" />
         </CardContent>
@@ -92,7 +113,10 @@ function Field({
   requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Input> & { label: string; requiredLabel?: boolean }) {
+}: React.ComponentProps<typeof Input> & {
+  label: string
+  requiredLabel?: boolean
+}) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
       <RequiredLabel htmlFor={name} required={requiredLabel}>
@@ -109,7 +133,10 @@ function TextField({
   requiredLabel = false,
   className,
   ...props
-}: React.ComponentProps<typeof Textarea> & { label: string; requiredLabel?: boolean }) {
+}: React.ComponentProps<typeof Textarea> & {
+  label: string
+  requiredLabel?: boolean
+}) {
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
       <RequiredLabel htmlFor={name} required={requiredLabel}>

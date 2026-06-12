@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { trackAnalyticsEvent } from "@/lib/analytics"
 import { encodeMessage } from "@/lib/messages"
-import {
-  createNotificationEvent,
-  notifyAdmins,
-} from "@/lib/notifications"
+import { createNotificationEvent, notifyAdmins } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { reportServerError } from "@/lib/security/errors"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
@@ -58,8 +55,14 @@ function value(formData: FormData, key: string) {
   return raw.length > 0 ? raw : null
 }
 
-function safeValue<T extends string>(valueToCheck: string | null, allowed: T[], fallback: T) {
-  return valueToCheck && allowed.includes(valueToCheck as T) ? (valueToCheck as T) : fallback
+function safeValue<T extends string>(
+  valueToCheck: string | null,
+  allowed: T[],
+  fallback: T,
+) {
+  return valueToCheck && allowed.includes(valueToCheck as T)
+    ? (valueToCheck as T)
+    : fallback
 }
 
 function redirectWithMessage(path: string, message: string): never {
@@ -112,10 +115,14 @@ async function getAllowedOwners(userId: string) {
   }
 
   memberships
-    .filter((membership) => ["owner", "admin", "editor"].includes(membership.role ?? "member"))
+    .filter((membership) =>
+      ["owner", "admin", "editor"].includes(membership.role ?? "member"),
+    )
     .forEach((membership) => {
       const organizationId =
-        membership.organization_id ?? membership.org_id ?? membership.organizations?.id
+        membership.organization_id ??
+        membership.org_id ??
+        membership.organizations?.id
 
       if (organizationId) {
         owners.push({ owner_type: "organization", owner_id: organizationId })
@@ -154,9 +161,11 @@ async function canEditEvent(userId: string, eventId: string) {
   if (error) throw new Error(error.message)
   if (!data) return false
 
-  if (data.created_by === userId) return true
-
-  return canUseOwner(userId, data.owner_type as EventOwnerType, data.owner_id as string)
+  return canUseOwner(
+    userId,
+    data.owner_type as EventOwnerType,
+    data.owner_id as string,
+  )
 }
 
 function eventPayload(
@@ -193,11 +202,20 @@ function eventPayload(
 }
 
 function requireModerationFields(formData: FormData, path: string) {
-  const required = ["title", "description", "start_date", "event_type", "format"]
+  const required = [
+    "title",
+    "description",
+    "start_date",
+    "event_type",
+    "format",
+  ]
   const missing = required.filter((field) => !value(formData, field))
 
   if (missing.length > 0) {
-    redirectWithMessage(path, "Заполните обязательные поля для отправки на модерацию")
+    redirectWithMessage(
+      path,
+      "Заполните обязательные поля для отправки на модерацию",
+    )
   }
 }
 
@@ -210,8 +228,14 @@ export async function createEvent(formData: FormData) {
   const owner = parseOwner(value(formData, "owner"))
   const path = "/dashboard/events/new"
 
-  if (!owner || !(await canUseOwner(user.id, owner.owner_type, owner.owner_id))) {
-    redirectWithMessage(path, "Выберите экспертный профиль или организацию-владельца")
+  if (
+    !owner ||
+    !(await canUseOwner(user.id, owner.owner_type, owner.owner_id))
+  ) {
+    redirectWithMessage(
+      path,
+      "Выберите экспертный профиль или организацию-владельца",
+    )
   }
 
   if (status === "moderation") {
@@ -275,12 +299,14 @@ export async function updateEvent(formData: FormData) {
 
   if (intent === "archive") {
     const supabase = await createWriterClient()
-    const { error } = await supabase
+    const { data: updatedEvent, error } = await supabase
       .from("events")
       .update({ status: "archived", updated_at: new Date().toISOString() })
       .eq("id", id)
+      .select("id")
+      .maybeSingle()
 
-    if (error) {
+    if (error || !updatedEvent) {
       reportServerError("events.archive", error)
       redirectWithMessage(path, "Не удалось архивировать мероприятие")
     }
@@ -290,12 +316,14 @@ export async function updateEvent(formData: FormData) {
 
   if (intent === "cancel") {
     const supabase = await createWriterClient()
-    const { error } = await supabase
+    const { data: updatedEvent, error } = await supabase
       .from("events")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
       .eq("id", id)
+      .select("id")
+      .maybeSingle()
 
-    if (error) {
+    if (error || !updatedEvent) {
       reportServerError("events.cancel", error)
       redirectWithMessage(path, "Не удалось отменить мероприятие")
     }
@@ -306,8 +334,14 @@ export async function updateEvent(formData: FormData) {
   const status = safeValue(value(formData, "status"), eventStatuses, "draft")
   const owner = parseOwner(value(formData, "owner"))
 
-  if (!owner || !(await canUseOwner(user.id, owner.owner_type, owner.owner_id))) {
-    redirectWithMessage(path, "Выберите экспертный профиль или организацию-владельца")
+  if (
+    !owner ||
+    !(await canUseOwner(user.id, owner.owner_type, owner.owner_id))
+  ) {
+    redirectWithMessage(
+      path,
+      "Выберите экспертный профиль или организацию-владельца",
+    )
   }
 
   if (status === "moderation") {
@@ -317,18 +351,17 @@ export async function updateEvent(formData: FormData) {
   const title = value(formData, "title") ?? "Новое событие"
   const slug = await getAvailableSlug(title, id)
   const supabase = await createWriterClient()
-  const payload = eventPayload(
-    formData,
-    owner,
-    user.id,
-    status,
-    slug,
-  )
+  const payload = eventPayload(formData, owner, user.id, status, slug)
   delete (payload as Partial<typeof payload>).created_by
 
-  const { error } = await supabase.from("events").update(payload).eq("id", id)
+  const { data: updatedEvent, error } = await supabase
+    .from("events")
+    .update(payload)
+    .eq("id", id)
+    .select("id")
+    .maybeSingle()
 
-  if (error) {
+  if (error || !updatedEvent) {
     reportServerError("events.update", error)
     redirectWithMessage(path, "Не удалось обновить мероприятие")
   }
@@ -380,7 +413,14 @@ export async function setEventParticipation(formData: FormData) {
     .from("events")
     .select("owner_type, owner_id")
     .eq("id", eventId)
+    .in("status", ["published", "completed"])
     .maybeSingle()
+  if (!event) {
+    redirectWithMessage(
+      path,
+      "Участие доступно только в опубликованном мероприятии",
+    )
+  }
   const { error } = await supabase.from("event_participants").upsert(
     {
       event_id: eventId,

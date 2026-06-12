@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ExternalLink, Mail, MapPin, Send } from "lucide-react"
 import { AnalyticsLink } from "@/components/analytics/analytics-link"
@@ -136,6 +137,41 @@ export default async function ExpertPage({
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Связанные компании пока не указаны.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Материалы</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {expert.materials?.length ? (
+                <div className="divide-y">
+                  {expert.materials.map((material) => (
+                    <Link
+                      className="block py-4 first:pt-0 last:pb-0"
+                      href={`/media/${material.slug}`}
+                      key={material.id}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {material.type === "case" ? "Кейс" : "Статья"}
+                        </Badge>
+                        <span className="font-medium">{material.title}</span>
+                      </div>
+                      {material.description ? (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {material.description}
+                        </p>
+                      ) : null}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Опубликованных материалов пока нет.
                 </p>
               )}
             </CardContent>

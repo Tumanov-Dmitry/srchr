@@ -11,7 +11,10 @@ function slugify(value: string) {
   return `${createSlug(value)}-${Date.now().toString(36)}`
 }
 
-async function markOnboardingComplete(userId: string, email: string | undefined) {
+async function markOnboardingComplete(
+  userId: string,
+  email: string | undefined,
+) {
   const supabase = await createClient()
   const payload = {
     id: userId,
@@ -25,15 +28,13 @@ async function markOnboardingComplete(userId: string, email: string | undefined)
 
   if (!error) return
 
-  const { error: fallbackError } = await supabase
-    .from("profiles")
-    .upsert(
-      {
-        id: userId,
-        email: email ?? null,
-      },
-      { onConflict: "id" },
-    )
+  const { error: fallbackError } = await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      email: email ?? null,
+    },
+    { onConflict: "id" },
+  )
 
   if (fallbackError) throw new Error(fallbackError.message)
 }
@@ -41,7 +42,7 @@ async function markOnboardingComplete(userId: string, email: string | undefined)
 async function createOrganizationMember(
   organizationId: string,
   userId: string,
-  role: OnboardingRole,
+  role: Exclude<OnboardingRole, "expert">,
 ) {
   const supabase = await createClient()
   const memberRole = role === "contractor" ? "owner" : "admin"
@@ -54,20 +55,82 @@ async function createOrganizationMember(
 
   if (!error) return
 
-  const { error: fallbackError } = await supabase.from("organization_members").insert({
-    org_id: organizationId,
-    profile_id: userId,
-    role: memberRole,
-  })
+  const { error: fallbackError } = await supabase
+    .from("organization_members")
+    .insert({
+      org_id: organizationId,
+      profile_id: userId,
+      role: memberRole,
+    })
 
   if (fallbackError) {
     throw new Error(fallbackError.message)
   }
 }
 
+async function getAvailableExpertSlug(name: string, email?: string) {
+  const supabase = await createClient()
+  const baseSlug = createSlug(name || email?.split("@")[0] || "expert")
+  let candidate = baseSlug
+
+  for (let index = 0; index < 20; index += 1) {
+    const { data } = await supabase
+      .from("expert_profiles")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle()
+
+    if (!data) return candidate
+    candidate = `${baseSlug}-${index + 2}`
+  }
+
+  return `${baseSlug}-${Date.now().toString(36)}`
+}
+
 function optionalValue(formData: FormData, key: string) {
   const raw = String(formData.get(key) ?? "").trim()
   return raw.length > 0 ? raw : null
+}
+
+async function createExpertProfile(
+  userId: string,
+  email: string | undefined,
+  formData: FormData,
+) {
+  const supabase = await createClient()
+  const firstName = String(formData.get("name") ?? "").trim()
+  const lastName = optionalValue(formData, "last_name")
+  const baseSlug = await getAvailableExpertSlug(
+    [firstName, lastName].filter(Boolean).join(" "),
+    email,
+  )
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`
+    const { error } = await supabase.from("expert_profiles").insert({
+      user_id: userId,
+      slug,
+      first_name: firstName,
+      last_name: lastName,
+      position: optionalValue(formData, "position"),
+      short_description: optionalValue(formData, "description"),
+      city: optionalValue(formData, "city"),
+      contact_email: email ?? null,
+      is_public: false,
+      is_open_to_work: true,
+      status: "draft",
+    })
+
+    if (!error) return
+    if (
+      error.code !== "23505" ||
+      !error.message.toLowerCase().includes("slug")
+    ) {
+      throw new Error(error.message)
+    }
+  }
+
+  throw new Error("Не удалось подобрать свободный адрес профиля")
 }
 
 function optionalNumber(formData: FormData, key: string) {
@@ -83,13 +146,17 @@ function getMissingColumn(error: { message?: string } | null) {
   return match?.[1]
 }
 
-async function createContractorProfile(organizationId: string, formData: FormData) {
+async function createContractorProfile(
+  organizationId: string,
+  formData: FormData,
+) {
   const supabase = await createClient()
   const description = String(formData.get("description") ?? "").trim()
   const payload: Record<string, string | number | null> = {
     organization_id: organizationId,
     description,
-    short_description: optionalValue(formData, "short_description") ?? description,
+    short_description:
+      optionalValue(formData, "short_description") ?? description,
     full_description: optionalValue(formData, "full_description"),
     telegram_url: optionalValue(formData, "telegram_url"),
     contact_email: optionalValue(formData, "contact_email"),
@@ -102,7 +169,9 @@ async function createContractorProfile(organizationId: string, formData: FormDat
   const nextPayload = { ...payload }
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
-    const { error } = await supabase.from("contractor_profiles").insert(nextPayload)
+    const { error } = await supabase
+      .from("contractor_profiles")
+      .insert(nextPayload)
 
     if (!error) return
 
@@ -171,7 +240,11 @@ async function createOrganization({
     .single()
 
   if (fallbackError || !fallbackData) {
-    throw new Error(fallbackError?.message ?? error?.message ?? "Не удалось создать организацию")
+    throw new Error(
+      fallbackError?.message ??
+        error?.message ??
+        "Не удалось создать организацию",
+    )
   }
 
   return fallbackData
@@ -211,7 +284,11 @@ export async function completeOnboarding(formData: FormData) {
 
   const requestedRole = String(formData.get("role") ?? "")
   const onboardingRole: OnboardingRole =
-    requestedRole === "contractor" ? "contractor" : "client"
+    requestedRole === "contractor"
+      ? "contractor"
+      : requestedRole === "expert"
+        ? "expert"
+        : "client"
 
   const name = String(formData.get("name") ?? "").trim()
   const description = String(formData.get("description") ?? "").trim()
@@ -222,6 +299,21 @@ export async function completeOnboarding(formData: FormData) {
 
   if (!name || !description || !city) {
     redirect("/onboarding?message=Заполните обязательные поля")
+  }
+
+  if (onboardingRole === "expert") {
+    try {
+      await createExpertProfile(user.id, user.email, formData)
+      await markOnboardingComplete(user.id, user.email)
+    } catch (error) {
+      reportServerError("onboarding.expert", error)
+      redirect(
+        "/onboarding?message=Не удалось создать профиль эксперта. Проверьте таблицу expert_profiles",
+      )
+    }
+
+    revalidatePath("/", "layout")
+    redirect("/dashboard/expert")
   }
 
   let organization: { id: string }
@@ -249,5 +341,9 @@ export async function completeOnboarding(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect(onboardingRole === "contractor" ? "/dashboard/contractor" : "/dashboard/client")
+  redirect(
+    onboardingRole === "contractor"
+      ? "/dashboard/contractor"
+      : "/dashboard/client",
+  )
 }

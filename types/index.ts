@@ -1,5 +1,11 @@
-export type AccountRole = "guest" | "contractor" | "client" | "admin"
-export type OnboardingRole = "contractor" | "client"
+export type AccountRole = "guest" | "expert" | "contractor" | "client" | "admin"
+export type OnboardingRole = "expert" | "contractor" | "client"
+
+export type ContentOwner = {
+  owner_type: "expert" | "organization"
+  owner_id: string
+  label: string
+}
 
 export type Organization = {
   id: string
@@ -69,6 +75,7 @@ export type ExpertProfile = {
   created_at?: string | null
   updated_at?: string | null
   organizations?: Organization[]
+  materials?: Material[]
 }
 
 export type ReputationTargetType = "contractor" | "expert"

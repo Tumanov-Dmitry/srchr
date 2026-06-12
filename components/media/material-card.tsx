@@ -57,7 +57,13 @@ export function MaterialCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-end justify-between gap-3 text-sm text-muted-foreground">
-        <span>{item.organizations?.name ?? item.author ?? "SRCHR"}</span>
+        <span>
+          {item.expert_profiles
+            ? [item.expert_profiles.first_name, item.expert_profiles.last_name]
+                .filter(Boolean)
+                .join(" ")
+            : (item.organizations?.name ?? item.author ?? "SRCHR")}
+        </span>
         <PublicViewCount views={views} />
       </CardContent>
       <CardFooter>

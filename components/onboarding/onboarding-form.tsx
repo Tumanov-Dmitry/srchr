@@ -44,6 +44,7 @@ export function OnboardingForm({
                 <SelectValue placeholder="Выберите роль" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="expert">Эксперт</SelectItem>
                 <SelectItem value="contractor">Подрядчик</SelectItem>
                 <SelectItem value="client">Компания / HR</SelectItem>
               </SelectContent>
@@ -53,24 +54,44 @@ export function OnboardingForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <RequiredLabel htmlFor="name" required>
-                {role === "contractor" ? "Название компании" : "Название компании"}
+                {role === "expert" ? "Имя" : "Название компании"}
               </RequiredLabel>
               <Input id="name" name="name" required />
             </div>
+            {role === "expert" ? (
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Фамилия</Label>
+                <Input id="last_name" name="last_name" />
+              </div>
+            ) : null}
             <div className="space-y-2">
-              <RequiredLabel htmlFor="city" required>Город</RequiredLabel>
+              <RequiredLabel htmlFor="city" required>
+                Город
+              </RequiredLabel>
               <Input id="city" name="city" required />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <RequiredLabel htmlFor="description" required>Описание</RequiredLabel>
+              <RequiredLabel htmlFor="description" required>
+                Описание
+              </RequiredLabel>
               <Textarea id="description" name="description" required />
             </div>
+            {role === "expert" ? (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="position">Должность / специализация</Label>
+                <Input id="position" name="position" />
+              </div>
+            ) : null}
 
             {role === "contractor" ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="website">Сайт</Label>
-                  <Input id="website" name="website" placeholder="https://example.com" />
+                  <Input
+                    id="website"
+                    name="website"
+                    placeholder="https://example.com"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="logo_url">Логотип</Label>
@@ -99,11 +120,21 @@ export function OnboardingForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="min_budget">Минимальный бюджет</Label>
-                  <Input id="min_budget" name="min_budget" type="number" min="0" />
+                  <Input
+                    id="min_budget"
+                    name="min_budget"
+                    type="number"
+                    min="0"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="team_size">Размер команды</Label>
-                  <Input id="team_size" name="team_size" type="number" min="1" />
+                  <Input
+                    id="team_size"
+                    name="team_size"
+                    type="number"
+                    min="1"
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="price_description">Описание цен</Label>
@@ -158,7 +189,9 @@ export function OnboardingForm({
             ) : null}
           </div>
 
-          {message ? <p className="text-sm text-destructive">{message}</p> : null}
+          {message ? (
+            <p className="text-sm text-destructive">{message}</p>
+          ) : null}
 
           <Button type="submit" size="lg">
             Завершить настройку

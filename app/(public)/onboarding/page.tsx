@@ -27,7 +27,7 @@ export default async function OnboardingPage({
     <PageShell>
       <PageHeader
         title="Первичная настройка"
-        description="Выберите роль и создайте организацию. Данные сохраняются в существующие таблицы Supabase."
+        description="Выберите основной сценарий: экспертный профиль, подрядчик или компания-заказчик."
       />
       <OnboardingForm services={services as Service[]} message={message} />
     </PageShell>

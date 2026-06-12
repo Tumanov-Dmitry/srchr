@@ -19,10 +19,11 @@ export default async function ClientTenderResponsesPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const [{ id }, { message }] = await Promise.all([params, searchParams])
-  const { user, organization, tender, responses } = await getTenderResponses(id)
+  const { user, organizations, tender, responses } =
+    await getTenderResponses(id)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (organizations.length === 0) redirect("/onboarding")
   if (!tender) redirect("/dashboard/client/tenders")
 
   const contractorIds = responses

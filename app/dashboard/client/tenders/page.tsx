@@ -8,10 +8,10 @@ import { formatDate, formatMoney } from "@/lib/utils"
 import type { Tender } from "@/types"
 
 export default async function ClientTendersPage() {
-  const { user, organization, tenders } = await getClientTenders()
+  const { user, organizations, tenders } = await getClientTenders()
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (organizations.length === 0) redirect("/onboarding")
 
   return (
     <div className="space-y-6">
@@ -19,7 +19,7 @@ export default async function ClientTendersPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-normal">Мои задачи</h1>
           <p className="mt-2 text-muted-foreground">
-            Задачи организации {organization.name}.
+            Задачи всех организаций, к которым у вас есть доступ.
           </p>
         </div>
         <Button asChild>
@@ -53,7 +53,9 @@ export default async function ClientTendersPage() {
                   </Button>
                 ) : null}
                 <Button asChild variant="outline">
-                  <Link href={`/dashboard/client/tenders/${tender.id}/responses`}>
+                  <Link
+                    href={`/dashboard/client/tenders/${tender.id}/responses`}
+                  >
                     Отклики
                   </Link>
                 </Button>

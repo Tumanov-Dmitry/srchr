@@ -316,7 +316,7 @@ export async function getPublicViewCounts(
   const ids = [...new Set(targetIds.filter(Boolean))]
   if (ids.length === 0) return counts
 
-  const supabase = createAdminClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from("analytics_public_totals")
     .select("target_id, views")

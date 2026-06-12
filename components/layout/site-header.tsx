@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Menu, Search } from "lucide-react"
 import { logout } from "@/app/actions/auth"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { Button } from "@/components/ui/button"
@@ -51,6 +51,25 @@ export async function SiteHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
+          <details className="relative md:hidden">
+            <summary
+              className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-md border"
+              title="Открыть меню"
+            >
+              <Menu className="h-4 w-4" />
+            </summary>
+            <nav className="absolute right-0 top-11 z-50 grid w-56 gap-1 rounded-md border bg-background p-2 shadow-lg">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded px-3 py-2 text-sm hover:bg-accent"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </details>
           {user ? (
             <>
               <NotificationBell />

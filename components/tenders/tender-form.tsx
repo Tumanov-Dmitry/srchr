@@ -1,24 +1,29 @@
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { TenderSlugFields } from "@/components/tenders/tender-slug-fields"
-import type { Tender } from "@/types"
+import type { Organization, Tender } from "@/types"
 
 export function TenderForm({
   action,
   tender,
   message,
+  organizations,
 }: {
   action: (formData: FormData) => void | Promise<void>
   tender?: Tender | null
   message?: string
+  organizations: Organization[]
 }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tender ? "Редактирование задачи" : "Новая задача"}</CardTitle>
+        <CardTitle>
+          {tender ? "Редактирование задачи" : "Новая задача"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-5 md:grid-cols-2">
@@ -26,6 +31,25 @@ export function TenderForm({
             defaultTitle={tender?.title}
             defaultSlug={tender?.slug}
           />
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="organization_id">Организация-владелец</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              defaultValue={
+                tender?.organization_id ?? organizations[0]?.id ?? ""
+              }
+              id="organization_id"
+              name="organization_id"
+              required
+            >
+              <option value="">Выберите организацию</option>
+              {organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="description">Описание</Label>
             <Textarea
@@ -37,11 +61,7 @@ export function TenderForm({
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="goal">Цель</Label>
-            <Textarea
-              id="goal"
-              name="goal"
-              defaultValue={tender?.goal ?? ""}
-            />
+            <Textarea id="goal" name="goal" defaultValue={tender?.goal ?? ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="budget_from">Бюджет от</Label>
@@ -100,7 +120,7 @@ export function TenderForm({
           <div className="flex gap-3 md:col-span-2">
             <Button type="submit">Сохранить</Button>
             <Button asChild variant="outline">
-              <a href="/dashboard/client/tenders">Отмена</a>
+              <Link href="/dashboard/client/tenders">Отмена</Link>
             </Button>
           </div>
         </form>

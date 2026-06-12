@@ -59,13 +59,22 @@ function getMissingColumn(error: { message?: string } | null) {
 async function upsertExpertWithFallback(payload: ExpertPayload) {
   const supabase = await createClient()
   const nextPayload: Partial<ExpertPayload> = { ...payload }
+  const baseSlug = payload.slug
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const { error } = await supabase
       .from("expert_profiles")
       .upsert(nextPayload, { onConflict: "user_id" })
 
-    if (!error) return
+    if (!error) return String(nextPayload.slug ?? baseSlug)
+
+    if (
+      error.code === "23505" &&
+      error.message.toLowerCase().includes("slug")
+    ) {
+      nextPayload.slug = `${baseSlug}-${attempt + 2}`
+      continue
+    }
 
     const missingColumn = getMissingColumn(error)
     if (!missingColumn || !(missingColumn in nextPayload)) {
@@ -78,6 +87,25 @@ async function upsertExpertWithFallback(payload: ExpertPayload) {
   throw new Error("Не удалось сохранить профиль эксперта")
 }
 
+async function getAvailableExpertSlug(requestedSlug: string, userId: string) {
+  const supabase = await createClient()
+  const baseSlug = createSlug(requestedSlug)
+  let candidate = baseSlug
+
+  for (let index = 0; index < 20; index += 1) {
+    const { data, error } = await supabase
+      .from("expert_profiles")
+      .select("user_id")
+      .eq("slug", candidate)
+      .maybeSingle()
+
+    if (!error && (!data || data.user_id === userId)) return candidate
+    candidate = `${baseSlug}-${index + 2}`
+  }
+
+  return `${baseSlug}-${Date.now().toString(36)}`
+}
+
 export async function saveExpertProfile(formData: FormData) {
   const user = await getCurrentUser()
 
@@ -85,7 +113,7 @@ export async function saveExpertProfile(formData: FormData) {
 
   const firstName = value(formData, "first_name")
   const lastName = value(formData, "last_name")
-  const slug = createSlug(
+  const requestedSlug = createSlug(
     value(formData, "slug") ??
       [firstName, lastName].filter(Boolean).join(" ") ??
       user.email ??
@@ -97,9 +125,11 @@ export async function saveExpertProfile(formData: FormData) {
   }
 
   const isPublic = value(formData, "is_public") === "on"
+  let slug = requestedSlug
 
   try {
-    await upsertExpertWithFallback({
+    slug = await getAvailableExpertSlug(requestedSlug, user.id)
+    slug = await upsertExpertWithFallback({
       user_id: user.id,
       slug,
       avatar_url: value(formData, "avatar_url"),
@@ -126,7 +156,10 @@ export async function saveExpertProfile(formData: FormData) {
     })
   } catch (error) {
     reportServerError("expert.saveProfile", error)
-    redirectWithMessage("/dashboard/expert", "Не удалось сохранить профиль эксперта")
+    redirectWithMessage(
+      "/dashboard/expert",
+      "Не удалось сохранить профиль эксперта",
+    )
   }
 
   revalidatePath("/experts")

@@ -2,20 +2,20 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import {
-  createNotificationEvent,
-  notifyAdmins,
-} from "@/lib/notifications"
+import { createNotificationEvent, notifyAdmins } from "@/lib/notifications"
 import { createSlug } from "@/lib/slug"
 import { encodeMessage } from "@/lib/messages"
 import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
-import { getCurrentTenderOwnerOrganization } from "@/lib/supabase/queries"
+import { getUserContentOwners } from "@/lib/supabase/queries"
+import type { ContentOwner } from "@/types"
 
 type PayloadValue = string | number | null
 type MaterialOwnership = {
   company_id?: string | null
   organization_id?: string | null
+  owner_type?: string | null
+  expert_id?: string | null
   created_by?: string | null
 }
 
@@ -39,6 +39,46 @@ function statusValue(formData: FormData) {
     : "draft"
 }
 
+async function getSelectedOwner(formData: FormData) {
+  const { user, owners } = await getUserContentOwners()
+  const [ownerType, ownerId] = (value(formData, "owner") ?? "").split(":")
+  const owner = owners.find(
+    (item) => item.owner_type === ownerType && item.owner_id === ownerId,
+  )
+
+  return { user, owners, owner: owner ?? null }
+}
+
+function materialOwnerPayload(owner: ContentOwner) {
+  const isExpert = owner.owner_type === "expert"
+
+  return {
+    owner_type: isExpert ? "expert" : "company",
+    expert_id: isExpert ? owner.owner_id : null,
+    company_id: isExpert ? null : owner.owner_id,
+    organization_id: isExpert ? null : owner.owner_id,
+  }
+}
+
+function canManageMaterial(
+  ownership: MaterialOwnership,
+  userId: string,
+  owners: ContentOwner[],
+) {
+  if (ownership.created_by === userId) return true
+
+  return owners.some((owner) => {
+    if (owner.owner_type === "expert") {
+      return ownership.expert_id === owner.owner_id
+    }
+
+    return (
+      ownership.organization_id === owner.owner_id ||
+      ownership.company_id === owner.owner_id
+    )
+  })
+}
+
 function getMissingColumn(error: { message?: string } | null) {
   const match = error?.message?.match(/'([^']+)' column/)
   return match?.[1]
@@ -46,7 +86,10 @@ function getMissingColumn(error: { message?: string } | null) {
 
 function isMissingTable(error: { message?: string } | null) {
   const message = error?.message ?? ""
-  return message.includes("Could not find the table") || message.includes("does not exist")
+  return (
+    message.includes("Could not find the table") ||
+    message.includes("does not exist")
+  )
 }
 
 function isDuplicateSlug(error: { message?: string; code?: string } | null) {
@@ -60,7 +103,9 @@ function isDuplicateSlug(error: { message?: string; code?: string } | null) {
 
 function uniqueSlugCandidate(slug: PayloadValue, attempt: number) {
   const baseSlug =
-    typeof slug === "string" && slug.trim().length > 0 ? slug.trim() : "material"
+    typeof slug === "string" && slug.trim().length > 0
+      ? slug.trim()
+      : "material"
 
   return `${baseSlug}-${attempt + 2}`
 }
@@ -106,7 +151,7 @@ async function getMaterialOwnership(id: string) {
   const supabase = await createWriterClient()
   const { data, error } = await supabase
     .from("materials")
-    .select("company_id, organization_id, created_by")
+    .select("company_id, organization_id, owner_type, expert_id, created_by")
     .eq("id", id)
     .maybeSingle()
 
@@ -228,20 +273,52 @@ function buildCaseBlocks(formData: FormData) {
   return [
     { type: "task", title: "Задача", content: value(formData, "task") },
     { type: "context", title: "Контекст", content: value(formData, "context") },
-    { type: "work", title: "Что сделали", content: value(formData, "work_done") },
-    { type: "team", title: "Команда проекта", content: value(formData, "project_team") },
-    { type: "solution", title: "Решение", content: value(formData, "solution") },
+    {
+      type: "work",
+      title: "Что сделали",
+      content: value(formData, "work_done"),
+    },
+    {
+      type: "team",
+      title: "Команда проекта",
+      content: value(formData, "project_team"),
+    },
+    {
+      type: "solution",
+      title: "Решение",
+      content: value(formData, "solution"),
+    },
     { type: "result", title: "Результат", content: value(formData, "result") },
-    { type: "metrics", title: "Цифры / метрики", content: value(formData, "metrics") },
-    { type: "review", title: "Отзыв клиента", content: value(formData, "client_review") },
-    { type: "gallery", title: "Галерея / медиа", content: value(formData, "gallery") },
-    { type: "links", title: "Ссылки на результат", content: value(formData, "result_links") },
+    {
+      type: "metrics",
+      title: "Цифры / метрики",
+      content: value(formData, "metrics"),
+    },
+    {
+      type: "review",
+      title: "Отзыв клиента",
+      content: value(formData, "client_review"),
+    },
+    {
+      type: "gallery",
+      title: "Галерея / медиа",
+      content: value(formData, "gallery"),
+    },
+    {
+      type: "links",
+      title: "Ссылки на результат",
+      content: value(formData, "result_links"),
+    },
   ].filter((block) => block.content)
 }
 
 function buildArticleBlocks(formData: FormData) {
   return [
-    { type: "text", title: "Основной текст", content: value(formData, "content") },
+    {
+      type: "text",
+      title: "Основной текст",
+      content: value(formData, "content"),
+    },
     { type: "quote", title: "Цитата", content: value(formData, "quote") },
     { type: "cta", title: "CTA-блок", content: value(formData, "cta") },
   ].filter((block) => block.content)
@@ -259,7 +336,10 @@ function redirectWithMissingFields(
   const missing = missingRequired(formData, fields)
 
   if (missing.length > 0) {
-    redirectWithMessage(path, "Заполните обязательные поля для отправки на модерацию")
+    redirectWithMessage(
+      path,
+      "Заполните обязательные поля для отправки на модерацию",
+    )
   }
 }
 
@@ -332,10 +412,15 @@ async function notifyAdminsAboutMaterialModeration({
 }
 
 export async function createCaseMaterial(formData: FormData) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, owner } = await getSelectedOwner(formData)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (!owner) {
+    redirectWithMessage(
+      "/dashboard/media/new/case",
+      "Выберите эксперта или организацию-владельца",
+    )
+  }
 
   const status = statusValue(formData)
   const title = value(formData, "title") ?? "Новый кейс"
@@ -367,8 +452,7 @@ export async function createCaseMaterial(formData: FormData) {
       description: value(formData, "description"),
       cover_url: value(formData, "cover_url"),
       author: user.email ?? null,
-      company_id: organization.id,
-      organization_id: organization.id,
+      ...materialOwnerPayload(owner),
       status,
       category: value(formData, "category"),
       tags: tagsValue(formData) ?? null,
@@ -406,8 +490,9 @@ export async function createCaseMaterial(formData: FormData) {
         client_url: value(formData, "client_url"),
         budget_range: value(formData, "budget_range"),
         tags: tagsValue(formData) ?? null,
-        organization_id: organization.id,
-        company_id: organization.id,
+        organization_id:
+          owner.owner_type === "organization" ? owner.owner_id : null,
+        company_id: owner.owner_type === "organization" ? owner.owner_id : null,
         author_id: user.id,
         created_by: user.id,
         published_at: status === "published" ? new Date().toISOString() : null,
@@ -432,8 +517,9 @@ export async function createCaseMaterial(formData: FormData) {
         client_url: value(formData, "client_url"),
         budget_range: value(formData, "budget_range"),
         tags: tagsValue(formData) ?? null,
-        organization_id: organization.id,
-        company_id: organization.id,
+        organization_id:
+          owner.owner_type === "organization" ? owner.owner_id : null,
+        company_id: owner.owner_type === "organization" ? owner.owner_id : null,
         author_id: user.id,
         created_by: user.id,
         published_at: status === "published" ? new Date().toISOString() : null,
@@ -441,7 +527,10 @@ export async function createCaseMaterial(formData: FormData) {
     }
   } catch (error) {
     reportServerError("media.createCase", error)
-    redirectWithMessage("/dashboard/media/new/case", "Не удалось сохранить кейс")
+    redirectWithMessage(
+      "/dashboard/media/new/case",
+      "Не удалось сохранить кейс",
+    )
   }
 
   revalidatePath("/media")
@@ -451,10 +540,15 @@ export async function createCaseMaterial(formData: FormData) {
 }
 
 export async function createArticleMaterial(formData: FormData) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, owner } = await getSelectedOwner(formData)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (!owner) {
+    redirectWithMessage(
+      "/dashboard/media/new/article",
+      "Выберите эксперта или организацию-владельца",
+    )
+  }
 
   const status = statusValue(formData)
   const title = value(formData, "title") ?? "Новая статья"
@@ -470,7 +564,10 @@ export async function createArticleMaterial(formData: FormData) {
   }
 
   if (!title) {
-    redirectWithMessage("/dashboard/media/new/article", "Укажите название статьи")
+    redirectWithMessage(
+      "/dashboard/media/new/article",
+      "Укажите название статьи",
+    )
   }
 
   let materialSaved = false
@@ -486,13 +583,15 @@ export async function createArticleMaterial(formData: FormData) {
       description: value(formData, "description"),
       cover_url: value(formData, "cover_url"),
       author: value(formData, "author") ?? user.email ?? null,
-      company_id: organization.id,
-      organization_id: organization.id,
+      ...materialOwnerPayload(owner),
       status,
       category: value(formData, "category"),
       tags: tagsValue(formData) ?? null,
       reading_time: numberValue(formData, "reading_time"),
-      published_at: status === "published" ? new Date().toISOString() : value(formData, "published_at"),
+      published_at:
+        status === "published"
+          ? new Date().toISOString()
+          : value(formData, "published_at"),
       content: articleContent(formData),
       created_by: user.id,
     })
@@ -509,7 +608,10 @@ export async function createArticleMaterial(formData: FormData) {
     }
   } catch (error) {
     reportServerError("media.createArticle", error)
-    redirectWithMessage("/dashboard/media/new/article", "Не удалось сохранить статью")
+    redirectWithMessage(
+      "/dashboard/media/new/article",
+      "Не удалось сохранить статью",
+    )
   }
 
   if (!materialSaved || materialTableMissing) {
@@ -524,10 +626,9 @@ export async function createArticleMaterial(formData: FormData) {
 }
 
 export async function updateMaterial(formData: FormData) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, owners } = await getUserContentOwners()
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
 
   const id = value(formData, "id")
   const type = value(formData, "type")
@@ -551,11 +652,7 @@ export async function updateMaterial(formData: FormData) {
 
       if (!ownership) {
         deleteError = "Материал не найден или таблица materials недоступна"
-      } else if (
-        ownership.company_id !== organization.id &&
-        ownership.organization_id !== organization.id &&
-        ownership.created_by !== user.id
-      ) {
+      } else if (!canManageMaterial(ownership, user.id, owners)) {
         deleteError = "Нет доступа к этому материалу"
       } else {
         deleted = Boolean(await deleteWithSchemaFallback("materials", id))
@@ -582,7 +679,15 @@ export async function updateMaterial(formData: FormData) {
       editPath,
       formData,
       type === "case"
-        ? ["title", "description", "category", "industry", "task", "work_done", "result"]
+        ? [
+            "title",
+            "description",
+            "category",
+            "industry",
+            "task",
+            "work_done",
+            "result",
+          ]
         : ["title", "description", "category", "tags", "content"],
     )
   }
@@ -595,27 +700,26 @@ export async function updateMaterial(formData: FormData) {
   let accessError: string | null = null
 
   try {
+    const { owner } = await getSelectedOwner(formData)
     const ownership = await getMaterialOwnership(id)
 
     if (!ownership) {
       accessError = "Материал не найден или таблица materials недоступна"
-    } else if (
-      ownership.company_id !== organization.id &&
-      ownership.organization_id !== organization.id &&
-      ownership.created_by !== user.id
-    ) {
+    } else if (!canManageMaterial(ownership, user.id, owners)) {
       accessError = "Нет доступа к этому материалу"
+    } else if (!owner) {
+      accessError = "Выберите эксперта или организацию-владельца"
     }
 
-    if (!accessError) {
-      const content = type === "case" ? caseContent(formData) : articleContent(formData)
+    if (!accessError && owner) {
+      const content =
+        type === "case" ? caseContent(formData) : articleContent(formData)
       const updated = await updateWithSchemaFallback("materials", id, {
         title,
         description: value(formData, "description"),
         cover_url: value(formData, "cover_url"),
         author: value(formData, "author") ?? user.email ?? null,
-        company_id: organization.id,
-        organization_id: organization.id,
+        ...materialOwnerPayload(owner),
         status,
         category: value(formData, "category"),
         tags: tagsValue(formData) ?? null,

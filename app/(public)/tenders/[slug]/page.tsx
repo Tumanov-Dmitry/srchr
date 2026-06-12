@@ -8,7 +8,6 @@ import { ResponseForm } from "@/components/tenders/response-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  getCurrentContractorOrganization,
   getCurrentExpertProfile,
   getCurrentUser,
   getTenderBySlug,
@@ -31,7 +30,7 @@ function formatTenderBudget(tender: Tender) {
 }
 
 type ResponseOption = {
-  value: "contractor" | "expert"
+  value: string
   label: string
   description: string
 }
@@ -44,10 +43,9 @@ export default async function TenderPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const [{ slug }, { message }] = await Promise.all([params, searchParams])
-  const [tender, user, contractorState, expertState] = await Promise.all([
+  const [tender, user, expertState] = await Promise.all([
     getTenderBySlug(slug),
     getCurrentUser(),
-    getCurrentContractorOrganization(),
     getCurrentExpertProfile(),
   ])
 
@@ -59,21 +57,27 @@ export default async function TenderPage({
   const isOwner = memberships.some(
     (membership) => membership.organizations?.id === item.organization_id,
   )
-  const hasContractor = Boolean(contractorState.organization)
+  const contractorOrganizations = memberships
+    .map((membership) => membership.organizations)
+    .filter(
+      (organization) =>
+        Boolean(organization?.id) && Boolean(organization?.is_contractor),
+    )
   const hasExpert = Boolean(expertState.profile)
   const responseOptions: ResponseOption[] = []
 
-  if (hasContractor) {
+  for (const organization of contractorOrganizations) {
+    if (!organization) continue
     responseOptions.push({
-      value: "contractor",
+      value: `contractor:${organization.id}`,
       label: "Как подрядчик",
-      description: contractorState.organization?.name ?? "От имени агентства",
+      description: organization.name,
     })
   }
 
   if (hasExpert) {
     responseOptions.push({
-      value: "expert",
+      value: `expert:${expertState.profile?.id}`,
       label: "Как эксперт",
       description: [
         expertState.profile?.first_name,
@@ -92,11 +96,13 @@ export default async function TenderPage({
       .select("id")
       .eq("tender_id", item.id)
 
-    if (contractorState.organization && !expertState.profile) {
-      query = query.eq("organization_id", contractorState.organization.id)
-    } else {
-      query = query.eq("user_id", user.id)
-    }
+    const responseFilters = [`user_id.eq.${user.id}`]
+    contractorOrganizations.forEach((organization) => {
+      if (organization?.id) {
+        responseFilters.push(`organization_id.eq.${organization.id}`)
+      }
+    })
+    query = query.or(responseFilters.join(","))
 
     const { data } = await query.limit(1).maybeSingle()
     hasResponse = Boolean(data)

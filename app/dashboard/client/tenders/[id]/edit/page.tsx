@@ -14,10 +14,10 @@ export default async function EditTenderPage({
   searchParams: Promise<{ message?: string }>
 }) {
   const [{ id }, { message }] = await Promise.all([params, searchParams])
-  const { user, organization, tender } = await getClientTenderById(id)
+  const { user, organizations, tender } = await getClientTenderById(id)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (organizations.length === 0) redirect("/onboarding")
   if (!tender) redirect("/dashboard/client/tenders")
 
   return (
@@ -37,6 +37,7 @@ export default async function EditTenderPage({
       </div>
       <TenderForm
         action={updateTender.bind(null, id)}
+        organizations={organizations}
         tender={tender as Tender}
         message={message}
       />

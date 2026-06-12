@@ -8,10 +8,10 @@ import { createSlug } from "@/lib/slug"
 import { reportServerError } from "@/lib/security/errors"
 import { createClient } from "@/lib/supabase/server"
 import {
-  getCurrentContractorOrganization,
   getCurrentExpertProfile,
-  getCurrentTenderOwnerOrganization,
   getCurrentUser,
+  getUserOrganizationMemberships,
+  getUserTenderOrganizations,
 } from "@/lib/supabase/queries"
 
 type PayloadValue = string | number | null
@@ -41,6 +41,15 @@ function responseStatus(formData: FormData) {
   return ["viewed", "accepted", "rejected"].includes(status ?? "")
     ? status
     : "viewed"
+}
+
+async function getSelectedTenderOrganization(formData: FormData) {
+  const { user, organizations } = await getUserTenderOrganizations()
+  const organizationId = value(formData, "organization_id")
+  const organization =
+    organizations.find((item) => item.id === organizationId) ?? null
+
+  return { user, organizations, organization }
 }
 
 function getMissingColumn(error: { message?: string } | null) {
@@ -172,10 +181,14 @@ function buildTenderPayload(
 }
 
 export async function createTender(formData: FormData) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, organization } = await getSelectedTenderOrganization(formData)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (!organization) {
+    redirect(
+      "/dashboard/client/tenders/new?message=Выберите организацию-владельца задачи",
+    )
+  }
 
   const title = value(formData, "title")
   if (!title) {
@@ -224,17 +237,20 @@ export async function createTender(formData: FormData) {
 }
 
 export async function updateTender(tenderId: string, formData: FormData) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const { user, organization } = await getSelectedTenderOrganization(formData)
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
+  if (!organization) {
+    redirect(
+      `/dashboard/client/tenders/${tenderId}/edit?message=Выберите организацию-владельца задачи`,
+    )
+  }
 
   const supabase = await createClient()
   const { data: tender } = await supabase
     .from("tenders")
     .select("id")
     .eq("id", tenderId)
-    .eq("organization_id", organization.id)
     .maybeSingle()
 
   if (!tender) redirect("/dashboard/client/tenders")
@@ -257,6 +273,9 @@ export async function updateTender(tenderId: string, formData: FormData) {
       buildTenderPayload(formData, organization.id, user.id, slug),
       { column: "id", value: tenderId },
     )
+    if (!updatedTender) {
+      throw new Error("Задача не была обновлена")
+    }
 
     if (updatedTender && tenderStatus(formData) === "published") {
       await notifyAdminsAboutTender({
@@ -299,23 +318,29 @@ export async function createTenderResponse(
   const user = await getCurrentUser()
   if (!user) redirect("/login")
 
-  const [{ organization }, { profile: expertProfile }] = await Promise.all([
-    getCurrentContractorOrganization(),
+  const [{ profile: expertProfile }, memberships] = await Promise.all([
     getCurrentExpertProfile(),
+    getUserOrganizationMemberships(user.id),
   ])
   const requestedResponderType = value(formData, "responder_type")
-  const hasContractor = Boolean(organization)
-  const hasExpert = Boolean(expertProfile)
+  const [requestedType, requestedId] = (requestedResponderType ?? "").split(":")
+  const contractorOrganizations = memberships
+    .map((membership) => membership.organizations)
+    .filter(
+      (organization) =>
+        Boolean(organization?.id) && Boolean(organization?.is_contractor),
+    )
+  const organization =
+    requestedType === "contractor"
+      ? (contractorOrganizations.find((item) => item?.id === requestedId) ??
+        null)
+      : null
   const responderType =
-    requestedResponderType === "expert" && hasExpert
+    requestedType === "expert" && expertProfile?.id === requestedId
       ? "expert"
-      : requestedResponderType === "contractor" && hasContractor
+      : organization
         ? "contractor"
-        : hasContractor && !hasExpert
-          ? "contractor"
-          : hasExpert
-            ? "expert"
-            : null
+        : null
 
   if (!responderType) {
     redirect(
@@ -332,7 +357,13 @@ export async function createTenderResponse(
     .maybeSingle()
 
   if (!tender) redirect("/tenders")
-  if (organization && tender.organization_id === organization.id) {
+  if (
+    memberships.some(
+      (membership) =>
+        (membership.organization_id ?? membership.organizations?.id) ===
+        tender.organization_id,
+    )
+  ) {
     redirect(
       `/tenders/${tender.slug}?message=Нельзя откликнуться на свою задачу`,
     )
@@ -399,28 +430,28 @@ export async function updateTenderResponseStatus(
   responseId: string,
   formData: FormData,
 ) {
-  const { user, organization } = await getCurrentTenderOwnerOrganization()
+  const user = await getCurrentUser()
 
   if (!user) redirect("/login")
-  if (!organization) redirect("/onboarding")
 
   const supabase = await createClient()
   const { data: tender } = await supabase
     .from("tenders")
-    .select("id")
+    .select("id, organization_id")
     .eq("id", tenderId)
-    .eq("organization_id", organization.id)
     .maybeSingle()
 
   if (!tender) redirect("/dashboard/client/tenders")
 
-  const { error } = await supabase
+  const { data: updatedResponse, error } = await supabase
     .from("tender_responses")
     .update({ status: responseStatus(formData) })
     .eq("id", responseId)
     .eq("tender_id", tenderId)
+    .select("id")
+    .maybeSingle()
 
-  if (error) {
+  if (error || !updatedResponse) {
     reportServerError("tenders.updateResponseStatus", error)
     redirect(
       `/dashboard/client/tenders/${tenderId}/responses?message=Не удалось изменить статус отклика`,
@@ -433,7 +464,7 @@ export async function updateTenderResponseStatus(
     targetType: "tender",
     targetId: tenderId,
     ownerType: "organization",
-    ownerId: organization.id,
+    ownerId: tender.organization_id as string,
     source: "tender_responses",
     metadata: {
       response_id: responseId,

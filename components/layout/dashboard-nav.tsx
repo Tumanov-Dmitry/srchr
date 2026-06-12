@@ -14,13 +14,19 @@ import {
   UserRound,
 } from "lucide-react"
 
-const items = [
+const items: Array<{
+  href: string
+  label: string
+  icon: typeof Home
+  visibleFor?: string[]
+  hiddenFor?: string[]
+}> = [
   { href: "/dashboard", label: "Обзор", icon: Home },
   {
     href: "/dashboard/contractor",
     label: "Кабинет подрядчика",
     icon: BriefcaseBusiness,
-    hiddenFor: ["client"],
+    visibleFor: ["contractor"],
   },
   {
     href: "/dashboard/client",
@@ -38,7 +44,7 @@ const items = [
     icon: BriefcaseBusiness,
   },
   {
-    href: "/dashboard/contractor/responses",
+    href: "/dashboard/responses",
     label: "Мои отклики",
     icon: MessageSquareReply,
   },

@@ -5,7 +5,7 @@ import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 
 type ResponseOption = {
-  value: "contractor" | "expert"
+  value: string
   label: string
   description: string
 }

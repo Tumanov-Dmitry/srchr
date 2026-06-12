@@ -51,6 +51,27 @@ test("database hardening protects roles and validates event ownership", async ()
   assert.match(sql, /private\.is_org_member\(owner_id/)
 })
 
+test("material ownership supports experts without allowing arbitrary owners", async () => {
+  const sql = await source("supabase/sql/fix-ownership-and-participation.sql")
+
+  assert.match(sql, /owner_type = 'expert'/)
+  assert.match(sql, /private\.owns_expert\(expert_id\)/)
+  assert.match(sql, /private\.is_org_member\(/)
+  assert.match(sql, /organization_id is null/)
+  assert.match(sql, /company_id is null/)
+})
+
+test("event writes verify affected rows and participation requires publication", async () => {
+  const [events, sql] = await Promise.all([
+    source("app/actions/events.ts"),
+    source("supabase/sql/fix-ownership-and-participation.sql"),
+  ])
+
+  assert.doesNotMatch(events, /data\.created_by === userId/)
+  assert.match(events, /\.select\(["']id["']\)\s*\.maybeSingle\(\)/s)
+  assert.match(sql, /e\.status in \('published', 'completed'\)/)
+})
+
 test("application sends baseline browser security headers", async () => {
   const config = await source("next.config.ts")
 
