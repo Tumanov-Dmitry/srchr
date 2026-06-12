@@ -1,6 +1,8 @@
 import Link from "next/link"
-import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ArrowUpRight, BookOpenText } from "lucide-react"
+
 import { PublicViewCount } from "@/components/analytics/public-view-count"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,31 +30,35 @@ export function MaterialCard({
   views?: number
 }) {
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
+    <Card className="group flex h-full flex-col overflow-hidden shadow-elevation-1 transition-colors hover:border-primary/40">
       {item.cover_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt="" className="h-44 w-full object-cover" src={item.cover_url} />
+        <img
+          alt=""
+          className="aspect-[16/9] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          src={item.cover_url}
+        />
       ) : (
-        <div className="h-44 bg-secondary" />
+        <div className="grid aspect-[16/9] place-items-center bg-srchr-pink/15">
+          <BookOpenText className="size-8 text-muted-foreground" />
+        </div>
       )}
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            <Badge className="w-fit">
-              {typeLabels[item.type] ?? item.type}
-            </Badge>
+            <Badge>{typeLabels[item.type] ?? item.type}</Badge>
             {item.category ? (
               <Badge variant="outline">{item.category}</Badge>
             ) : null}
           </div>
           <FavoriteButton
+            initialFavoriteId={favoriteId}
             targetId={item.id}
             targetType={item.type}
-            initialFavoriteId={favoriteId}
           />
         </div>
-        <CardTitle>{item.title}</CardTitle>
-        <CardDescription className="line-clamp-3">
+        <CardTitle className="text-xl leading-snug">{item.title}</CardTitle>
+        <CardDescription className="line-clamp-3 min-h-[4.5rem] leading-6">
           {item.description ?? "Описание материала скоро появится."}
         </CardDescription>
       </CardHeader>
@@ -66,9 +72,12 @@ export function MaterialCard({
         </span>
         <PublicViewCount views={views} />
       </CardContent>
-      <CardFooter>
-        <Button asChild className="w-full" variant="outline">
-          <Link href={`/media/${item.slug}`}>Открыть материал</Link>
+      <CardFooter className="border-t pt-4">
+        <Button asChild className="w-full justify-between" variant="ghost">
+          <Link href={`/media/${item.slug}`}>
+            Читать материал
+            <ArrowUpRight />
+          </Link>
         </Button>
       </CardFooter>
     </Card>

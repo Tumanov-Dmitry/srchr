@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   Award,
   BarChart3,
@@ -14,17 +17,18 @@ import {
   UserRound,
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+
 const items: Array<{
   href: string
   label: string
   icon: typeof Home
   visibleFor?: string[]
-  hiddenFor?: string[]
 }> = [
   { href: "/dashboard", label: "Обзор", icon: Home },
   {
     href: "/dashboard/contractor",
-    label: "Кабинет подрядчика",
+    label: "Профиль подрядчика",
     icon: BriefcaseBusiness,
     visibleFor: ["contractor"],
   },
@@ -34,7 +38,7 @@ const items: Array<{
     icon: Building2,
     visibleFor: ["client"],
   },
-  { href: "/dashboard/organization", label: "Организация", icon: Building2 },
+  { href: "/dashboard/organization", label: "Организации", icon: Building2 },
   { href: "/dashboard/expert", label: "Профиль эксперта", icon: UserRound },
   { href: "/dashboard/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/dashboard/reputation", label: "Репутация", icon: Award },
@@ -56,29 +60,32 @@ const items: Array<{
 ]
 
 export function DashboardNav({ primaryRole }: { primaryRole?: string | null }) {
-  const visibleItems = items.filter((item) => {
-    if ("visibleFor" in item && item.visibleFor) {
-      return primaryRole ? item.visibleFor.includes(primaryRole) : false
-    }
-
-    if ("hiddenFor" in item && item.hiddenFor) {
-      return primaryRole ? !item.hiddenFor.includes(primaryRole) : true
-    }
-
-    return true
-  })
+  const pathname = usePathname()
+  const visibleItems = items.filter(
+    (item) =>
+      !item.visibleFor ||
+      (primaryRole ? item.visibleFor.includes(primaryRole) : false),
+  )
 
   return (
     <nav className="grid gap-1">
       {visibleItems.map((item) => {
         const Icon = item.icon
+        const active =
+          pathname === item.href ||
+          (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`))
+
         return (
           <Link
-            key={item.href}
+            className={cn(
+              "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              active &&
+                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+            )}
             href={item.href}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            key={item.href}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="size-4" />
             {item.label}
           </Link>
         )

@@ -1,7 +1,8 @@
 import Link from "next/link"
-import { Building2, MapPin } from "lucide-react"
-import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { ArrowUpRight, Building2, MapPin } from "lucide-react"
+
 import { PublicViewCount } from "@/components/analytics/public-view-count"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Button } from "@/components/ui/button"
 import {
@@ -41,36 +42,38 @@ export function ContractorCard({
     "Описание подрядчика скоро появится."
 
   return (
-    <Card className="flex h-full flex-col">
-      <CardHeader>
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-secondary">
+    <Card className="group flex h-full flex-col overflow-hidden shadow-elevation-1 transition-colors hover:border-primary/40">
+      <CardHeader className="gap-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex size-14 items-center justify-center overflow-hidden rounded-lg bg-muted">
             {contractor.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={contractor.logo_url}
                 alt=""
-                className="h-10 w-10 rounded object-cover"
+                className="h-full w-full object-cover"
+                src={contractor.logo_url}
               />
             ) : (
-              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <Building2 className="size-5 text-muted-foreground" />
             )}
           </div>
           <FavoriteButton
+            initialFavoriteId={favoriteId}
             targetId={contractor.id}
             targetType="company"
-            initialFavoriteId={favoriteId}
           />
         </div>
-        <CardTitle>{contractor.name}</CardTitle>
-        <CardDescription className="line-clamp-3">
+        <CardTitle className="text-xl leading-snug">
+          {contractor.name}
+        </CardTitle>
+        <CardDescription className="line-clamp-3 min-h-[4.5rem] leading-6">
           {description}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <div className="mt-auto space-y-2 text-sm text-muted-foreground">
+        <div className="mt-auto space-y-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="size-4" />
             {contractor.city ?? "Город не указан"}
           </div>
           <div>
@@ -86,9 +89,12 @@ export function ContractorCard({
           <PublicViewCount views={views} />
         </div>
       </CardContent>
-      <CardFooter>
-        <Button asChild variant="outline" className="w-full">
-          <Link href={`/contractors/${contractor.slug}`}>Открыть профиль</Link>
+      <CardFooter className="border-t pt-4">
+        <Button asChild className="w-full justify-between" variant="ghost">
+          <Link href={`/contractors/${contractor.slug}`}>
+            Открыть профиль
+            <ArrowUpRight />
+          </Link>
         </Button>
       </CardFooter>
     </Card>
