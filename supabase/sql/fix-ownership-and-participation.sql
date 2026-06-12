@@ -1,6 +1,53 @@
 -- Align material ownership and event participation policies with the current UI.
 -- Apply manually with the database owner role.
 
+create schema if not exists private;
+
+create or replace function private.is_org_member(
+  target_organization_id uuid,
+  allowed_roles text[] default array['owner', 'admin', 'editor', 'member']::text[]
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.organization_members om
+    where coalesce(
+        to_jsonb(om) ->> 'organization_id',
+        to_jsonb(om) ->> 'org_id'
+      )::uuid = target_organization_id
+      and coalesce(
+        to_jsonb(om) ->> 'user_id',
+        to_jsonb(om) ->> 'profile_id'
+      )::uuid = auth.uid()
+      and coalesce(to_jsonb(om) ->> 'role', 'member') = any(allowed_roles)
+  );
+$$;
+
+create or replace function private.owns_expert(target_expert_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.expert_profiles ep
+    where ep.id = target_expert_id
+      and ep.user_id = auth.uid()
+  );
+$$;
+
+revoke all on function private.is_org_member(uuid, text[]) from public;
+revoke all on function private.owns_expert(uuid) from public;
+grant execute on function private.is_org_member(uuid, text[]) to authenticated;
+grant execute on function private.owns_expert(uuid) to authenticated;
+
 drop policy if exists "Users create material drafts" on public.materials;
 create policy "Users create material drafts"
   on public.materials for insert to authenticated
