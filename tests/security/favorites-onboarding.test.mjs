@@ -3,7 +3,10 @@ import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 const sql = await readFile(
-  new URL("../../supabase/sql/extend-favorites-and-onboarding.sql", import.meta.url),
+  new URL(
+    "../../supabase/sql/extend-favorites-and-onboarding.sql",
+    import.meta.url,
+  ),
   "utf8",
 )
 const favoriteApi = await readFile(
@@ -15,17 +18,20 @@ const onboarding = await readFile(
   "utf8",
 )
 const onboardingForm = await readFile(
-  new URL(
-    "../../components/onboarding/onboarding-form.tsx",
-    import.meta.url,
-  ),
+  new URL("../../components/onboarding/onboarding-form.tsx", import.meta.url),
   "utf8",
 )
 
 test("favorite collections are additive, private, and keep favorites intact", () => {
   assert.match(sql, /create table if not exists public\.favorite_collections/)
-  assert.match(sql, /create table if not exists public\.favorite_collection_items/)
-  assert.match(sql, /alter table public\.favorite_collections enable row level security/)
+  assert.match(
+    sql,
+    /create table if not exists public\.favorite_collection_items/,
+  )
+  assert.match(
+    sql,
+    /alter table public\.favorite_collections enable row level security/,
+  )
   assert.match(sql, /user_id = \(select auth\.uid\(\)\)/)
   assert.doesNotMatch(sql, /delete from public\.favorites/i)
   assert.doesNotMatch(favoriteApi, /createAdminClient/)
@@ -42,8 +48,21 @@ test("onboarding creates an expert before optional organization work", () => {
   assert.match(onboardingForm, /value="skip"/)
 })
 
+test("skipping onboarding completes the profile without organization side effects", () => {
+  assert.match(onboarding, /const isSkip =/)
+  assert.match(onboarding, /!isSkip &&\s+marketRole !== "independent"/)
+  assert.match(onboarding, /\.from\("profiles"\)\s+\.update\(nextPayload\)/)
+  assert.doesNotMatch(
+    onboarding,
+    /markOnboardingComplete\(\s*user\.id,\s*user\.email/,
+  )
+})
+
 test("organization join requests are user scoped and owner reviewed", () => {
-  assert.match(sql, /create table if not exists public\.organization_join_requests/)
+  assert.match(
+    sql,
+    /create table if not exists public\.organization_join_requests/,
+  )
   assert.match(sql, /Users create organization join requests/)
   assert.match(sql, /Organization owners manage join requests/)
   assert.match(sql, /private\.is_org_member/)

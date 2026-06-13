@@ -13,34 +13,29 @@ function slugify(value: string) {
   return `${createSlug(value)}-${Date.now().toString(36)}`
 }
 
-async function markOnboardingComplete(
-  userId: string,
-  email: string | undefined,
-  marketRole: MarketRole,
-) {
+async function markOnboardingComplete(userId: string, marketRole: MarketRole) {
   const supabase = await createClient()
-  const payload = {
-    id: userId,
-    email: email ?? null,
+  const payload: Record<string, boolean | string> = {
     onboarding_completed: true,
     market_role: marketRole,
   }
+  const nextPayload = { ...payload }
 
-  const { error } = await supabase
-    .from("profiles")
-    .upsert(payload, { onConflict: "id" })
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { error } = await supabase
+      .from("profiles")
+      .update(nextPayload)
+      .eq("id", userId)
 
-  if (!error) return
+    if (!error) return
 
-  const { error: fallbackError } = await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      email: email ?? null,
-    },
-    { onConflict: "id" },
-  )
+    const missingColumn = getMissingColumn(error)
+    if (!missingColumn || !(missingColumn in nextPayload)) {
+      throw new Error(error.message)
+    }
 
-  if (fallbackError) throw new Error(fallbackError.message)
+    delete nextPayload[missingColumn]
+  }
 }
 
 async function createOrganizationMember(
@@ -336,6 +331,7 @@ export async function completeOnboarding(formData: FormData) {
   }
 
   const requestedMarketRole = String(formData.get("market_role") ?? "")
+  const isSkip = String(formData.get("intent") ?? "") === "skip"
   const marketRole: MarketRole =
     requestedMarketRole === "agency"
       ? "agency"
@@ -350,7 +346,7 @@ export async function completeOnboarding(formData: FormData) {
 
   try {
     await createExpertProfile(user.id, user.email, formData)
-    await markOnboardingComplete(user.id, user.email, marketRole)
+    await markOnboardingComplete(user.id, marketRole)
   } catch (error) {
     reportServerError("onboarding.expert", error)
     redirect(
@@ -365,6 +361,7 @@ export async function completeOnboarding(formData: FormData) {
 
   try {
     if (
+      !isSkip &&
       marketRole !== "independent" &&
       organizationAction === "request" &&
       selectedOrganizationId
@@ -376,7 +373,11 @@ export async function completeOnboarding(formData: FormData) {
       )
     }
 
-    if (marketRole !== "independent" && organizationAction === "create") {
+    if (
+      !isSkip &&
+      marketRole !== "independent" &&
+      organizationAction === "create"
+    ) {
       const organizationName =
         String(formData.get("organization_name") ?? "").trim() || name
       const organizationDescription = String(
