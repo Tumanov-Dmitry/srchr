@@ -146,6 +146,7 @@ create index if not exists favorites_user_type_sort_idx
 create or replace function public.sync_favorites_target_columns()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
   new.target_type := coalesce(new.target_type, new.entity_type);
