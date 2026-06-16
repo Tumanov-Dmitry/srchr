@@ -1,0 +1,82 @@
+name: Apply security hardening SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-security-hardening-sql.yml"
+      - "supabase/sql/security-hardening.sql"
+      - "supabase/sql/fix-legacy-public-rls.sql"
+      - "supabase/sql/security-audit.sql"
+  workflow_dispatch:
+
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply RLS hardening on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply security SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -Eeuo pipefail
+            cd /opt/srchr-dev
+
+            git update-ref -d refs/remotes/origin/main || true
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/security-hardening.sql
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-legacy-public-rls.sql
+
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -At -U supabase_admin -d postgres -c "
+              select n.nspname || '.' || c.relname
+              from pg_class c
+              join pg_namespace n on n.oid = c.relnamespace
+              where n.nspname = 'public'
+                and c.relkind = 'r'
+                and c.relname in (
+                  'profiles',
+                  'services',
+                  'organizations',
+                  'organization_members',
+                  'contractor_profiles',
+                  'organization_services',
+                  'cases',
+                  'files',
+                  'case_comments',
+                  'subscriptions',
+                  'schema_migrations',
+                  'materials',
+                  'material_expert_authors',
+                  'expert_profiles',
+                  'events',
+                  'event_participants',
+                  'tenders',
+                  'tender_responses',
+                  'favorites',
+                  'notification_events',
+                  'notifications',
+                  'notification_preferences'
+                )
+                and not c.relrowsecurity;
+            " | tee /tmp/srchr-rls-audit.txt
+
+            if [ -s /tmp/srchr-rls-audit.txt ]; then
+              echo "Some public application tables still have RLS disabled"
+              exit 1
+            fi
+
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
+            docker restart supabase-rest supabase-kong
+            pm2 restart srchr-dev --update-env || true

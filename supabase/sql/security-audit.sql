@@ -10,10 +10,16 @@ where n.nspname = 'public'
   and c.relkind = 'r'
   and c.relname in (
     'profiles',
+    'services',
     'organizations',
     'organization_members',
     'contractor_profiles',
     'organization_services',
+    'cases',
+    'files',
+    'case_comments',
+    'subscriptions',
+    'schema_migrations',
     'materials',
     'material_expert_authors',
     'expert_profiles',
