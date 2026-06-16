@@ -1,0 +1,74 @@
+name: Harden server network
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/harden-server-network.yml"
+
+concurrency:
+  group: srchr-network-hardening
+  cancel-in-progress: false
+
+jobs:
+  harden:
+    name: Close direct database and service ports
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply firewall rules over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -Eeuo pipefail
+
+            cat >/usr/local/sbin/srchr-firewall-hardening.sh <<'SCRIPT'
+            #!/usr/bin/env bash
+            set -Eeuo pipefail
+
+            WAN_IF="$(ip route get 1.1.1.1 | awk '{ for (i = 1; i <= NF; i++) if ($i == "dev") { print $(i + 1); exit } }')"
+            BLOCK_PORTS="5432,6543,8001,8002,8003,8004,8444,8445,8446,8447"
+
+            iptables -N SRCHR-HARDENING 2>/dev/null || true
+            iptables -F SRCHR-HARDENING
+            iptables -A SRCHR-HARDENING -i "$WAN_IF" -p tcp -m multiport --dports "$BLOCK_PORTS" -j DROP
+
+            iptables -C DOCKER-USER -j SRCHR-HARDENING 2>/dev/null || iptables -I DOCKER-USER 1 -j SRCHR-HARDENING
+            iptables -C INPUT -i "$WAN_IF" -p tcp -m multiport --dports "$BLOCK_PORTS" -j DROP 2>/dev/null || \
+              iptables -I INPUT 1 -i "$WAN_IF" -p tcp -m multiport --dports "$BLOCK_PORTS" -j DROP
+            SCRIPT
+
+            chmod 700 /usr/local/sbin/srchr-firewall-hardening.sh
+
+            cat >/etc/systemd/system/srchr-firewall-hardening.service <<'SERVICE'
+            [Unit]
+            Description=SRCHR firewall hardening rules
+            Wants=network-online.target docker.service
+            After=network-online.target docker.service
+
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/sbin/srchr-firewall-hardening.sh
+            RemainAfterExit=yes
+
+            [Install]
+            WantedBy=multi-user.target
+            SERVICE
+
+            systemctl daemon-reload
+            systemctl enable --now srchr-firewall-hardening.service
+
+            echo "Public Docker ports:"
+            docker ps --format "table {{.Names}}\t{{.Ports}}"
+            echo
+            echo "Listening ports:"
+            ss -tulpn | grep -E ':(22|80|443|5432|6543|8000|8443|5678|8080)\b' || true
+            echo
+            echo "Applied SRCHR hardening rules:"
+            iptables -S SRCHR-HARDENING
+            iptables -S DOCKER-USER | grep SRCHR-HARDENING || true
