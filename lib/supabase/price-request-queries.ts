@@ -74,14 +74,6 @@ function buildInsights(
 
 export async function getActivePriceRequests() {
   const user = await getCurrentUser()
-  if (!user) {
-    return {
-      user: null,
-      requests: [] as PriceRequest[],
-      isMissing: false,
-    }
-  }
-
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("price_requests")

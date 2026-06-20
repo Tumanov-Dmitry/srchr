@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
 import { WalletCards } from "@/components/ui/icons"
 import { PriceRequestCard } from "@/components/price-requests/price-request-card"
 import { EmptyState } from "@/components/srchr"
@@ -9,7 +8,6 @@ import { getActivePriceRequests } from "@/lib/supabase/price-request-queries"
 
 export default async function PriceRequestsPage() {
   const { user, requests, isMissing } = await getActivePriceRequests()
-  if (!user) redirect("/login?next=/price-requests")
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -22,7 +20,11 @@ export default async function PriceRequestsPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/price-requests/new">Создать запрос</Link>
+          <Link
+            href={user ? "/price-requests/new" : "/login?next=/price-requests/new"}
+          >
+            Создать запрос
+          </Link>
         </Button>
       </div>
 

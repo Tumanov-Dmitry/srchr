@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { createTenderResponse } from "@/app/actions/tenders"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
@@ -42,10 +42,18 @@ export default async function TenderPage({
   params: Promise<{ slug: string }>
   searchParams: Promise<{ message?: string }>
 }) {
-  const [{ slug }, { message }] = await Promise.all([params, searchParams])
-  const [tender, user, expertState] = await Promise.all([
-    getTenderBySlug(slug),
+  const [{ slug }, { message }, user] = await Promise.all([
+    params,
+    searchParams,
     getCurrentUser(),
+  ])
+
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/tenders/${slug}`)}`)
+  }
+
+  const [tender, expertState] = await Promise.all([
+    getTenderBySlug(slug),
     getCurrentExpertProfile(),
   ])
 

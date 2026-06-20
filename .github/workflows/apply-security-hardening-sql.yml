@@ -10,6 +10,7 @@ on:
       - "supabase/sql/fix-legacy-public-rls.sql"
       - "supabase/sql/fix-advisor-warnings.sql"
       - "supabase/sql/fix-rls-advisor-performance.sql"
+      - "supabase/sql/fix-public-guest-access.sql"
       - "supabase/sql/security-audit.sql"
   workflow_dispatch:
 
@@ -42,6 +43,7 @@ jobs:
             docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-legacy-public-rls.sql
             docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-advisor-warnings.sql
             docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-rls-advisor-performance.sql
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/fix-public-guest-access.sql
 
             docker exec supabase-db psql -v ON_ERROR_STOP=1 -At -U supabase_admin -d postgres -c "
               select n.nspname || '.' || c.relname

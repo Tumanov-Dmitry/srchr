@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageShell } from "@/components/layout/page-shell"
 import {
+  getCurrentUser,
   getFavoriteMarkers,
   getPublishedExpertBySlug,
   getReputationDetails,
@@ -23,7 +24,10 @@ export default async function ExpertPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const expert = await getPublishedExpertBySlug(slug)
+  const [expert, user] = await Promise.all([
+    getPublishedExpertBySlug(slug),
+    getCurrentUser(),
+  ])
 
   if (!expert) notFound()
 
@@ -197,7 +201,13 @@ export default async function ExpertPage({
               <CardTitle>Контакты</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {expert.contact_email ? (
+              {!user ? (
+                <Button asChild className="w-full">
+                  <Link href={`/login?next=${encodeURIComponent(`/@${expert.slug}`)}`}>
+                    Войти, чтобы увидеть контакты
+                  </Link>
+                </Button>
+              ) : expert.contact_email ? (
                 <AnalyticsLink
                   className="flex items-center gap-2"
                   eventType="profile_telegram_click"
@@ -210,7 +220,7 @@ export default async function ExpertPage({
                   {expert.contact_email}
                 </AnalyticsLink>
               ) : null}
-              {expert.telegram_url ? (
+              {user && expert.telegram_url ? (
                 <AnalyticsLink
                   className="flex items-center gap-2"
                   eventType="contact_click"
@@ -225,7 +235,7 @@ export default async function ExpertPage({
                   Telegram
                 </AnalyticsLink>
               ) : null}
-              {expert.website_url ? (
+              {user && expert.website_url ? (
                 <Button asChild className="w-full" variant="outline">
                   <AnalyticsLink
                     eventType="profile_website_click"
