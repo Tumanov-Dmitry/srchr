@@ -5,7 +5,7 @@
     "summary": "Общая модель SRCHR, роли пользователей и границы основных сущностей.",
     "category": "Основа",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["architecture", "roles"],
     "dependsOn": []
@@ -16,7 +16,7 @@
     "summary": "Регистрация, вход, профиль пользователя и первичная настройка аккаунта.",
     "category": "Основа",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["engineering"],
     "tags": ["auth", "profiles", "onboarding"],
     "dependsOn": ["platform"]
@@ -27,7 +27,7 @@
     "summary": "Компании-заказчики, агентства-подрядчики, участники и роли организации.",
     "category": "Профили",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["organizations", "memberships"],
     "dependsOn": ["authentication"]
@@ -38,7 +38,7 @@
     "summary": "Профиль подрядчика, публикация, услуги и публичный каталог.",
     "category": "Профили",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["contractors", "catalog"],
     "dependsOn": ["organizations"]
@@ -49,7 +49,7 @@
     "summary": "Независимый публичный профиль эксперта и его связи с организациями.",
     "category": "Профили",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["experts", "catalog"],
     "dependsOn": ["authentication", "organizations"]
@@ -60,7 +60,7 @@
     "summary": "Кейсы, статьи, черновики, модерация, авторство и публикация.",
     "category": "Контент",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["content", "engineering"],
     "tags": ["materials", "cases", "articles"],
     "dependsOn": ["organizations", "experts"]
@@ -71,7 +71,7 @@
     "summary": "Создание задач, публикация и отклики экспертов или подрядчиков.",
     "category": "Маркетплейс",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["tenders", "responses"],
     "dependsOn": ["organizations", "experts"]
@@ -82,7 +82,7 @@
     "summary": "Публичный запрос цены, подбор исполнителей и управление ответами.",
     "category": "Маркетплейс",
     "status": "beta",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["price-requests", "responses"],
     "dependsOn": ["organizations", "experts", "notifications"]
@@ -93,7 +93,7 @@
     "summary": "Создание, модерация, продвижение и участие в мероприятиях.",
     "category": "Контент",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["events", "participants"],
     "dependsOn": ["organizations", "experts", "notifications"]
@@ -104,7 +104,7 @@
     "summary": "Персональные сохранения, снимки объектов, закрепление и коллекции.",
     "category": "Персонализация",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["favorites", "collections"],
     "dependsOn": ["authentication"]
@@ -115,7 +115,7 @@
     "summary": "Системные события, пользовательские уведомления и настройки каналов.",
     "category": "Платформа",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["engineering"],
     "tags": ["notifications", "system-events"],
     "dependsOn": ["authentication"]
@@ -126,7 +126,7 @@
     "summary": "Правила начисления, журнал событий и агрегированная репутация.",
     "category": "Доверие",
     "status": "beta",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["reputation", "reviews"],
     "dependsOn": ["contractors", "experts", "materials", "tenders", "events"]
@@ -137,7 +137,7 @@
     "summary": "События поведения, сводные показатели и статистика объектов.",
     "category": "Платформа",
     "status": "beta",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["product", "engineering"],
     "tags": ["analytics", "events"],
     "dependsOn": ["authentication"]
@@ -148,9 +148,31 @@
     "summary": "Доступ администраторов, модерация и системные операции.",
     "category": "Управление",
     "status": "active",
-    "updatedAt": "2026-06-12",
+    "updatedAt": "2026-06-20",
     "owners": ["engineering", "operations"],
     "tags": ["admin", "moderation", "security"],
     "dependsOn": ["platform", "notifications"]
+  },
+  {
+    "slug": "design-system",
+    "title": "Дизайн-система SRCHR 2.0",
+    "summary": "shadcn/ui, NOVA, Hugeicons, Geist и правила продуктового интерфейса.",
+    "category": "Основа",
+    "status": "active",
+    "updatedAt": "2026-06-20",
+    "owners": ["design", "engineering"],
+    "tags": ["ui", "shadcn", "nova"],
+    "dependsOn": ["platform"]
+  },
+  {
+    "slug": "security-operations",
+    "title": "Безопасность и эксплуатация",
+    "summary": "RLS, секреты, SQL-патчи, deploy и сетевая защита self-hosted Supabase.",
+    "category": "Управление",
+    "status": "active",
+    "updatedAt": "2026-06-20",
+    "owners": ["engineering", "operations"],
+    "tags": ["security", "rls", "deploy"],
+    "dependsOn": ["platform", "authentication", "administration"]
   }
 ]
