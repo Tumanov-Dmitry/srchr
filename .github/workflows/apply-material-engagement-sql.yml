@@ -1,0 +1,40 @@
+name: Apply material engagement SQL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-material-engagement-sql.yml"
+      - "supabase/sql/create-material-engagement.sql"
+  workflow_dispatch:
+
+concurrency:
+  group: srchr-dev-server
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Create material engagement tables on dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply material engagement SQL over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            set -e
+            cd /opt/srchr-dev
+            git update-ref -d refs/remotes/origin/main || true
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+            docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres < supabase/sql/create-material-engagement.sql
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "select to_regclass('public.material_comments'), to_regclass('public.material_reactions');"
+            docker exec supabase-db psql -v ON_ERROR_STOP=1 -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
+            docker restart supabase-rest supabase-kong
+            sleep 10
+            pm2 restart srchr-dev --update-env || true

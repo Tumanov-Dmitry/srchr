@@ -4,13 +4,16 @@ import { AnalyticsInternalLink } from "@/components/analytics/analytics-internal
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { CaseProjectDetails } from "@/components/media/case-project-details"
+import { MaterialEngagement } from "@/components/media/material-engagement"
+import { MaterialShareButton } from "@/components/media/material-share-button"
 import { PageShell } from "@/components/layout/page-shell"
 import { MaterialContentRenderer } from "@/components/media/material-content-renderer"
 import { ReputationStats } from "@/components/reputation/reputation-stats"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseMaterialDocument } from "@/lib/material-content"
 import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
+import { getMaterialEngagement } from "@/lib/supabase/material-engagement-queries"
 import {
   getFavoriteMarkers,
   getPublishedMaterialBySlug,
@@ -35,12 +38,13 @@ export default async function MaterialPage({
     : item.organizations?.is_contractor
       ? (item.organization_id ?? item.company_id)
       : null
-  const [favoriteMarkers, reputation, views] = await Promise.all([
+  const [favoriteMarkers, reputation, views, engagement] = await Promise.all([
     getFavoriteMarkers([{ targetType: item.type, targetId: item.id }]),
     reputationTargetId
       ? getReputationSummary(reputationTargetType, reputationTargetId)
       : Promise.resolve(null),
     getPublicViewCount("material", item.id),
+    getMaterialEngagement(item.id),
   ])
   const expertName = item.expert_profiles
     ? [item.expert_profiles.first_name, item.expert_profiles.last_name]
@@ -89,12 +93,15 @@ export default async function MaterialPage({
               <Badge variant="outline">{item.category}</Badge>
             ) : null}
           </div>
-          <FavoriteButton
-            initialFavoriteId={favoriteMarkers.get(`${item.type}:${item.id}`)}
-            label="Добавить в избранное"
-            targetId={item.id}
-            targetType={item.type}
-          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <MaterialShareButton title={item.title} />
+            <FavoriteButton
+              initialFavoriteId={favoriteMarkers.get(`${item.type}:${item.id}`)}
+              label="Добавить в избранное"
+              targetId={item.id}
+              targetType={item.type}
+            />
+          </div>
         </div>
         <div className="space-y-2">
           {authorHref ? (
@@ -143,21 +150,16 @@ export default async function MaterialPage({
           </div>
         ) : null}
         <div className="mt-10">
+          {item.type === "case" ? (
+            <CaseProjectDetails document={document} />
+          ) : null}
           <MaterialContentRenderer document={document} />
         </div>
-        <Card className="mt-12">
-          <CardHeader>
-            <CardTitle>Комментарии</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {audienceQuestion ? (
-              <p className="mb-4 text-base font-medium text-foreground">
-                {audienceQuestion}
-              </p>
-            ) : null}
-            Обсуждение скоро появится.
-          </CardContent>
-        </Card>
+        <MaterialEngagement
+          {...engagement}
+          audienceQuestion={audienceQuestion}
+          materialId={item.id}
+        />
       </article>
     </PageShell>
   )

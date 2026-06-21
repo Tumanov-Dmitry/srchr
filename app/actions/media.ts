@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createNotificationEvent, notifyAdmins } from "@/lib/notifications"
+import {
+  getCaseWizardData,
+  getMissingCaseWizardFields,
+} from "@/lib/material-case"
+import type { MaterialDocument } from "@/lib/material-content"
 import { createSlug } from "@/lib/slug"
 import { encodeMessage } from "@/lib/messages"
 import { reportServerError } from "@/lib/security/errors"
@@ -310,6 +315,24 @@ function cmsContent(formData: FormData, type: "case" | "article") {
 function validateCmsContent(formData: FormData, type: "case" | "article") {
   const content = cmsContent(formData, type)
   if (!content) return false
+
+  if (
+    type === "case" &&
+    content.meta &&
+    typeof content.meta === "object" &&
+    (content.meta as Record<string, unknown>).editor === "case-wizard-v1"
+  ) {
+    const data = getCaseWizardData(content as unknown as MaterialDocument)
+    return (
+      getMissingCaseWizardFields({
+        title: value(formData, "title") ?? "",
+        coverUrl: value(formData, "cover_url") ?? "",
+        owner: value(formData, "owner") ?? "",
+        data,
+      }).length === 0
+    )
+  }
+
   const blocks = content.blocks
   const hasContent = blocks.some((block) => {
     if (block.type === "section") return false

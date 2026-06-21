@@ -10,6 +10,7 @@
     "test:notifications": "node --test tests/notifications/*.test.mjs",
     "test:analytics": "node --test tests/analytics/*.test.mjs",
     "test:reputation": "node --test tests/reputation/*.test.mjs",
+    "test:materials": "node --test tests/materials/*.test.mjs",
     "test:security": "node --test tests/security/*.test.mjs",
     "security:check": "npm run lint && npm run test:security && npm run test:notifications && npm run test:analytics && npm run test:reputation && npm audit --omit=dev --audit-level=high",
     "db:migrate": "node scripts/db-migrate.mjs",

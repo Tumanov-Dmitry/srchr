@@ -41,6 +41,22 @@ export async function getServices() {
   return data ?? []
 }
 
+export async function getMaterialClientOptions() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id, name, logo_url, slug")
+    .eq("status", "published")
+    .order("name")
+
+  if (error) {
+    reportServerError("materials.clientOptions", error)
+    return []
+  }
+
+  return (data ?? []) as Organization[]
+}
+
 export async function getUserOrganizationMemberships(userId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase

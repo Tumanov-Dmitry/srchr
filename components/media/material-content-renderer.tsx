@@ -16,6 +16,9 @@ function safe(value: unknown) {
       "code",
       "a",
       "br",
+      "ul",
+      "ol",
+      "li",
     ],
     allowedAttributes: { a: ["href", "target", "rel"] },
     allowedSchemes: ["http", "https", "mailto"],
@@ -86,8 +89,8 @@ export function MaterialContentRenderer({
         }
         if (block.type === "paragraph")
           return (
-            <p
-              className="text-[1.05rem] leading-8"
+            <div
+              className="text-[1.05rem] leading-8 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
               dangerouslySetInnerHTML={{ __html: safe(block.data.text) }}
               key={key}
             />
