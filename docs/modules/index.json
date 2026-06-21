@@ -60,7 +60,7 @@
     "summary": "Кейсы, статьи, черновики, модерация, авторство и публикация.",
     "category": "Контент",
     "status": "active",
-    "updatedAt": "2026-06-20",
+    "updatedAt": "2026-06-21",
     "owners": ["content", "engineering"],
     "tags": ["materials", "cases", "articles"],
     "dependsOn": ["organizations", "experts"]

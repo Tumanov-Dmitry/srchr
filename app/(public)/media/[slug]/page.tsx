@@ -1,56 +1,22 @@
 import { notFound } from "next/navigation"
+
 import { AnalyticsInternalLink } from "@/components/analytics/analytics-internal-link"
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
-import { ReputationStats } from "@/components/reputation/reputation-stats"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { PageShell } from "@/components/layout/page-shell"
+import { MaterialContentRenderer } from "@/components/media/material-content-renderer"
+import { ReputationStats } from "@/components/reputation/reputation-stats"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { parseMaterialDocument } from "@/lib/material-content"
+import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
 import {
   getFavoriteMarkers,
   getPublishedMaterialBySlug,
   getReputationSummary,
 } from "@/lib/supabase/queries"
-import { getPublicViewCount } from "@/lib/supabase/analytics-queries"
-import type { Material } from "@/types"
-
-type MaterialBlock = {
-  type?: string
-  title?: string
-  content?: string | null
-}
-
-type MaterialContent = {
-  blocks?: MaterialBlock[]
-}
-
-const typeLabels: Record<string, string> = {
-  case: "Кейс",
-  article: "Статья",
-}
-
-function getMaterialBlocks(material: Material) {
-  if (!material.content) return null
-
-  if (typeof material.content === "object") {
-    const content = material.content as MaterialContent
-    return Array.isArray(content.blocks) ? content.blocks : null
-  }
-
-  try {
-    const parsed = JSON.parse(material.content) as MaterialContent
-    return Array.isArray(parsed.blocks) ? parsed.blocks : null
-  } catch {
-    return [
-      {
-        type: "text",
-        title: null,
-        content: material.content,
-      },
-    ]
-  }
-}
+import { formatDate } from "@/lib/utils"
 
 export default async function MaterialPage({
   params,
@@ -59,10 +25,9 @@ export default async function MaterialPage({
 }) {
   const { slug } = await params
   const item = await getPublishedMaterialBySlug(slug)
-
   if (!item) notFound()
 
-  const blocks = getMaterialBlocks(item)
+  const document = parseMaterialDocument(item)
   const isExpertOwner = item.owner_type === "expert" && item.expert_id
   const reputationTargetType = isExpertOwner ? "expert" : "contractor"
   const reputationTargetId = isExpertOwner
@@ -85,9 +50,17 @@ export default async function MaterialPage({
   const authorName =
     expertName ?? item.organizations?.name ?? item.author ?? "SRCHR"
   const authorHref = item.expert_profiles?.slug
-    ? `/@${item.expert_profiles.slug}`
+    ? `/experts/${item.expert_profiles.slug}`
     : item.organizations?.slug
       ? `/contractors/${item.organizations.slug}`
+      : null
+  const tags = (item.tags ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+  const audienceQuestion =
+    typeof document.meta?.audience_question === "string"
+      ? document.meta.audience_question
       : null
 
   return (
@@ -100,16 +73,18 @@ export default async function MaterialPage({
       />
       <article className="mx-auto max-w-4xl">
         {item.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt=""
-            className="mb-8 h-80 w-full rounded-lg object-cover"
-            src={item.cover_url}
-          />
+          <div className="mb-8 aspect-[16/7] overflow-hidden rounded-lg bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt=""
+              className="h-full w-full object-cover"
+              src={item.cover_url}
+            />
+          </div>
         ) : null}
-        <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            <Badge>{typeLabels[item.type] ?? item.type}</Badge>
+            <Badge>{item.type === "case" ? "Кейс" : "Статья"}</Badge>
             {item.category ? (
               <Badge variant="outline">{item.category}</Badge>
             ) : null}
@@ -121,7 +96,7 @@ export default async function MaterialPage({
             targetType={item.type}
           />
         </div>
-        <div className="mb-3 space-y-2">
+        <div className="space-y-2">
           {authorHref ? (
             <AnalyticsInternalLink
               className="text-sm font-medium text-primary"
@@ -140,6 +115,9 @@ export default async function MaterialPage({
           ) : (
             <p className="text-sm font-medium text-primary">{authorName}</p>
           )}
+          <p className="text-xs text-muted-foreground">
+            {formatDate(item.published_at ?? item.created_at)}
+          </p>
           {reputationTargetId ? (
             <ReputationStats
               compact
@@ -148,41 +126,36 @@ export default async function MaterialPage({
             />
           ) : null}
         </div>
-        <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+        <h1 className="mt-5 text-3xl font-semibold sm:text-5xl">
           {item.title}
         </h1>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
-          {item.description ?? "Краткое описание материала скоро появится."}
+        <p className="mt-5 text-lg leading-8 text-muted-foreground">
+          {item.description ?? "Описание материала скоро появится."}
         </p>
         <PublicViewCount className="mt-4" views={views} />
-
-        {blocks?.length ? (
-          <div className="mt-8 space-y-6">
-            {blocks.map((block, index) => (
-              <section key={`${block.type ?? "block"}-${index}`}>
-                {block.title ? (
-                  <h2 className="text-xl font-semibold tracking-normal">
-                    {block.title}
-                  </h2>
-                ) : null}
-                <p className="mt-2 whitespace-pre-line leading-8">
-                  {block.content}
-                </p>
-              </section>
+        {tags.length > 0 ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <Badge key={tag} variant="secondary">
+                {tag}
+              </Badge>
             ))}
           </div>
-        ) : (
-          <div className="mt-8 text-muted-foreground">
-            Полный текст материала будет добавлен позже.
-          </div>
-        )}
-
-        <Card className="mt-10">
+        ) : null}
+        <div className="mt-10">
+          <MaterialContentRenderer document={document} />
+        </div>
+        <Card className="mt-12">
           <CardHeader>
             <CardTitle>Комментарии</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Комментарии будут подключены в следующих версиях.
+            {audienceQuestion ? (
+              <p className="mb-4 text-base font-medium text-foreground">
+                {audienceQuestion}
+              </p>
+            ) : null}
+            Обсуждение скоро появится.
           </CardContent>
         </Card>
       </article>

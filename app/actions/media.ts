@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getUserContentOwners } from "@/lib/supabase/queries"
 import type { ContentOwner } from "@/types"
 
-type PayloadValue = string | number | null
+type PayloadValue = string | number | null | Record<string, unknown>
 type MaterialOwnership = {
   company_id?: string | null
   organization_id?: string | null
@@ -269,6 +269,87 @@ function tagsValue(formData: FormData) {
     .join(", ")
 }
 
+function cmsContent(formData: FormData, type: "case" | "article") {
+  const raw = value(formData, "content_json")
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    if (parsed.version !== 2 || !Array.isArray(parsed.blocks)) return null
+    const blocks = parsed.blocks as Array<Record<string, unknown>>
+    const meta =
+      parsed.meta && typeof parsed.meta === "object"
+        ? (parsed.meta as Record<string, unknown>)
+        : {}
+
+    return {
+      ...parsed,
+      version: 2,
+      type,
+      blocks,
+      meta: {
+        ...meta,
+        category: value(formData, "category"),
+        tags: tagsValue(formData) ?? null,
+        client_name: value(formData, "client_name"),
+        client_url: value(formData, "client_url"),
+        industry: value(formData, "industry"),
+        services: value(formData, type === "case" ? "services" : "service"),
+        specialists: value(formData, "specialists"),
+        project_team: value(formData, "project_team"),
+        related_organizations: value(formData, "related_organizations"),
+        related_experts: value(formData, "related_experts"),
+        audience_question: value(formData, "audience_question"),
+      },
+    }
+  } catch {
+    return null
+  }
+}
+
+function validateCmsContent(formData: FormData, type: "case" | "article") {
+  const content = cmsContent(formData, type)
+  if (!content) return false
+  const blocks = content.blocks
+  const hasContent = blocks.some((block) => {
+    if (block.type === "section") return false
+    const data = block.data
+    if (!data || typeof data !== "object") return false
+    if (block.type === "image") {
+      const file = (data as Record<string, unknown>).file
+      return Boolean(
+        file &&
+        typeof file === "object" &&
+        "url" in file &&
+        typeof file.url === "string" &&
+        file.url.trim(),
+      )
+    }
+    return Object.values(data).some((item) => {
+      if (typeof item === "string") {
+        return Boolean(item.replace(/<[^>]*>/g, "").trim())
+      }
+      if (Array.isArray(item)) return item.length > 0
+      if (item && typeof item === "object") {
+        return Object.keys(item).length > 0
+      }
+      return false
+    })
+  })
+  if (!hasContent) return false
+  if (type === "article") return true
+
+  const sectionKeys = new Set(
+    blocks
+      .filter((block) => block.type === "section")
+      .map((block) => {
+        const data = block.data as Record<string, unknown> | undefined
+        return typeof data?.key === "string" ? data.key : ""
+      }),
+  )
+  return ["about", "work", "results"].every((key) => sectionKeys.has(key))
+}
+
 function buildCaseBlocks(formData: FormData) {
   return [
     { type: "task", title: "Задача", content: value(formData, "task") },
@@ -348,9 +429,11 @@ function redirectWithMessage(path: string, message: string): never {
 }
 
 function caseContent(formData: FormData) {
+  const cms = cmsContent(formData, "case")
+  if (cms) return cms
   const blocks = buildCaseBlocks(formData)
 
-  return JSON.stringify({
+  return {
     type: "case",
     blocks,
     meta: {
@@ -368,14 +451,16 @@ function caseContent(formData: FormData) {
       budget_range: value(formData, "budget_range"),
       tags: tagsValue(formData) ?? null,
     },
-  })
+  }
 }
 
 function articleContent(formData: FormData) {
-  return JSON.stringify({
+  const cms = cmsContent(formData, "article")
+  if (cms) return cms
+  return {
     type: "article",
     blocks: buildArticleBlocks(formData),
-  })
+  }
 }
 
 async function notifyAdminsAboutMaterialModeration({
@@ -412,6 +497,7 @@ async function notifyAdminsAboutMaterialModeration({
 }
 
 export async function createCaseMaterial(formData: FormData) {
+  if (value(formData, "id")) return updateMaterial(formData)
   const { user, owner } = await getSelectedOwner(formData)
 
   if (!user) redirect("/login")
@@ -430,11 +516,14 @@ export async function createCaseMaterial(formData: FormData) {
       "title",
       "description",
       "category",
-      "industry",
-      "task",
-      "work_done",
-      "result",
+      "tags",
     ])
+    if (!validateCmsContent(formData, "case")) {
+      redirectWithMessage(
+        "/dashboard/media/new/case",
+        "Заполните контент и обязательные разделы кейса",
+      )
+    }
   }
 
   if (!title) {
@@ -479,7 +568,7 @@ export async function createCaseMaterial(formData: FormData) {
         short_description: value(formData, "description"),
         cover: value(formData, "cover_url"),
         cover_url: value(formData, "cover_url"),
-        content,
+        content: JSON.stringify(content),
         status,
         category: value(formData, "category"),
         service: value(formData, "category"),
@@ -506,7 +595,7 @@ export async function createCaseMaterial(formData: FormData) {
         short_description: value(formData, "description"),
         cover: value(formData, "cover_url"),
         cover_url: value(formData, "cover_url"),
-        content,
+        content: JSON.stringify(content),
         status,
         category: value(formData, "category"),
         service: value(formData, "category"),
@@ -540,6 +629,7 @@ export async function createCaseMaterial(formData: FormData) {
 }
 
 export async function createArticleMaterial(formData: FormData) {
+  if (value(formData, "id")) return updateMaterial(formData)
   const { user, owner } = await getSelectedOwner(formData)
 
   if (!user) redirect("/login")
@@ -559,8 +649,13 @@ export async function createArticleMaterial(formData: FormData) {
       "description",
       "category",
       "tags",
-      "content",
     ])
+    if (!validateCmsContent(formData, "article")) {
+      redirectWithMessage(
+        "/dashboard/media/new/article",
+        "Добавьте содержимое статьи",
+      )
+    }
   }
 
   if (!title) {
@@ -675,21 +770,20 @@ export async function updateMaterial(formData: FormData) {
   }
 
   if (status === "moderation") {
-    redirectWithMissingFields(
-      editPath,
-      formData,
-      type === "case"
-        ? [
-            "title",
-            "description",
-            "category",
-            "industry",
-            "task",
-            "work_done",
-            "result",
-          ]
-        : ["title", "description", "category", "tags", "content"],
-    )
+    redirectWithMissingFields(editPath, formData, [
+      "title",
+      "description",
+      "category",
+      "tags",
+    ])
+    if (!validateCmsContent(formData, type)) {
+      redirectWithMessage(
+        editPath,
+        type === "case"
+          ? "Заполните контент и обязательные разделы кейса"
+          : "Добавьте содержимое статьи",
+      )
+    }
   }
 
   if (!title) {

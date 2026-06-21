@@ -43,6 +43,10 @@
 - Публичный URL строится по уникальному `slug`.
 - Опубликованные материалы полностью доступны гостям.
 - Комментарии, реакции, избранное и создание материала требуют авторизации.
+- Контент новых материалов хранится как версионированный JSON независимых блоков (`version: 2`). Старый текстовый и ранний блочный формат преобразуются адаптером при чтении и не требуют массовой миграции.
+- Редактор поддерживает автосохранение серверного черновика с локальной страховочной копией, предпросмотр и индикатор качества.
+- Для кейса обязательны структурные разделы «О проекте», «Что сделали» и «Результаты»; их наличие проверяется перед модерацией.
+- Изображения загружаются через серверный endpoint в публичный Storage bucket `materials`; service role не передаётся в браузер.
 
 ## Маршруты
 
@@ -58,7 +62,14 @@
 - `app/actions/media.ts`
 - `components/media/autosave-form.tsx`
 - `components/media/material-form-actions.tsx`
+- `components/media/material-cms-form.tsx`
+- `components/media/material-block-editor.tsx`
+- `components/media/material-content-renderer.tsx`
+- `lib/material-content.ts`
+- `app/api/materials/autosave/route.ts`
+- `app/api/materials/upload/route.ts`
 - `supabase/sql/create-materials.sql`
+- `supabase/sql/create-materials-storage.sql`
 
 ## Связи
 

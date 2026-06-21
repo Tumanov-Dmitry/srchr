@@ -196,3 +196,40 @@ select:focus-visible {
     font-size: 1.75rem;
   }
 }
+
+.material-editor .codex-editor__redactor {
+  padding-bottom: 7rem !important;
+}
+
+.material-editor .ce-block__content,
+.material-editor .ce-toolbar__content {
+  max-width: 760px;
+}
+
+.material-editor .ce-block {
+  border-radius: var(--radius-md);
+  padding-block: 0.2rem;
+}
+
+.material-editor .ce-block--selected .ce-block__content {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.material-editor .ce-toolbar__plus,
+.material-editor .ce-toolbar__settings-btn,
+.material-editor .ce-popover,
+.material-editor .ce-inline-toolbar {
+  color: var(--foreground);
+  background: var(--background);
+  border-color: var(--border);
+}
+
+.material-editor .ce-popover-item:hover,
+.material-editor .ce-popover-item--focused {
+  background: var(--muted);
+}
+
+.material-editor .cdx-block,
+.material-editor .ce-header {
+  color: var(--foreground);
+}
