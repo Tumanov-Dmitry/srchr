@@ -425,7 +425,15 @@ function redirectWithMissingFields(
 }
 
 function redirectWithMessage(path: string, message: string): never {
-  redirect(`${path}?message=${encodeMessage(message)}`)
+  const separator = path.includes("?") ? "&" : "?"
+  redirect(`${path}${separator}message=${encodeMessage(message)}`)
+}
+
+function dashboardMediaPath(formData: FormData) {
+  const storageKey = value(formData, "storage_key")
+  return storageKey
+    ? `/dashboard/media?draftKey=${encodeURIComponent(storageKey)}`
+    : "/dashboard/media"
 }
 
 function caseContent(formData: FormData) {
@@ -625,7 +633,7 @@ export async function createCaseMaterial(formData: FormData) {
   revalidatePath("/media")
   revalidatePath("/cases")
   revalidatePath("/dashboard/media")
-  redirectWithMessage("/dashboard/media", "Кейс сохранен")
+  redirectWithMessage(dashboardMediaPath(formData), "Кейс сохранен")
 }
 
 export async function createArticleMaterial(formData: FormData) {
@@ -717,7 +725,7 @@ export async function createArticleMaterial(formData: FormData) {
   }
 
   revalidatePath("/dashboard/media")
-  redirectWithMessage("/dashboard/media", "Статья сохранена")
+  redirectWithMessage(dashboardMediaPath(formData), "Статья сохранена")
 }
 
 export async function updateMaterial(formData: FormData) {
@@ -766,7 +774,7 @@ export async function updateMaterial(formData: FormData) {
     }
 
     revalidatePath("/dashboard/media")
-    redirectWithMessage("/dashboard/media", "Черновик удален")
+    redirectWithMessage(dashboardMediaPath(formData), "Черновик удален")
   }
 
   if (status === "moderation") {
@@ -852,5 +860,5 @@ export async function updateMaterial(formData: FormData) {
 
   revalidatePath("/dashboard/media")
   revalidatePath(editPath)
-  redirectWithMessage("/dashboard/media", "Материал обновлен")
+  redirectWithMessage(dashboardMediaPath(formData), "Материал обновлен")
 }

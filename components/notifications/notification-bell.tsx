@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Bell } from "@/components/ui/icons"
 
-import { NotificationOpenLink } from "@/components/notifications/notification-open-link"
+import { NotificationReadButton } from "@/components/notifications/notification-read-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -61,27 +61,32 @@ export async function NotificationBell() {
               const href = notification.target_url ?? "/dashboard/notifications"
 
               return (
-                <NotificationOpenLink
+                <div
                   className="block border-b px-4 py-3 text-sm transition-colors last:border-0 hover:bg-muted"
-                  href={href}
                   key={notification.id}
-                  notificationId={notification.id}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="font-medium">{notification.title}</div>
-                    {!notification.is_read ? (
-                      <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
+                  <Link className="block" href={href}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="font-medium">{notification.title}</div>
+                      {!notification.is_read ? (
+                        <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
+                      ) : null}
+                    </div>
+                    {notification.text ? (
+                      <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {notification.text}
+                      </div>
                     ) : null}
-                  </div>
-                  {notification.text ? (
-                    <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                      {notification.text}
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {formatDate(notification.created_at)}
+                    </div>
+                  </Link>
+                  {!notification.is_read ? (
+                    <div className="mt-2">
+                      <NotificationReadButton id={notification.id} />
                     </div>
                   ) : null}
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {formatDate(notification.created_at)}
-                  </div>
-                </NotificationOpenLink>
+                </div>
               )
             })
           ) : (

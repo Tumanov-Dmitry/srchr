@@ -22,20 +22,25 @@ const typeLabels: Record<string, string> = {
 export default async function DashboardMediaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ message?: string }>
+  searchParams: Promise<{ draftKey?: string; message?: string }>
 }) {
-  const { message: rawMessage } = await searchParams
+  const { draftKey, message: rawMessage } = await searchParams
   const message = decodeMessage(rawMessage)
   const { materials, isMaterialsTableMissing } = await getDashboardMaterials()
-  const statusCounts = materials.reduce<Record<string, number>>((acc, material) => {
-    const status = material.status ?? "unknown"
-    acc[status] = (acc[status] ?? 0) + 1
-    return acc
-  }, {})
+  const statusCounts = materials.reduce<Record<string, number>>(
+    (acc, material) => {
+      const status = material.status ?? "unknown"
+      acc[status] = (acc[status] ?? 0) + 1
+      return acc
+    },
+    {},
+  )
 
   return (
     <div className="space-y-6">
-      {message ? <ClearMaterialAutosave /> : null}
+      {message && draftKey ? (
+        <ClearMaterialAutosave storageKey={draftKey} />
+      ) : null}
 
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -61,8 +66,8 @@ export default async function DashboardMediaPage({
             <CardTitle>Нужна таблица materials</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Чтобы сохранять черновики, статьи и материалы на модерации, примените
-            SQL из supabase/sql/create-materials.sql.
+            Чтобы сохранять черновики, статьи и материалы на модерации,
+            примените SQL из supabase/sql/create-materials.sql.
           </CardContent>
         </Card>
       ) : null}

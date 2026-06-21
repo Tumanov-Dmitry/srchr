@@ -42,6 +42,7 @@
 - `lib/notification-targets.ts`
 - `lib/supabase/notification-queries.ts`
 - `components/notifications/notification-bell.tsx`
+- `components/notifications/notification-read-button.tsx`
 - `app/actions/notifications.ts`
 - `supabase/sql/create-notifications.sql`
 

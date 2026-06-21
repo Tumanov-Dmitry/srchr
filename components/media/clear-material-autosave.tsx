@@ -2,23 +2,12 @@
 
 import { useEffect } from "react"
 
-const materialDraftKeys = [
-  "srchr:material:article:draft",
-  "srchr:material:case:draft",
-]
-
-export function ClearMaterialAutosave() {
+export function ClearMaterialAutosave({ storageKey }: { storageKey: string }) {
   useEffect(() => {
-    for (const key of materialDraftKeys) {
-      window.localStorage.removeItem(key)
+    if (storageKey.startsWith("srchr:material:")) {
+      window.localStorage.removeItem(storageKey)
     }
-    for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
-      const key = window.localStorage.key(index)
-      if (key?.startsWith("srchr:material:v2:")) {
-        window.localStorage.removeItem(key)
-      }
-    }
-  }, [])
+  }, [storageKey])
 
   return null
 }

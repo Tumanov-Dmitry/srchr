@@ -34,20 +34,18 @@ function ownerFields(owner: string) {
       }
 }
 
-async function availableSlug(title: string) {
-  const supabase = await createClient()
+function autosaveSlug(title: string, id: string) {
   const base = createSlug(title || "material")
-  let slug = base
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const { data } = await supabase
-      .from("materials")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle()
-    if (!data) return slug
-    slug = `${base}-${attempt + 2}`
-  }
-  return `${base}-${Date.now().toString(36)}`
+  return `${base}-${id.slice(0, 8)}`
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  )
 }
 
 export async function POST(request: Request) {
@@ -63,6 +61,12 @@ export async function POST(request: Request) {
   if (payload.type !== "case" && payload.type !== "article") {
     return NextResponse.json(
       { error: "Неизвестный тип материала" },
+      { status: 400 },
+    )
+  }
+  if (!isUuid(payload.id)) {
+    return NextResponse.json(
+      { error: "Некорректный идентификатор черновика" },
       { status: 400 },
     )
   }
@@ -93,12 +97,16 @@ export async function POST(request: Request) {
     updated_at: new Date().toISOString(),
   }
 
-  if (payload.id) {
-    const { data: existing } = await supabase
-      .from("materials")
-      .select("id, status, created_by, organization_id, company_id, expert_id")
-      .eq("id", payload.id)
-      .maybeSingle()
+  const { data: existing, error: lookupError } = await supabase
+    .from("materials")
+    .select("id, status, created_by, organization_id, company_id, expert_id")
+    .eq("id", payload.id)
+    .maybeSingle()
+  if (lookupError) {
+    return NextResponse.json({ error: lookupError.message }, { status: 500 })
+  }
+
+  if (existing) {
     const canManage =
       existing?.created_by === user.id ||
       owners.some((owner) =>
@@ -115,7 +123,13 @@ export async function POST(request: Request) {
       )
     }
     if (!["draft", "rejected"].includes(existing.status ?? "draft")) {
-      return NextResponse.json({ id: existing.id, skipped: true })
+      return NextResponse.json(
+        {
+          id: existing.id,
+          error: "Материал уже отправлен на модерацию и не был изменён",
+        },
+        { status: 409 },
+      )
     }
 
     const { error } = await supabase
@@ -130,10 +144,11 @@ export async function POST(request: Request) {
     })
   }
 
-  const slug = await availableSlug(fields.title)
+  const slug = autosaveSlug(fields.title, payload.id)
   const { data, error } = await supabase
     .from("materials")
     .insert({
+      id: payload.id,
       ...fields,
       slug,
       status: "draft",
@@ -142,6 +157,35 @@ export async function POST(request: Request) {
     .select("id, slug")
     .single()
 
+  if (error?.code === "23505") {
+    const { data: racedDraft } = await supabase
+      .from("materials")
+      .select("id, status")
+      .eq("id", payload.id)
+      .maybeSingle()
+    if (racedDraft && ["draft", "rejected"].includes(racedDraft.status)) {
+      const { error: retryError } = await supabase
+        .from("materials")
+        .update(fields)
+        .eq("id", payload.id)
+      if (retryError) {
+        return NextResponse.json({ error: retryError.message }, { status: 500 })
+      }
+      return NextResponse.json({
+        id: racedDraft.id,
+        savedAt: new Date().toISOString(),
+      })
+    }
+    if (racedDraft) {
+      return NextResponse.json(
+        {
+          id: racedDraft.id,
+          error: "Материал уже отправлен на модерацию и не был изменён",
+        },
+        { status: 409 },
+      )
+    }
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ...data, savedAt: new Date().toISOString() })
 }

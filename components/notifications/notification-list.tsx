@@ -1,5 +1,5 @@
+import Link from "next/link"
 import { markNotificationRead } from "@/app/actions/notifications"
-import { NotificationOpenLink } from "@/components/notifications/notification-open-link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { Notification } from "@/types"
@@ -42,13 +42,9 @@ export function NotificationList({
                 </span>
               </div>
               <div>
-                <NotificationOpenLink
-                  className="font-medium hover:text-primary"
-                  href={href}
-                  notificationId={notification.id}
-                >
+                <Link className="font-medium hover:text-primary" href={href}>
                   {notification.title}
-                </NotificationOpenLink>
+                </Link>
                 {notification.text ? (
                   <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
                     {notification.text}
@@ -61,16 +57,14 @@ export function NotificationList({
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm" variant="outline">
-                <NotificationOpenLink href={href} notificationId={notification.id}>
-                  Открыть источник
-                </NotificationOpenLink>
+                <Link href={href}>Открыть источник</Link>
               </Button>
               {!notification.is_read ? (
                 <form action={markNotificationRead}>
                   <input name="id" type="hidden" value={notification.id} />
                   <input name="path" type="hidden" value={returnPath} />
                   <Button size="sm" type="submit" variant="ghost">
-                    Прочитано
+                    ОК
                   </Button>
                 </form>
               ) : null}

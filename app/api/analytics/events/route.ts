@@ -4,7 +4,7 @@ import {
   resolveAnalyticsTarget,
   trackAnalyticsEvent,
 } from "@/lib/analytics"
-import { checkRateLimit } from "@/lib/security/rate-limit"
+import { checkRateLimit, getRequestIdentifier } from "@/lib/security/rate-limit"
 import { createClient } from "@/lib/supabase/server"
 
 function isUuid(value: unknown): value is string {
@@ -53,8 +53,7 @@ export async function POST(request: Request) {
     typeof body?.visitor_key === "string"
       ? body.visitor_key.slice(0, 120)
       : null
-  const rateKey =
-    visitorKey || request.headers.get("x-forwarded-for") || "guest"
+  const rateKey = getRequestIdentifier(request.headers)
   const rateLimit = checkRateLimit(`analytics:${rateKey}`, 120, 60_000)
 
   if (!rateLimit.allowed) {

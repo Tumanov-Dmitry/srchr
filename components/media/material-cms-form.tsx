@@ -1,7 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import Link from "next/link"
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
+import { useRouter } from "next/navigation"
 import { Check, Eye, Send, Trash2 } from "@/components/ui/icons"
 
 import { MaterialBlockEditor } from "@/components/media/material-block-editor"
@@ -14,6 +21,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -80,6 +88,7 @@ export function MaterialCmsForm({
   initialDocument,
   message,
 }: MaterialCmsFormProps) {
+  const router = useRouter()
   const initialOwner =
     material?.owner_type === "expert" && material.expert_id
       ? `expert:${material.expert_id}`
@@ -116,12 +125,19 @@ export function MaterialCmsForm({
     "idle" | "saving" | "saved" | "error"
   >("idle")
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const statusRef = useRef<HTMLInputElement>(null)
   const intentRef = useRef<HTMLInputElement>(null)
+  const hiddenIdRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const autosaveTimeoutRef = useRef<number | null>(null)
+  const autosaveIdRef = useRef(material?.id ?? crypto.randomUUID())
   const submittingRef = useRef(false)
+  const allowNativeSubmitRef = useRef(false)
   const storageKey = `srchr:material:v2:${material?.id ?? type}:draft`
+  const canAutosave =
+    !material || ["draft", "rejected"].includes(material.status ?? "draft")
 
   const documentForSave = useMemo<MaterialDocument>(
     () => ({
@@ -168,7 +184,10 @@ export function MaterialCmsForm({
       }
       if (saved.fields) setFields(saved.fields)
       if (saved.document?.version === 2) setDocument(saved.document)
-      if (saved.draftId) setDraftId(saved.draftId)
+      if (saved.draftId) {
+        autosaveIdRef.current = saved.draftId
+        setDraftId(saved.draftId)
+      }
       setIsDirty(true)
     } catch {
       window.localStorage.removeItem(storageKey)
@@ -177,12 +196,53 @@ export function MaterialCmsForm({
     }
   }, [storageKey])
 
+  const persistDraft = useCallback(
+    async (signal?: AbortSignal) => {
+      const response = await fetch("/api/materials/autosave", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          id: autosaveIdRef.current,
+          type,
+          title: fields.title,
+          description: fields.description,
+          cover_url: fields.coverUrl,
+          category: fields.category,
+          tags: fields.tags,
+          owner: fields.owner,
+          author: fields.author,
+          content: documentForSave,
+        }),
+      })
+      const result = (await response.json()) as {
+        id?: string
+        error?: string
+      }
+      if (!response.ok || !result.id) {
+        throw new Error(result.error ?? "Ошибка автосохранения")
+      }
+
+      autosaveIdRef.current = result.id
+      if (hiddenIdRef.current) hiddenIdRef.current.value = result.id
+      setDraftId(result.id)
+      return result.id
+    },
+    [documentForSave, fields, type],
+  )
+
   useEffect(() => {
     if (!isDirty) return
     window.localStorage.setItem(
       storageKey,
-      JSON.stringify({ fields, document: documentForSave, draftId }),
+      JSON.stringify({
+        fields,
+        document: documentForSave,
+        draftId: autosaveIdRef.current,
+      }),
     )
+    if (!canAutosave) return
+
     const timeout = window.setTimeout(async () => {
       autosaveTimeoutRef.current = null
       if (submittingRef.current) return
@@ -192,30 +252,7 @@ export function MaterialCmsForm({
       abortRef.current = controller
       setSaveState("saving")
       try {
-        const response = await fetch("/api/materials/autosave", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            id: draftId || null,
-            type,
-            title: fields.title,
-            description: fields.description,
-            cover_url: fields.coverUrl,
-            category: fields.category,
-            tags: fields.tags,
-            owner: fields.owner,
-            author: fields.author,
-            content: documentForSave,
-          }),
-        })
-        const result = (await response.json()) as {
-          id?: string
-          error?: string
-        }
-        if (!response.ok)
-          throw new Error(result.error ?? "Ошибка автосохранения")
-        if (result.id) setDraftId(result.id)
+        await persistDraft(controller.signal)
         setSaveState("saved")
         setIsDirty(false)
       } catch (error) {
@@ -230,7 +267,7 @@ export function MaterialCmsForm({
         autosaveTimeoutRef.current = null
       }
     }
-  }, [documentForSave, draftId, fields, isDirty, storageKey, type])
+  }, [canAutosave, documentForSave, fields, isDirty, persistDraft, storageKey])
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -258,24 +295,121 @@ export function MaterialCmsForm({
   }
 
   function prepareSubmit(intent: "save" | "moderate" | "delete") {
-    submittingRef.current = true
-    if (autosaveTimeoutRef.current !== null) {
-      window.clearTimeout(autosaveTimeoutRef.current)
-      autosaveTimeoutRef.current = null
-    }
-    abortRef.current?.abort()
     if (statusRef.current) {
       statusRef.current.value = intent === "moderate" ? "moderation" : "draft"
     }
     if (intentRef.current) intentRef.current.value = intent
   }
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (allowNativeSubmitRef.current) {
+      allowNativeSubmitRef.current = false
+      return
+    }
+
+    if (!canAutosave) {
+      submittingRef.current = true
+      abortRef.current?.abort()
+      return
+    }
+
+    event.preventDefault()
+    const form = event.currentTarget
+    submittingRef.current = true
+    if (autosaveTimeoutRef.current !== null) {
+      window.clearTimeout(autosaveTimeoutRef.current)
+      autosaveTimeoutRef.current = null
+    }
+    abortRef.current?.abort()
+    setSaveState("saving")
+
+    try {
+      await persistDraft()
+      setSaveState("saved")
+      setIsDirty(false)
+      allowNativeSubmitRef.current = true
+      form.requestSubmit()
+    } catch {
+      submittingRef.current = false
+      setSaveState("error")
+    }
+  }
+
+  function requestClose() {
+    if (isDirty || saveState === "saving" || saveState === "error") {
+      setCloseDialogOpen(true)
+      return
+    }
+    window.localStorage.removeItem(storageKey)
+    router.push("/dashboard/media")
+  }
+
+  function saveAndClose() {
+    setCloseDialogOpen(false)
+    prepareSubmit("save")
+    formRef.current?.requestSubmit()
+  }
+
+  function currentUploadUrls() {
+    return [
+      fields.coverUrl,
+      ...documentForSave.blocks.flatMap((block) => {
+        if (block.type === "image") {
+          const file = block.data.file as { url?: unknown } | undefined
+          return typeof file?.url === "string" ? [file.url] : []
+        }
+        if (block.type === "gallery" && Array.isArray(block.data.images)) {
+          return block.data.images.filter(
+            (url): url is string => typeof url === "string",
+          )
+        }
+        return []
+      }),
+    ].filter(Boolean)
+  }
+
+  async function cleanupUploads() {
+    const urls = currentUploadUrls()
+    if (urls.length === 0) return
+    await fetch("/api/materials/upload", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ urls }),
+    }).catch(() => undefined)
+  }
+
+  async function discardAndClose() {
+    if (autosaveTimeoutRef.current !== null) {
+      window.clearTimeout(autosaveTimeoutRef.current)
+      autosaveTimeoutRef.current = null
+    }
+    abortRef.current?.abort()
+    window.localStorage.removeItem(storageKey)
+    if (!material) await cleanupUploads()
+
+    if (!material && draftId) {
+      setCloseDialogOpen(false)
+      prepareSubmit("delete")
+      formRef.current?.requestSubmit()
+      return
+    }
+
+    router.push("/dashboard/media")
+  }
+
   const missingSections =
     type === "case" ? getMissingCaseSections(documentForSave) : []
 
   return (
-    <form action={action} className="space-y-6" data-material-form>
-      <input name="id" type="hidden" value={draftId} />
+    <form
+      action={action}
+      className="space-y-6"
+      data-material-form
+      onSubmit={handleSubmit}
+      ref={formRef}
+    >
+      <input name="id" ref={hiddenIdRef} type="hidden" value={draftId} />
+      <input name="storage_key" type="hidden" value={storageKey} />
       <input name="type" type="hidden" value={type} />
       <input
         name="content_json"
@@ -329,8 +463,8 @@ export function MaterialCmsForm({
           >
             <Eye /> Предпросмотр
           </Button>
-          <Button asChild variant="ghost">
-            <Link href="/dashboard/media">Закрыть</Link>
+          <Button onClick={requestClose} type="button" variant="ghost">
+            Закрыть
           </Button>
         </div>
       </div>
@@ -631,14 +765,15 @@ export function MaterialCmsForm({
             </Button>
             {draftId && (material?.status ?? "draft") === "draft" ? (
               <Button
-                onClick={(event) => {
+                onClick={async () => {
                   if (!window.confirm("Удалить черновик?")) {
-                    event.preventDefault()
                     return
                   }
+                  await cleanupUploads()
                   prepareSubmit("delete")
+                  formRef.current?.requestSubmit()
                 }}
-                type="submit"
+                type="button"
                 variant="destructive"
               >
                 <Trash2 /> Удалить
@@ -657,6 +792,37 @@ export function MaterialCmsForm({
             </DialogDescription>
           </DialogHeader>
           <MaterialPreview document={documentForSave} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Сохранить изменения?</DialogTitle>
+            <DialogDescription>
+              В материале есть изменения. Сохраните черновик или закройте его
+              без сохранения.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:space-x-0">
+            <Button
+              onClick={() => setCloseDialogOpen(false)}
+              type="button"
+              variant="ghost"
+            >
+              Продолжить редактирование
+            </Button>
+            <Button
+              onClick={() => void discardAndClose()}
+              type="button"
+              variant="outline"
+            >
+              Не сохранять
+            </Button>
+            <Button onClick={saveAndClose} type="button">
+              Сохранить черновик
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </form>
