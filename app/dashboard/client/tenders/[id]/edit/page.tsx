@@ -24,10 +24,10 @@ export default async function EditTenderPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">
+          <h1 className="type-h1">
             Редактировать задачу
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="type-body mt-2 text-muted-foreground">
             Изменения доступны только участникам организации-владельца задачи.
           </p>
         </div>

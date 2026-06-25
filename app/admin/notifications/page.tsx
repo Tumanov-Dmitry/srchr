@@ -21,7 +21,7 @@ export default async function AdminNotificationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Notifications</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Системный журнал событий платформы за последние 30 дней.
         </p>
       </div>

@@ -18,8 +18,8 @@ export default async function DashboardPriceRequestsPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Запросы стоимости</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Запросы стоимости</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Черновики, активные запросы и результаты предварительной оценки.
           </p>
         </div>

@@ -40,7 +40,7 @@ export default async function AdminOrganizationsPage({
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Компании и агентства</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Управление карточками подрядчиков и заказчиков.
         </p>
       </div>

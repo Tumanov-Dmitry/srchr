@@ -20,8 +20,8 @@ export default async function AdminEditEventPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Редактирование события</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Редактирование события</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Админское редактирование без смены владельца события.
         </p>
       </div>

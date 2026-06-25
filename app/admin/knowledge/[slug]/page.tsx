@@ -45,7 +45,7 @@ export default async function AdminKnowledgeDocumentPage({
       </Button>
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
-        <main className="min-w-0 rounded-2xl border bg-card p-6 shadow-elevation-1 sm:p-8">
+        <article className="min-w-0 rounded-xl border bg-card p-6 shadow-elevation-1">
           <div className="mb-8 flex flex-wrap items-center gap-2 border-b pb-6">
             <Badge>{document.category}</Badge>
             <Badge variant="secondary">
@@ -57,7 +57,7 @@ export default async function AdminKnowledgeDocumentPage({
             </span>
           </div>
           <KnowledgeMarkdown content={document.content} />
-        </main>
+        </article>
 
         <aside className="space-y-4 xl:sticky xl:top-6">
           <div className="rounded-2xl border bg-card p-5">

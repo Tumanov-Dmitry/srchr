@@ -14,8 +14,8 @@ export default async function ResponsesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Мои отклики</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Мои отклики</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Отклики, отправленные от имени эксперта или ваших организаций.
         </p>
       </div>

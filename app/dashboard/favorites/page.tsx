@@ -57,7 +57,7 @@ export default async function FavoritesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Избранное</h1>
+        <h1 className="type-h1">Избранное</h1>
         <p className="mt-2 max-w-3xl text-muted-foreground">
           Личные подборки подрядчиков, экспертов, материалов и мероприятий.
         </p>

@@ -36,7 +36,7 @@ export default async function AdminExpertsPage({
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Эксперты</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Публичные профили специалистов, их статус и видимость.
         </p>
       </div>

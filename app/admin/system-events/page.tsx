@@ -21,10 +21,10 @@ export default async function AdminSystemEventsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">
+        <h1 className="type-h1">
           System Events
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Предупреждения, ошибки и критические события платформы.
         </p>
       </div>

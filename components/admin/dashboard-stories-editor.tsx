@@ -68,8 +68,8 @@ export function DashboardStoriesEditor({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold">Сторис онбординга</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Сторис онбординга</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Настройте кружки-хайлайты для кабинетов подрядчика и заказчика.
           </p>
         </div>

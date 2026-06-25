@@ -448,14 +448,14 @@ export function MaterialCmsForm({
             </Badge>
             <Badge variant="secondary">{material?.status ?? "Черновик"}</Badge>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold">
+          <h1 className="type-h1 mt-3">
             {material
               ? "Редактировать материал"
               : type === "case"
                 ? "Создать кейс"
                 : "Создать статью"}
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="type-body mt-2 text-muted-foreground">
             Соберите материал из независимых блоков и отправьте его на
             модерацию.
           </p>

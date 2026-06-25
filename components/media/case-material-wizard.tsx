@@ -352,7 +352,7 @@ export function CaseMaterialWizard({
             <Badge>Кейс</Badge>
             <Badge variant="secondary">{material?.status ?? "Черновик"}</Badge>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold">
+          <h1 className="type-h1 mt-3">
             {material ? "Редактировать кейс" : "Создать кейс"}
           </h1>
         </div>

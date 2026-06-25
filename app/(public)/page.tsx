@@ -60,7 +60,7 @@ export default function HomePage() {
           <h1 className="type-display max-w-4xl">
             Находите людей и команды, с которыми хочется работать
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+          <p className="type-body mt-6 max-w-2xl text-muted-foreground">
             Подрядчики, эксперты, реальные кейсы, отраслевые события и задачи
             компаний в одном рабочем пространстве.
           </p>

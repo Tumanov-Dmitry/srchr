@@ -31,7 +31,7 @@ export default async function DashboardReputationPage() {
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Репутация</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Баллы, источники начислений и история изменений.
         </p>
       </div>

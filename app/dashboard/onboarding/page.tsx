@@ -18,10 +18,10 @@ export default async function DashboardOnboardingPage({
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">
+        <h1 className="type-h1">
           Создайте экспертный профиль
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Это основа вашего аккаунта. Организацию можно подключить сейчас или
           позже.
         </p>

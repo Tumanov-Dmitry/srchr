@@ -29,8 +29,8 @@ export default async function EditEventPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">Редактирование события</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Редактирование события</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Публикация выполняется только через модерацию.
           </p>
         </div>

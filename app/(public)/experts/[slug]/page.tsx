@@ -49,7 +49,7 @@ export default async function ExpertPage({
         targetId={expert.id}
         targetType="expert"
       />
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:gap-8">
         <article className="space-y-6">
           <div className="rounded-lg border bg-card p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -82,10 +82,10 @@ export default async function ExpertPage({
                     targetType="expert"
                   />
                 </div>
-                <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+                <h1 className="type-h1">
                   {name}
                 </h1>
-                <p className="mt-2 text-lg text-muted-foreground">
+                <p className="type-body mt-2 text-muted-foreground">
                   {expert.position ?? "Специалист"}
                 </p>
                 {expert.city ? (

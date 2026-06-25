@@ -34,10 +34,10 @@ export default async function ContractorProfilePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">
+        <h1 className="type-h1">
           Редактирование профиля
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Данные сохраняются в organizations и contractor_profiles.
         </p>
       </div>

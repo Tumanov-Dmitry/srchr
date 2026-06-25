@@ -40,7 +40,7 @@ export default async function AdminTendersPage({
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Задачи</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Контроль заданий и мини-тендеров компаний.
         </p>
       </div>

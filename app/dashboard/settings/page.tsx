@@ -41,7 +41,7 @@ export default async function SettingsPage({
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Настройки</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Аккаунт и каналы уведомлений.
         </p>
       </div>

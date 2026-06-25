@@ -117,8 +117,8 @@ export default async function ContractorPage({
         </Button>
       </div>
 
-      <section className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-8">
+      <section className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
+        <div className="space-y-6">
           <div className="rounded-lg border bg-card p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-secondary">
@@ -146,7 +146,7 @@ export default async function ContractorPage({
                     targetType="company"
                   />
                 </div>
-                <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+                <h1 className="type-h1">
                   {item.name}
                 </h1>
                 <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export default async function ContractorPage({
                   </span>
                   <PublicViewCount views={views} />
                 </div>
-                <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
+                <p className="type-body mt-5 max-w-3xl text-muted-foreground">
                   {shortDescription}
                 </p>
                 <div id="reputation">

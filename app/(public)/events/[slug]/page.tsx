@@ -6,6 +6,7 @@ import { AnalyticsTracker } from "@/components/analytics/analytics-tracker"
 import { PublicViewCount } from "@/components/analytics/public-view-count"
 import { EventParticipationForm } from "@/components/events/event-participation-form"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { PageShell } from "@/components/layout/page-shell"
 import {
   eventFormatLabels,
   eventTypeLabels,
@@ -57,7 +58,7 @@ export default async function EventPage({
   const tags = splitList(event.tags)
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <PageShell className="max-w-6xl">
       <AnalyticsTracker
         eventType="event_view"
         source="event_page"
@@ -70,8 +71,8 @@ export default async function EventPage({
         </div>
       ) : null}
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-        <main className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:gap-8">
+        <article className="space-y-6">
           {event.cover_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -91,7 +92,7 @@ export default async function EventPage({
                 <Badge variant="outline">Продвигается</Badge>
               ) : null}
             </div>
-            <h1 className="text-4xl font-semibold tracking-normal">
+            <h1 className="type-h1">
               {event.title}
             </h1>
             <PublicViewCount views={views} />
@@ -101,7 +102,7 @@ export default async function EventPage({
               targetId={event.id}
               targetType="event"
             />
-            <p className="whitespace-pre-line text-lg text-muted-foreground">
+            <p className="type-body whitespace-pre-line text-muted-foreground">
               {event.description}
             </p>
           </div>
@@ -135,7 +136,7 @@ export default async function EventPage({
               </CardContent>
             </Card>
           ) : null}
-        </main>
+        </article>
 
         <aside className="space-y-4">
           <Card>
@@ -248,6 +249,6 @@ export default async function EventPage({
           </Card>
         </aside>
       </div>
-    </div>
+    </PageShell>
   )
 }

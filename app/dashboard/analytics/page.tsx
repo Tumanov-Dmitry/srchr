@@ -11,8 +11,8 @@ export default async function DashboardAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Аналитика</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Аналитика</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Выберите профиль или организацию, статистику которых хотите открыть.
         </p>
       </div>

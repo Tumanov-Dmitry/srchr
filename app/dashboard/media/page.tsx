@@ -44,8 +44,8 @@ export default async function DashboardMediaPage({
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">Медиа</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Медиа</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Публикации, материалы и кейсы организации.
           </p>
         </div>

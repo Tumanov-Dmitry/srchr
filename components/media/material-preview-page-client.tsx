@@ -61,7 +61,7 @@ export function MaterialPreviewPageClient({ storageKey }: { storageKey: string }
     <article className="mx-auto max-w-4xl space-y-8">
       <div className="rounded-2xl border bg-card p-6 shadow-elevation-1">
         <p className="text-sm font-medium text-primary">Предпросмотр</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-normal">
+        <h1 className="type-h1 mt-3">
           {payload.title || "Без названия"}
         </h1>
         {payload.description ? (

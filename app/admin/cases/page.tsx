@@ -15,8 +15,8 @@ export default async function AdminCasesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Кейсы</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Кейсы</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Модерация и публикация практических разборов проектов.
         </p>
       </div>

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { WalletCards } from "@/components/ui/icons"
+import { PageShell } from "@/components/layout/page-shell"
 import { PriceRequestCard } from "@/components/price-requests/price-request-card"
 import { EmptyState } from "@/components/srchr"
 import { Button } from "@/components/ui/button"
@@ -10,11 +11,11 @@ export default async function PriceRequestsPage() {
   const { user, requests, isMissing } = await getActivePriceRequests()
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-6 border-b pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <PageShell>
+      <div className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-3xl">
           <h1 className="type-h1">Запросы стоимости</h1>
-          <p className="mt-3 text-muted-foreground">
+          <p className="type-body mt-3 text-muted-foreground">
             Получите несколько независимых оценок бюджета и сроков до создания
             полноценного задания.
           </p>
@@ -53,6 +54,6 @@ export default async function PriceRequestsPage() {
           />
         </div>
       )}
-    </main>
+    </PageShell>
   )
 }

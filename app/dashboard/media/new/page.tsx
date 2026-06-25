@@ -6,10 +6,10 @@ export default function NewMaterialPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">
+        <h1 className="type-h1">
           Что хотите опубликовать?
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Выберите формат материала. Кейс показывает выполненный проект, статья
           помогает делиться экспертизой.
         </p>

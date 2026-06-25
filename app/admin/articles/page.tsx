@@ -15,8 +15,8 @@ export default async function AdminArticlesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Статьи</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Статьи</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Управление экспертными материалами, рубриками и публикацией.
         </p>
       </div>

@@ -338,7 +338,7 @@ export function ComponentLab() {
         <section className="space-y-5">
           <div>
             <h2 className="type-h2">Hugeicons</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="type-body mt-2 text-muted-foreground">
               Единый набор Stroke Rounded с толщиной линии 1.7.
             </p>
           </div>
@@ -357,7 +357,7 @@ export function ComponentLab() {
         <section id="motion" className="space-y-5">
           <div>
             <h2 className="type-h2">Motion</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="type-body mt-2 text-muted-foreground">
               Базовые переходы интерфейса и анимации состояний компонентов.
             </p>
           </div>
@@ -793,7 +793,7 @@ export function ComponentLab() {
         <section id="cards" className="space-y-5">
           <div>
             <h2 className="type-h2">Компоненты SRCHR</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="type-body mt-2 text-muted-foreground">
               Карточки сущностей для будущих каталогов и рекомендаций.
             </p>
           </div>

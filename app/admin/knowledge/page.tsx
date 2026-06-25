@@ -37,7 +37,7 @@ export default async function AdminKnowledgePage({
   })
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         description="Живая документация по бизнес-логике, данным и технической реализации SRCHR."
         eyebrow="Только для администраторов"

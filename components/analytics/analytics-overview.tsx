@@ -138,9 +138,9 @@ export function AnalyticsOverview({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">{title}</h1>
+          <h1 className="type-h1">{title}</h1>
           {description ? (
-            <p className="mt-2 text-muted-foreground">{description}</p>
+            <p className="type-body mt-2 text-muted-foreground">{description}</p>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-1 shadow-elevation-1">

@@ -124,16 +124,16 @@ export default async function TenderPage({
         targetId={item.id}
         targetType="tender"
       />
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
         <article>
           <p className="mb-3 text-sm font-medium text-primary">
             {item.organizations?.name ?? "Компания"}
           </p>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+          <h1 className="type-h1">
             {item.title}
           </h1>
           <PublicViewCount className="mt-4" views={views} />
-          <div className="mt-8 space-y-8">
+          <div className="mt-6 space-y-6">
             <section>
               <h2 className="mb-3 text-xl font-semibold tracking-normal">
                 Описание

@@ -12,10 +12,10 @@ export function UniversalDashboard({ email }: UniversalDashboardProps) {
   return (
     <div className="mx-auto max-w-3xl py-8">
       <p className="text-sm font-medium text-primary">Добро пожаловать</p>
-      <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">
+      <h1 className="type-h1 mt-2">
         Настройте рабочее пространство
       </h1>
-      <p className="mt-3 text-muted-foreground">
+      <p className="type-body mt-3 text-muted-foreground">
         {email ? `${email} · ` : ""}Создайте экспертный профиль или добавьте
         организацию, чтобы получить персональный dashboard.
       </p>

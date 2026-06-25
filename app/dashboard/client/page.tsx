@@ -13,10 +13,10 @@ export default async function ClientDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">
+          <h1 className="type-h1">
             Кабинет заказчика
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="type-body mt-2 text-muted-foreground">
             {organization?.name ?? "Организация"} · задачи, отклики и избранные подрядчики.
           </p>
         </div>

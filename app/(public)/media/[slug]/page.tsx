@@ -133,10 +133,10 @@ export default async function MaterialPage({
             />
           ) : null}
         </div>
-        <h1 className="mt-5 text-3xl font-semibold sm:text-5xl">
+        <h1 className="type-h1 mt-5">
           {item.title}
         </h1>
-        <p className="mt-5 text-lg leading-8 text-muted-foreground">
+        <p className="type-body mt-5 text-muted-foreground">
           {item.description ?? "Описание материала скоро появится."}
         </p>
         <PublicViewCount className="mt-4" views={views} />

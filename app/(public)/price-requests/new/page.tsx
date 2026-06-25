@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { PageShell } from "@/components/layout/page-shell"
 import { PriceRequestForm } from "@/components/price-requests/price-request-form"
 import { decodeMessage } from "@/lib/messages"
 import {
@@ -19,10 +20,10 @@ export default async function NewPriceRequestPage({
   const message = decodeMessage(rawMessage)
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
+    <PageShell className="max-w-4xl">
+      <div className="mb-6 border-b pb-6">
         <h1 className="type-h1">Новый запрос стоимости</h1>
-        <p className="mt-3 text-muted-foreground">
+        <p className="type-body mt-3 text-muted-foreground">
           Опишите задачу без сложного тендерного брифа. Черновик можно
           опубликовать позже.
         </p>
@@ -33,6 +34,6 @@ export default async function NewPriceRequestPage({
         </div>
       ) : null}
       <PriceRequestForm memberships={memberships} />
-    </main>
+    </PageShell>
   )
 }

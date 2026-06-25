@@ -17,8 +17,8 @@ export default async function ClientTendersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">Мои задачи</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Мои задачи</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Задачи всех организаций, к которым у вас есть доступ.
           </p>
         </div>

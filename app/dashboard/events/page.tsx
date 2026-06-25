@@ -19,8 +19,8 @@ export default async function DashboardEventsPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal">Мероприятия</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="type-h1">Мероприятия</h1>
+          <p className="type-body mt-2 text-muted-foreground">
             Созданные события, события организаций и отметки участия.
           </p>
         </div>

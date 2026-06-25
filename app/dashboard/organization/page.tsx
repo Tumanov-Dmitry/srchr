@@ -43,8 +43,8 @@ export default async function OrganizationPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">Организации</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="type-h1">Организации</h1>
+        <p className="type-body mt-2 text-muted-foreground">
           Связанные компании, заполненность карточек и запросы участников.
         </p>
       </div>

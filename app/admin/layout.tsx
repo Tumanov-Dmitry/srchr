@@ -24,9 +24,9 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-secondary/40">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+        <div className="mx-auto flex min-h-18 max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link className="flex items-center gap-2 text-lg font-semibold" href="/admin">
             <Search className="h-5 w-5 text-primary" />
             SRCHR Admin
@@ -53,14 +53,14 @@ export default async function AdminLayout({
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:hidden">
+      <div className="mx-auto max-w-[1440px] px-4 pt-4 sm:px-6 lg:hidden">
         <AdminMobileNav />
       </div>
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
-        <aside className="hidden h-fit rounded-lg border bg-background p-3 lg:block">
+      <div className="mx-auto grid max-w-[1440px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8 lg:px-8 lg:py-8">
+        <aside className="hidden h-fit rounded-xl border bg-card p-3 shadow-elevation-1 lg:sticky lg:top-24 lg:block">
           <AdminNav />
         </aside>
-        <main>{children}</main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   )

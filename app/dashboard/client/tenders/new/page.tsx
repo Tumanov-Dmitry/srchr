@@ -19,10 +19,10 @@ export default async function NewTenderPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal">
+        <h1 className="type-h1">
           Создать задачу
         </h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Выберите организацию, от имени которой будет опубликована задача.
         </p>
       </div>

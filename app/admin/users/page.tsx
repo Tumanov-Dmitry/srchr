@@ -32,7 +32,7 @@ export default async function AdminUsersPage({
     <div className="space-y-6">
       <div>
         <h1 className="type-h1">Пользователи</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="type-body mt-2 text-muted-foreground">
           Роли, подтверждение и последняя активность пользователей.
         </p>
       </div>

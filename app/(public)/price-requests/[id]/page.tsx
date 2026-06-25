@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation"
+import { PageShell } from "@/components/layout/page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PriceRequestInsightsCard } from "@/components/price-requests/price-request-insights"
@@ -29,14 +30,14 @@ export default async function PriceRequestPage({
   const request = result.request
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="space-y-8">
+    <PageShell className="max-w-6xl">
+      <div className="space-y-6">
         {message ? (
           <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm">
             {message}
           </div>
         ) : null}
-        <header className="space-y-4 border-b pb-8">
+        <header className="space-y-4 border-b pb-6">
           <div className="flex flex-wrap gap-2">
             <Badge>{request.service_category}</Badge>
             <Badge variant="outline">{formatLabels[request.format]}</Badge>
@@ -45,7 +46,7 @@ export default async function PriceRequestPage({
             ) : null}
           </div>
           <h1 className="type-h1">{request.title}</h1>
-          <p className="max-w-3xl whitespace-pre-wrap text-muted-foreground">
+          <p className="type-body max-w-3xl whitespace-pre-wrap text-muted-foreground">
             {request.description}
           </p>
         </header>
@@ -84,7 +85,7 @@ export default async function PriceRequestPage({
                 <CardTitle>Полученные оценки</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-semibold">
+                <p className="text-2xl font-semibold tabular-nums">
                   {result.responses.length}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -150,7 +151,7 @@ export default async function PriceRequestPage({
           </Card>
         ) : null}
       </div>
-    </main>
+    </PageShell>
   )
 }
 
