@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import {
   StoriesModal,
+  resolveStoryIcon,
   type DashboardStory,
 } from "@/components/dashboard/stories-modal"
 import { cn } from "@/lib/utils"
@@ -14,13 +15,13 @@ type DashboardHighlightsProps = {
 
 export function DashboardHighlights({ stories }: DashboardHighlightsProps) {
   const [open, setOpen] = useState(false)
-  const [initialIndex, setInitialIndex] = useState(0)
+  const [activeStory, setActiveStory] = useState<DashboardStory | null>(null)
 
   return (
     <>
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
-        {stories.map((story, index) => {
-          const Icon = story.icon
+        {stories.map((story) => {
+          const Icon = resolveStoryIcon(story)
           return (
             <button
               className={cn(
@@ -29,7 +30,7 @@ export function DashboardHighlights({ stories }: DashboardHighlightsProps) {
               )}
               key={story.id}
               onClick={() => {
-                setInitialIndex(index)
+                setActiveStory(story)
                 setOpen(true)
               }}
               type="button"
@@ -45,10 +46,9 @@ export function DashboardHighlights({ stories }: DashboardHighlightsProps) {
         })}
       </div>
       <StoriesModal
-        initialIndex={initialIndex}
         onOpenChange={setOpen}
         open={open}
-        stories={stories}
+        story={activeStory}
       />
     </>
   )

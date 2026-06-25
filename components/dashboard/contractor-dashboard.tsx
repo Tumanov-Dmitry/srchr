@@ -25,7 +25,13 @@ export function ContractorDashboard({ data }: ContractorDashboardProps) {
 
   return (
     <div className="space-y-8">
-      <DashboardHighlights stories={contractorStories} />
+      <DashboardHighlights
+        stories={
+          data.storyHighlights.length > 0
+            ? data.storyHighlights
+            : contractorStories
+        }
+      />
       <DashboardWelcome
         actions={[
           {

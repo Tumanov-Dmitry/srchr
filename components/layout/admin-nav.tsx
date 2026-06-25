@@ -14,6 +14,7 @@ import {
   FolderKanban,
   Home,
   Newspaper,
+  Sparkles,
   UserRound,
   Users,
 } from "@/components/ui/icons"
@@ -36,6 +37,11 @@ const items = [
     icon: CircleAlert,
   },
   { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
+  {
+    href: "/admin/onboarding-stories",
+    label: "Сторис онбординга",
+    icon: Sparkles,
+  },
   { href: "/admin/knowledge", label: "База знаний", icon: BookOpenText },
 ]
 

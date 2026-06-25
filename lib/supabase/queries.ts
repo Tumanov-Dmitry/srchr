@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { reportServerError } from "@/lib/security/errors"
+import type { DashboardStory, DashboardStorySlide } from "@/components/dashboard/stories-modal"
 import {
   calculateExpertCompletion,
   calculateOrganizationCompletion,
@@ -55,6 +56,83 @@ export async function getMaterialClientOptions() {
   }
 
   return (data ?? []) as Organization[]
+}
+
+function normalizeStorySlide(value: unknown): DashboardStorySlide | null {
+  if (!value || typeof value !== "object") return null
+  const row = value as Record<string, unknown>
+  const title = typeof row.title === "string" ? row.title.trim() : ""
+  const description =
+    typeof row.description === "string" ? row.description.trim() : ""
+  if (!title || !description) return null
+
+  const textPosition = ["top", "center", "bottom"].includes(
+    String(row.textPosition ?? ""),
+  )
+    ? (row.textPosition as DashboardStorySlide["textPosition"])
+    : "bottom"
+  const backgroundSize = ["cover", "contain"].includes(
+    String(row.backgroundSize ?? ""),
+  )
+    ? (row.backgroundSize as DashboardStorySlide["backgroundSize"])
+    : "cover"
+
+  return {
+    id: typeof row.id === "string" && row.id ? row.id : crypto.randomUUID(),
+    eyebrow: typeof row.eyebrow === "string" ? row.eyebrow : "",
+    title,
+    description,
+    backgroundUrl:
+      typeof row.backgroundUrl === "string" ? row.backgroundUrl : "",
+    backgroundColor:
+      typeof row.backgroundColor === "string" ? row.backgroundColor : "",
+    textColor: typeof row.textColor === "string" ? row.textColor : "",
+    textPosition,
+    backgroundSize,
+    ctaLabel: typeof row.ctaLabel === "string" ? row.ctaLabel : "",
+    ctaUrl: typeof row.ctaUrl === "string" ? row.ctaUrl : "",
+  }
+}
+
+export async function getDashboardStoryHighlights(
+  audience: "contractor" | "client",
+): Promise<DashboardStory[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("dashboard_story_highlights")
+    .select("*")
+    .eq("audience", audience)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    if (!isMissingTable(error)) reportServerError("dashboard.stories", error)
+    return []
+  }
+
+  return (data ?? []).flatMap((row) => {
+    const record = row as Record<string, unknown>
+    const label = typeof record.label === "string" ? record.label.trim() : ""
+    if (!label) return []
+    const slides = Array.isArray(record.slides)
+      ? record.slides.flatMap((slide) => {
+          const normalized = normalizeStorySlide(slide)
+          return normalized ? [normalized] : []
+        })
+      : []
+    if (slides.length === 0) return []
+
+    return [
+      {
+        id: String(record.id),
+        label,
+        title: typeof record.title === "string" ? record.title : label,
+        iconName: typeof record.icon === "string" ? record.icon : "sparkles",
+        slides,
+      },
+    ]
+  })
 }
 
 export async function getUserOrganizationMemberships(userId: string) {

@@ -13,7 +13,6 @@ import { Check, Eye, Send, Trash2 } from "@/components/ui/icons"
 
 import { MaterialBlockEditor } from "@/components/media/material-block-editor"
 import { MaterialCoverUpload } from "@/components/media/material-cover-upload"
-import { MaterialPreview } from "@/components/media/material-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -124,7 +123,6 @@ export function MaterialCmsForm({
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle")
-  const [previewOpen, setPreviewOpen] = useState(false)
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const statusRef = useRef<HTMLInputElement>(null)
   const intentRef = useRef<HTMLInputElement>(null)
@@ -350,6 +348,24 @@ export function MaterialCmsForm({
     formRef.current?.requestSubmit()
   }
 
+  function openPreview() {
+    const previewKey = `srchr:material-preview:${autosaveIdRef.current}`
+    window.localStorage.setItem(
+      previewKey,
+      JSON.stringify({
+        title: fields.title,
+        description: fields.description,
+        coverUrl: fields.coverUrl,
+        document: documentForSave,
+      }),
+    )
+    window.open(
+      `/dashboard/media/preview?key=${encodeURIComponent(previewKey)}`,
+      "_blank",
+      "noopener,noreferrer",
+    )
+  }
+
   function currentUploadUrls() {
     return [
       fields.coverUrl,
@@ -457,7 +473,7 @@ export function MaterialCmsForm({
                     : ""}
           </span>
           <Button
-            onClick={() => setPreviewOpen(true)}
+            onClick={openPreview}
             type="button"
             variant="outline"
           >
@@ -782,18 +798,6 @@ export function MaterialCmsForm({
           </div>
         </aside>
       </div>
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{fields.title || "Без названия"}</DialogTitle>
-            <DialogDescription>
-              {fields.description || "Короткое описание не заполнено"}
-            </DialogDescription>
-          </DialogHeader>
-          <MaterialPreview document={documentForSave} />
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <DialogContent className="max-w-md">

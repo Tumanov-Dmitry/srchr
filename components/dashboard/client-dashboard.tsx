@@ -21,7 +21,11 @@ type ClientDashboardProps = {
 export function ClientDashboard({ data }: ClientDashboardProps) {
   return (
     <div className="space-y-8">
-      <DashboardHighlights stories={clientStories} />
+      <DashboardHighlights
+        stories={
+          data.storyHighlights.length > 0 ? data.storyHighlights : clientStories
+        }
+      />
       <DashboardWelcome
         actions={[
           {

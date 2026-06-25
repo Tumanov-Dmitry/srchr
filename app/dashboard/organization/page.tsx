@@ -1,10 +1,8 @@
 import { reviewOrganizationJoinRequest } from "@/app/actions/organization-requests"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   getCurrentUser,
-  getProfileCompletionState,
   getUserOrganizationMemberships,
 } from "@/lib/supabase/queries"
 import { createClient } from "@/lib/supabase/server"
@@ -14,10 +12,9 @@ export default async function OrganizationPage({
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
-  const [{ message }, user, completion] = await Promise.all([
+  const [{ message }, user] = await Promise.all([
     searchParams,
     getCurrentUser(),
-    getProfileCompletionState(),
   ])
   if (!user) return null
 
@@ -57,35 +54,6 @@ export default async function OrganizationPage({
           {message}
         </p>
       ) : null}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {completion.organizations.map(({ organization, score }) => (
-          <Card key={organization.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle>{organization.name}</CardTitle>
-                <Badge variant="outline">
-                  {organization.status ?? "draft"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full bg-primary"
-                  style={{ width: `${score.percent}%` }}
-                />
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Карточка заполнена на {score.percent}%.
-                {score.missing.length > 0
-                  ? ` Не хватает: ${score.missing.slice(0, 3).join(", ")}.`
-                  : ""}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <Card>
         <CardHeader>

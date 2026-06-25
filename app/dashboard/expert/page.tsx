@@ -10,7 +10,6 @@ import { RequiredLabel } from "@/components/ui/required-label"
 import { Textarea } from "@/components/ui/textarea"
 import { decodeMessage } from "@/lib/messages"
 import { getCurrentExpertProfile } from "@/lib/supabase/queries"
-import { getProfileCompletionState } from "@/lib/supabase/queries"
 
 export default async function DashboardExpertPage({
   searchParams,
@@ -19,8 +18,8 @@ export default async function DashboardExpertPage({
 }) {
   const { message: rawMessage } = await searchParams
   const message = decodeMessage(rawMessage)
-  const [{ profile, organizations, isExpertTableMissing }, completion] =
-    await Promise.all([getCurrentExpertProfile(), getProfileCompletionState()])
+  const { profile, organizations, isExpertTableMissing } =
+    await getCurrentExpertProfile()
 
   return (
     <form action={saveExpertProfile} className="space-y-6">
@@ -44,26 +43,6 @@ export default async function DashboardExpertPage({
         <div className="rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-primary">
           {message}
         </div>
-      ) : null}
-
-      {completion.expert?.score ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Заполненность профиля</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${completion.expert.score.percent}%` }}
-              />
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Профиль заполнен на {completion.expert.score.percent}%. Это
-              показатель полноты данных, а не рейтинг.
-            </p>
-          </CardContent>
-        </Card>
       ) : null}
 
       {isExpertTableMissing ? (

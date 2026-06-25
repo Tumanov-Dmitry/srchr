@@ -6,13 +6,9 @@ import { logout } from "@/app/actions/auth"
 import { DashboardNav } from "@/components/layout/dashboard-nav"
 import { DashboardMobileNav } from "@/components/layout/dashboard-mobile-nav"
 import { NotificationBell } from "@/components/notifications/notification-bell"
-import { CompletionBanner } from "@/components/onboarding/completion-banner"
 import { Button } from "@/components/ui/button"
 import { getAdminAccess } from "@/lib/supabase/admin-queries"
-import {
-  getOnboardingState,
-  getProfileCompletionState,
-} from "@/lib/supabase/queries"
+import { getOnboardingState } from "@/lib/supabase/queries"
 
 export default async function DashboardLayout({
   children,
@@ -25,12 +21,7 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const [adminAccess, completion] = await Promise.all([
-    getAdminAccess(),
-    state.isComplete
-      ? getProfileCompletionState()
-      : Promise.resolve({ expert: null, organizations: [] }),
-  ])
+  const adminAccess = await getAdminAccess()
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,27 +70,7 @@ export default async function DashboardLayout({
           </div>
           <DashboardNav primaryRole={state.primaryRole} />
         </aside>
-        <main className="min-w-0">
-          {completion.expert?.score ? (
-            <CompletionBanner
-              href="/dashboard/expert"
-              score={completion.expert.score}
-              title="Завершите экспертный профиль"
-            />
-          ) : null}
-          {completion.organizations
-            .filter((item) => item.score.percent < 100)
-            .slice(0, 1)
-            .map((item) => (
-              <CompletionBanner
-                href="/dashboard/organization"
-                key={item.organization.id}
-                score={item.score}
-                title={`Завершите оформление: ${item.organization.name}`}
-              />
-            ))}
-          {children}
-        </main>
+        <main className="min-w-0">{children}</main>
       </div>
     </div>
   )

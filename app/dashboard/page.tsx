@@ -7,6 +7,7 @@ import { getTenderResponseCounts } from "@/lib/supabase/dashboard-queries"
 import {
   getClientTenders,
   getCurrentContractorOrganization,
+  getDashboardStoryHighlights,
   getDashboardMaterials,
   getDashboardReputation,
   getOnboardingState,
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
       reputationState,
       notificationsState,
       contractorState,
+      storyHighlights,
     ] = await Promise.all([
       getProfileCompletionState(),
       getDashboardMaterials(),
@@ -45,6 +47,7 @@ export default async function DashboardPage() {
       getDashboardReputation(),
       getUserNotifications(6),
       getCurrentContractorOrganization(),
+      getDashboardStoryHighlights("contractor"),
     ])
 
     const organization = contractorMembership?.organizations ?? null
@@ -106,6 +109,7 @@ export default async function DashboardPage() {
           materials: materialsState.materials as Material[],
           notifications: notificationsState.notifications,
           reputation: reputationTarget?.summary ?? null,
+          storyHighlights,
         }}
       />
     )
@@ -118,12 +122,14 @@ export default async function DashboardPage() {
       experts,
       favoritesState,
       notificationsState,
+      storyHighlights,
     ] = await Promise.all([
       getClientTenders(),
       getPublishedContractors(),
       getPublishedExperts(),
       getUserFavorites(),
       getUserNotifications(6),
+      getDashboardStoryHighlights("client"),
     ])
     const typedTenders = (clientState.tenders as Tender[]).filter(
       (tender) =>
@@ -182,6 +188,7 @@ export default async function DashboardPage() {
           recommendations: recommendations.slice(0, 6),
           favorites: favoritesState.favorites,
           notifications: notificationsState.notifications,
+          storyHighlights,
         }}
       />
     )

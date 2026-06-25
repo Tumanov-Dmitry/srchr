@@ -16,11 +16,22 @@ function safe(value: unknown) {
       "code",
       "a",
       "br",
+      "p",
+      "h2",
+      "h3",
+      "blockquote",
+      "figure",
+      "figcaption",
+      "img",
+      "hr",
       "ul",
       "ol",
       "li",
     ],
-    allowedAttributes: { a: ["href", "target", "rel"] },
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt"],
+    },
     allowedSchemes: ["http", "https", "mailto"],
     transformTags: {
       a: sanitizeHtml.simpleTransform("a", {

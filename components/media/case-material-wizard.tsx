@@ -4,12 +4,11 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Check, Eye, Plus, Send, Trash2 } from "@/components/ui/icons"
 
+import { CaseSectionEditor } from "@/components/media/case-section-editor"
 import { MaterialCoverUpload } from "@/components/media/material-cover-upload"
 import { MaterialClientPicker } from "@/components/media/material-client-picker"
 import { MaterialImageUpload } from "@/components/media/material-image-upload"
-import { MaterialPreview } from "@/components/media/material-preview"
 import { MultiServiceSelect } from "@/components/media/multi-service-select"
-import { RichTextField } from "@/components/media/rich-text-field"
 import { Alert } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -87,7 +86,6 @@ export function CaseMaterialWizard({
     "idle" | "saving" | "saved" | "error"
   >("idle")
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const statusRef = useRef<HTMLInputElement>(null)
@@ -302,6 +300,19 @@ export function CaseMaterialWizard({
     router.push("/dashboard/media")
   }
 
+  function openPreview() {
+    const previewKey = `srchr:material-preview:${autosaveIdRef.current}`
+    window.localStorage.setItem(
+      previewKey,
+      JSON.stringify({ title, description, coverUrl, document }),
+    )
+    window.open(
+      `/dashboard/media/preview?key=${encodeURIComponent(previewKey)}`,
+      "_blank",
+      "noopener,noreferrer",
+    )
+  }
+
   return (
     <form
       action={action}
@@ -356,7 +367,7 @@ export function CaseMaterialWizard({
                   : ""}
           </span>
           <Button
-            onClick={() => setPreviewOpen(true)}
+            onClick={openPreview}
             type="button"
             variant="outline"
           >
@@ -419,10 +430,9 @@ export function CaseMaterialWizard({
                   <RequiredLabel htmlFor="project-about" required>
                     О проекте
                   </RequiredLabel>
-                  <RichTextField
+                  <CaseSectionEditor
                     id="project-about"
                     onChange={(value) => updateData("projectAbout", value)}
-                    placeholder="Коротко расскажите о проекте. Из этого текста сформируется описание карточки."
                     value={data.projectAbout}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -577,10 +587,9 @@ export function CaseMaterialWizard({
                   <RequiredLabel htmlFor="case-task" required>
                     Задача
                   </RequiredLabel>
-                  <RichTextField
+                  <CaseSectionEditor
                     id="case-task"
                     onChange={(value) => updateData("task", value)}
-                    placeholder="Что требовалось сделать"
                     value={data.task}
                   />
                 </div>
@@ -588,10 +597,9 @@ export function CaseMaterialWizard({
                   <RequiredLabel htmlFor="case-solution" required>
                     Решение
                   </RequiredLabel>
-                  <RichTextField
+                  <CaseSectionEditor
                     id="case-solution"
                     onChange={(value) => updateData("solution", value)}
-                    placeholder="Как команда подошла к задаче"
                     value={data.solution}
                   />
                 </div>
@@ -610,10 +618,9 @@ export function CaseMaterialWizard({
                     <RequiredLabel htmlFor="case-result" required>
                       Результат
                     </RequiredLabel>
-                    <RichTextField
+                    <CaseSectionEditor
                       id="case-result"
                       onChange={(value) => updateData("result", value)}
-                      placeholder="Результаты, цифры и эффект проекта"
                       value={data.result}
                     />
                   </div>
@@ -872,18 +879,6 @@ export function CaseMaterialWizard({
           </div>
         </aside>
       </div>
-
-      <Dialog onOpenChange={setPreviewOpen} open={previewOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{title || "Новый кейс"}</DialogTitle>
-            <DialogDescription>
-              {description || "Описание появится из блока «О проекте»."}
-            </DialogDescription>
-          </DialogHeader>
-          <MaterialPreview document={document} />
-        </DialogContent>
-      </Dialog>
 
       <Dialog onOpenChange={setCloseOpen} open={closeOpen}>
         <DialogContent>

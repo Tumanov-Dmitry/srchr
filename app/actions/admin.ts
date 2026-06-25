@@ -41,6 +41,47 @@ function safeStatus(status: string | null, allowed: string[], fallback: string) 
   return status && allowed.includes(status) ? status : fallback
 }
 
+function parseDashboardSlides(raw: string | null) {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.flatMap((item) => {
+      if (!item || typeof item !== "object") return []
+      const row = item as Record<string, unknown>
+      const title = String(row.title ?? "").trim()
+      const description = String(row.description ?? "").trim()
+      if (!title || !description) return []
+
+      return [
+        {
+          id: String(row.id ?? crypto.randomUUID()),
+          eyebrow: String(row.eyebrow ?? "").trim(),
+          title,
+          description,
+          backgroundUrl: String(row.backgroundUrl ?? "").trim(),
+          backgroundColor: String(row.backgroundColor ?? "").trim(),
+          textColor: String(row.textColor ?? "").trim(),
+          textPosition: safeStatus(
+            String(row.textPosition ?? ""),
+            ["top", "center", "bottom"],
+            "bottom",
+          ),
+          backgroundSize: safeStatus(
+            String(row.backgroundSize ?? ""),
+            ["cover", "contain"],
+            "cover",
+          ),
+          ctaLabel: String(row.ctaLabel ?? "").trim(),
+          ctaUrl: String(row.ctaUrl ?? "").trim(),
+        },
+      ]
+    })
+  } catch {
+    return []
+  }
+}
+
 async function updateStatus(
   table: TableName,
   id: string | null,
@@ -265,4 +306,80 @@ export async function updateAdminEventPromotion(formData: FormData) {
   revalidatePath("/events")
   revalidatePath(path)
   redirectWithMessage(path, "Продвижение обновлено")
+}
+
+export async function saveAdminDashboardStoryHighlight(formData: FormData) {
+  await requireAdmin()
+
+  const path = "/admin/onboarding-stories"
+  const id = value(formData, "id")
+  const audience = safeStatus(value(formData, "audience"), [
+    "contractor",
+    "client",
+  ], "contractor")
+  const label = value(formData, "label")
+  const title = value(formData, "title")
+  const icon = safeStatus(value(formData, "icon"), [
+    "sparkles",
+    "user",
+    "briefcase",
+    "heart",
+  ], "sparkles")
+  const sortOrder = Number(value(formData, "sort_order") ?? "100")
+  const slides = parseDashboardSlides(value(formData, "slides_json"))
+
+  if (!label || slides.length === 0) {
+    redirectWithMessage(path, "Укажите название кружка и хотя бы один слайд")
+  }
+
+  const supabase = createAdminClient()
+  const payload = {
+    audience,
+    label,
+    title,
+    icon,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 100,
+    is_active: value(formData, "is_active") === "on",
+    slides,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error } = id
+    ? await supabase
+        .from("dashboard_story_highlights")
+        .update(payload)
+        .eq("id", id)
+    : await supabase.from("dashboard_story_highlights").insert(payload)
+
+  if (error) {
+    reportServerError("admin.dashboardStories.save", error)
+    redirectWithMessage(path, "Не удалось сохранить сторис")
+  }
+
+  revalidatePath("/dashboard")
+  revalidatePath(path)
+  redirectWithMessage(path, "Сторис сохранены")
+}
+
+export async function deleteAdminDashboardStoryHighlight(formData: FormData) {
+  await requireAdmin()
+
+  const path = "/admin/onboarding-stories"
+  const id = value(formData, "id")
+  if (!id) redirectWithMessage(path, "Сторис не найдены")
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from("dashboard_story_highlights")
+    .delete()
+    .eq("id", id)
+
+  if (error) {
+    reportServerError("admin.dashboardStories.delete", error)
+    redirectWithMessage(path, "Не удалось удалить сторис")
+  }
+
+  revalidatePath("/dashboard")
+  revalidatePath(path)
+  redirectWithMessage(path, "Сторис удалены")
 }

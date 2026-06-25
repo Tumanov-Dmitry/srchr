@@ -8,6 +8,7 @@ import type {
   ReputationSummary,
   Tender,
 } from "@/types"
+import type { DashboardStory } from "@/components/dashboard/stories-modal"
 
 export type PresenceItem = {
   kind: "organization" | "expert"
@@ -28,6 +29,7 @@ export type ContractorDashboardData = {
   materials: Material[]
   notifications: Notification[]
   reputation: ReputationSummary | null
+  storyHighlights: DashboardStory[]
 }
 
 export type ClientDashboardData = {
@@ -46,6 +48,7 @@ export type ClientDashboardData = {
   }>
   favorites: Favorite[]
   notifications: Notification[]
+  storyHighlights: DashboardStory[]
 }
 
 export type UniversalDashboardData = {

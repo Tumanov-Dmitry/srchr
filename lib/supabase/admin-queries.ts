@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
+import type { DashboardStorySlide } from "@/components/dashboard/stories-modal"
 import type { Event, ExpertProfile, Material, Organization, Tender } from "@/types"
 
 export type AdminProfile = {
@@ -40,6 +41,19 @@ export type AdminStats = {
   tenderResponses: number
   subscriptions: number
   requests: number
+}
+
+export type AdminDashboardStoryHighlight = {
+  id: string
+  audience: "contractor" | "client"
+  label: string
+  title?: string | null
+  icon?: string | null
+  sort_order?: number | null
+  is_active?: boolean | null
+  slides?: DashboardStorySlide[] | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
 export type AdminAccess = {
@@ -269,6 +283,19 @@ export async function getAdminEvents(status?: string | null) {
 
   const { data, error } = await query
   return error ? [] : ((data ?? []) as Event[])
+}
+
+export async function getAdminDashboardStoryHighlights() {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("dashboard_story_highlights")
+    .select("*")
+    .order("audience", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+
+  if (error) return []
+  return (data ?? []) as AdminDashboardStoryHighlight[]
 }
 
 export async function getAdminEventById(id: string) {
