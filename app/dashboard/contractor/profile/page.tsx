@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import {
   setContractorPublicationStatus,
   updateContractorProfile,
@@ -86,7 +87,7 @@ export default async function ContractorProfilePage({
               <RequiredLabel htmlFor="city" required>
                 Город
               </RequiredLabel>
-              <NumberInput
+              <Input
                 id="city"
                 name="city"
                 defaultValue={organization.city ?? ""}
@@ -201,7 +202,7 @@ export default async function ContractorProfilePage({
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <Button type="submit">Сохранить</Button>
               <Button asChild type="button" variant="outline">
-                <a href="/dashboard/contractor">Отмена</a>
+                <Link href="/dashboard/contractor">Отмена</Link>
               </Button>
             </div>
           </form>

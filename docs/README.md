@@ -7,6 +7,7 @@ This directory contains product, architecture, and module documentation for SRCH
 - `architecture.md` - technical architecture and operational model.
 - `product/` - product vision, roles, business model, pricing, reputation, recommendations, search, and analytics.
 - `modules/` - current behavior of implemented product modules.
+- `qa/` - release smoke checklists and manual verification flows.
 
 ## Usage
 
