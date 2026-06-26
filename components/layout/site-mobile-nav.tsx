@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Menu } from "@/components/ui/icons"
+import { Menu, Search } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Sheet,
   SheetClose,
@@ -35,6 +36,21 @@ export function SiteMobileNav({ items }: { items: NavItem[] }) {
         <SheetHeader>
           <SheetTitle>Навигация</SheetTitle>
         </SheetHeader>
+        <form action="/search" className="grid gap-2 px-4 pb-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              aria-label="Поиск"
+              className="h-11 pl-10"
+              name="q"
+              placeholder="Поиск по SRCHR"
+              type="search"
+            />
+          </div>
+          <SheetClose asChild>
+            <Button type="submit">Найти</Button>
+          </SheetClose>
+        </form>
         <nav className="grid gap-1 px-4">
           {items.map((item) => (
             <SheetClose asChild key={item.href}>

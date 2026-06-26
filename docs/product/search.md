@@ -42,6 +42,23 @@ Prefer simple database filters and explicit UI controls before adding advanced f
 
 When advanced search is added, keep structured filters available.
 
+## Global Search Page
+
+The public global search lives at `/search`.
+
+Behavior:
+
+- the main page search form sends users to `/search?q=...`;
+- profile results are split into tabs: agencies and experts;
+- material results are split into tabs: cases and articles;
+- default sort is by rating;
+- default profile ranking puts active pro/subscribed profiles first, then reputation;
+- users can switch sorting to relevance, newest, or name;
+- materials use public interest signals in MVP: views and freshness;
+- contacts and actions still follow the rules of the target entity pages.
+
+The pro-first filter is a ranking preference, not a hard filter. If subscription data is unavailable, search falls back to reputation-based ordering.
+
 ## Future Direction
 
 Search can evolve toward:

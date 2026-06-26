@@ -678,6 +678,7 @@ export async function getPublishedExpertBySlug(slug: string) {
 }
 
 export type ContractorFilters = {
+  q?: string
   city?: string
   service?: string
   budget?: string
@@ -701,6 +702,30 @@ export async function getPublishedContractors(filters: ContractorFilters = {}) {
   const maxBudget = filters.budget ? Number(filters.budget) : null
   let contractors = (data ?? []) as Organization[]
 
+  if (filters.q) {
+    const search = filters.q.toLocaleLowerCase("ru-RU")
+    contractors = contractors.filter((contractor) => {
+      const profile = contractor.contractor_profiles?.[0]
+      const services =
+        contractor.organization_services
+          ?.map((item) => item.services?.name)
+          .filter(Boolean)
+          .join(" ") ?? ""
+
+      return [
+        contractor.name,
+        contractor.description,
+        contractor.city,
+        profile?.short_description,
+        profile?.full_description,
+        profile?.price_description,
+        services,
+      ].some((value) =>
+        value?.toLocaleLowerCase("ru-RU").includes(search),
+      )
+    })
+  }
+
   if (filters.service) {
     contractors = contractors.filter((contractor) =>
       contractor.organization_services?.some(
@@ -720,6 +745,79 @@ export async function getPublishedContractors(filters: ContractorFilters = {}) {
   }
 
   return contractors
+}
+
+export type GlobalSearchResults = {
+  contractors: Organization[]
+  experts: ExpertProfile[]
+  materials: Material[]
+}
+
+export async function getGlobalSearchResults(q?: string | null) {
+  const normalized = q?.trim().slice(0, 120) ?? ""
+  const [contractors, experts, materials] = await Promise.all([
+    getPublishedContractors({ q: normalized }),
+    getPublishedExperts({ q: normalized }),
+    getPublishedMaterials({ q: normalized }),
+  ])
+
+  return {
+    contractors,
+    experts,
+    materials,
+  } satisfies GlobalSearchResults
+}
+
+export async function getActiveSubscriptionMarkers({
+  organizationIds,
+  userIds,
+}: {
+  organizationIds: string[]
+  userIds: string[]
+}) {
+  const companyIds = new Set<string>()
+  const expertUserIds = new Set<string>()
+  const uniqueOrganizationIds = [...new Set(organizationIds.filter(Boolean))]
+  const uniqueUserIds = [...new Set(userIds.filter(Boolean))]
+
+  if (uniqueOrganizationIds.length === 0 && uniqueUserIds.length === 0) {
+    return { companyIds, expertUserIds }
+  }
+
+  let supabase
+  try {
+    supabase = createAdminClient()
+  } catch {
+    return { companyIds, expertUserIds }
+  }
+
+  if (uniqueOrganizationIds.length > 0) {
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("organization_id")
+      .eq("status", "active")
+      .in("organization_id", uniqueOrganizationIds)
+
+    for (const row of data ?? []) {
+      const organizationId = String(row.organization_id ?? "")
+      if (organizationId) companyIds.add(organizationId)
+    }
+  }
+
+  if (uniqueUserIds.length > 0) {
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("status", "active")
+      .in("user_id", uniqueUserIds)
+
+    for (const row of data ?? []) {
+      const userId = String(row.user_id ?? "")
+      if (userId) expertUserIds.add(userId)
+    }
+  }
+
+  return { companyIds, expertUserIds }
 }
 
 export async function getContractorBySlug(slug: string) {

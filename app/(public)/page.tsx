@@ -68,7 +68,7 @@ export default function HomePage() {
         <Card className="border-primary/20 bg-card shadow-elevation-2">
           <CardContent className="space-y-4 p-5">
             <p className="text-sm font-semibold">С чего начнём?</p>
-            <form action="/contractors" className="relative">
+            <form action="/search" className="relative">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 aria-label="Поиск подрядчиков"
@@ -87,7 +87,7 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-2">
               {["HR-брендинг", "EVP", "Исследования"].map((item) => (
                 <Button asChild key={item} size="sm" variant="secondary">
-                  <Link href={`/contractors?q=${encodeURIComponent(item)}`}>
+                  <Link href={`/search?q=${encodeURIComponent(item)}`}>
                     {item}
                   </Link>
                 </Button>

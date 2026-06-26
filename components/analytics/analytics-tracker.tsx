@@ -28,6 +28,7 @@ const trafficSources = new Set([
   "media",
   "events",
   "tenders",
+  "search",
   "qr",
   "external",
 ])

@@ -8,7 +8,7 @@ export function CatalogAnalyticsTracker({
   catalog,
   filters,
 }: {
-  catalog: "contractors" | "experts" | "media" | "events" | "tenders"
+  catalog: "contractors" | "experts" | "media" | "events" | "tenders" | "search"
   filters: Record<string, string | undefined>
 }) {
   useEffect(() => {
